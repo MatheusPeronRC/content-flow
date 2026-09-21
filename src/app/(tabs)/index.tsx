@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 
-import { colors, radius, spacing, typography } from "../constants/theme";
+import { colors, radius, spacing, typography } from "../../constants/theme";
 
 export default function HomeScreen() {
   return (
