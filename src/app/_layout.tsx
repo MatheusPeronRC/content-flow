@@ -11,6 +11,13 @@ export default function RootLayout() {
           presentation: "modal",
         }}
       />
+
+      <Stack.Screen
+        name="inspiracao/nova"
+        options={{
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }

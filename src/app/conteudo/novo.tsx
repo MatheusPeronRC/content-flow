@@ -1,15 +1,9 @@
 import { router } from "expo-router";
-import {
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing, typography } from "../../constants/theme";
-
 export default function NovoConteudoScreen() {
   return (
     <SafeAreaView style={styles.container}>

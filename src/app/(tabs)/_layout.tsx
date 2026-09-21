@@ -13,15 +13,18 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.textMuted,
 
         tabBarStyle: {
-          height: 70,
+          height: 74,
           paddingTop: 8,
           paddingBottom: 8,
+
           backgroundColor: colors.surface,
+
+          borderTopWidth: 1,
           borderTopColor: colors.border,
         },
 
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: "600",
         },
       }}
@@ -52,13 +55,20 @@ export default function TabsLayout() {
           tabBarIcon: () => (
             <View
               style={{
-                width: 54,
-                height: 54,
-                borderRadius: 27,
+                width: 58,
+                height: 58,
+
+                borderRadius: 29,
+
                 backgroundColor: colors.primary,
+
                 alignItems: "center",
                 justifyContent: "center",
-                marginTop: -18,
+
+                marginTop: -22,
+
+                borderWidth: 5,
+                borderColor: colors.surface,
               }}
             >
               <Ionicons name="add" size={30} color={colors.surface} />

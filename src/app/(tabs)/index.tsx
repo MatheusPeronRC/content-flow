@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -7,118 +9,217 @@ import {
   View,
 } from "react-native";
 
-import { colors, radius, spacing, typography } from "../../constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { SectionHeader } from "../../components/SectionHeader";
+import { TaskCard } from "../../components/TaskCard";
+
+import {
+  colors,
+  radius,
+  shadows,
+  spacing,
+  typography,
+} from "../../constants/theme";
+
+const weekDays = [
+  {
+    day: "SEG",
+    date: "21",
+    completed: true,
+  },
+  {
+    day: "TER",
+    date: "22",
+    completed: true,
+  },
+  {
+    day: "QUA",
+    date: "23",
+    completed: false,
+  },
+  {
+    day: "QUI",
+    date: "24",
+    completed: true,
+  },
+  {
+    day: "SEX",
+    date: "25",
+    completed: false,
+  },
+];
 
 export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER */}
+
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Olá 👋</Text>
-            <Text style={styles.subtitle}>
-              Vamos tirar suas ideias do papel?
-            </Text>
+          <View style={styles.brand}>
+            <View style={styles.brandIcon}>
+              <Ionicons
+                name="sparkles-outline"
+                size={20}
+                color={colors.surface}
+              />
+            </View>
+
+            <Text style={styles.brandName}>ContentFlow</Text>
           </View>
 
           <TouchableOpacity style={styles.notificationButton}>
-            <Text style={styles.notificationIcon}>●</Text>
+            <Ionicons
+              name="notifications-outline"
+              size={21}
+              color={colors.text}
+            />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Hoje</Text>
-            <Text style={styles.sectionSubtitle}>21 de setembro</Text>
-          </View>
+        {/* INTRO */}
 
-          <TouchableOpacity>
-            <Text style={styles.link}>Ver semana</Text>
-          </TouchableOpacity>
-        </View>
+        <View style={styles.hero}>
+          <Text style={styles.heroLabel}>SEU FOCO DE HOJE</Text>
 
-        <View style={styles.taskCard}>
-          <View style={[styles.taskIcon, styles.reelIcon]}>
-            <Text>🎥</Text>
-          </View>
-
-          <View style={styles.taskContent}>
-            <Text style={styles.taskAction}>Gravar</Text>
-            <Text style={styles.taskTitle}>Creatina engorda?</Text>
-            <Text style={styles.taskType}>Reel</Text>
-          </View>
-
-          <TouchableOpacity style={styles.checkCircle} />
-        </View>
-
-        <View style={styles.taskCard}>
-          <View style={[styles.taskIcon, styles.carouselIcon]}>
-            <Text>✏️</Text>
-          </View>
-
-          <View style={styles.taskContent}>
-            <Text style={styles.taskAction}>Finalizar roteiro</Text>
-            <Text style={styles.taskTitle}>3 erros no café da manhã</Text>
-            <Text style={styles.taskType}>Carrossel</Text>
-          </View>
-
-          <TouchableOpacity style={styles.checkCircle} />
-        </View>
-
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Ver conteúdos de hoje</Text>
-        </TouchableOpacity>
-
-        <View style={styles.weekSection}>
-          <Text style={styles.sectionTitle}>Sua semana</Text>
-          <Text style={styles.sectionSubtitle}>
-            3 de 5 conteúdos planejados
+          <Text style={styles.heroTitle}>
+            Transforme suas ideias em conteúdo.
           </Text>
 
-          <View style={styles.weekDays}>
-            {[
-              ["SEG", "21", true],
-              ["TER", "22", true],
-              ["QUA", "23", false],
-              ["QUI", "24", true],
-              ["SEX", "25", false],
-            ].map(([day, date, completed]) => (
-              <View style={styles.dayCard} key={String(day)}>
-                <Text style={styles.dayName}>{day}</Text>
-                <Text style={styles.dayNumber}>{date}</Text>
-
-                <View
-                  style={[
-                    styles.dayStatus,
-                    completed && styles.dayStatusCompleted,
-                  ]}
-                >
-                  {completed && <Text style={styles.dayCheck}>✓</Text>}
-                </View>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>
-              Planejar minha semana ✨
-            </Text>
-          </TouchableOpacity>
+          <Text style={styles.heroDescription}>
+            Você já sabe o que precisa produzir hoje. Agora é só colocar em
+            movimento.
+          </Text>
         </View>
 
-        <TouchableOpacity style={styles.inspirationCard}>
-          <View>
-            <Text style={styles.inspirationTitle}>💡 Inspirações</Text>
+        {/* PROGRESSO */}
+
+        <View style={styles.progressCard}>
+          <View style={styles.progressTop}>
+            <View>
+              <Text style={styles.progressLabel}>Ritmo da semana</Text>
+
+              <Text style={styles.progressValue}>3 de 5 conteúdos</Text>
+            </View>
+
+            <View style={styles.progressIcon}>
+              <Ionicons
+                name="trending-up-outline"
+                size={21}
+                color={colors.primary}
+              />
+            </View>
+          </View>
+
+          <View style={styles.progressTrack}>
+            <View style={styles.progressFill} />
+          </View>
+
+          <Text style={styles.progressHint}>
+            Você está a 2 conteúdos de completar sua semana.
+          </Text>
+        </View>
+
+        {/* HOJE */}
+
+        <View style={styles.section}>
+          <SectionHeader
+            title="Hoje"
+            subtitle="Conteúdos que precisam da sua atenção"
+          />
+
+          <TaskCard
+            action="Gravar"
+            title="Creatina engorda?"
+            type="Reel"
+            icon="videocam-outline"
+            iconBackground={colors.reel}
+          />
+
+          <TaskCard
+            action="Finalizar roteiro"
+            title="3 erros no café da manhã"
+            type="Carrossel"
+            icon="create-outline"
+            iconBackground={colors.carousel}
+          />
+        </View>
+
+        {/* SEMANA */}
+
+        <View style={styles.section}>
+          <SectionHeader
+            title="Sua semana"
+            subtitle="3 de 5 conteúdos planejados"
+          />
+
+          <View style={styles.weekCard}>
+            <View style={styles.weekDays}>
+              {weekDays.map((item) => (
+                <View key={item.day} style={styles.day}>
+                  <Text style={styles.dayName}>{item.day}</Text>
+
+                  <View
+                    style={[
+                      styles.dayCircle,
+                      item.completed && styles.dayCircleCompleted,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayNumber,
+                        item.completed && styles.dayNumberCompleted,
+                      ]}
+                    >
+                      {item.date}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statusDot,
+                      item.completed && styles.statusDotCompleted,
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.planButton}
+              onPress={() => router.push("/planejar")}
+            >
+              <Text style={styles.planButtonText}>Planejar minha semana</Text>
+
+              <Ionicons name="arrow-forward" size={17} color={colors.surface} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* INSPIRAÇÕES */}
+
+        <TouchableOpacity
+          style={styles.inspirationCard}
+          activeOpacity={0.8}
+          onPress={() => router.push("/inspiracoes")}
+        >
+          <View style={styles.inspirationIcon}>
+            <Ionicons name="bulb-outline" size={23} color={colors.primary} />
+          </View>
+
+          <View style={styles.inspirationContent}>
+            <Text style={styles.inspirationTitle}>Suas inspirações</Text>
+
             <Text style={styles.inspirationSubtitle}>
-              7 novas inspirações salvas
+              7 referências esperando para virar conteúdo
             </Text>
           </View>
 
-          <Text style={styles.arrow}>›</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -131,238 +232,310 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  container: {
-    flex: 1,
-  },
-
   content: {
-    padding: spacing.lg,
-    paddingBottom: 60,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 110,
   },
 
   header: {
+    height: 68,
+
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.xl,
+    justifyContent: "space-between",
   },
 
-  greeting: {
-    fontSize: typography.title,
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  brandIcon: {
+    width: 36,
+    height: 36,
+
+    borderRadius: 12,
+
+    backgroundColor: colors.primary,
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  brandName: {
+    fontSize: 17,
     fontWeight: "700",
     color: colors.text,
-  },
-
-  subtitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
   },
 
   notificationButton: {
     width: 42,
     height: 42,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.surface,
+
     alignItems: "center",
     justifyContent: "center",
-  },
 
-  notificationIcon: {
-    color: colors.primary,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: spacing.md,
-  },
-
-  sectionTitle: {
-    fontSize: typography.heading,
-    fontWeight: "700",
-    color: colors.text,
-  },
-
-  sectionSubtitle: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-
-  link: {
-    color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: "600",
-  },
-
-  taskCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
 
-  taskIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.md,
+  hero: {
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+
+  heroLabel: {
+    fontSize: typography.tiny,
+    fontWeight: "800",
+    letterSpacing: 1.3,
+
+    color: colors.primary,
+
+    marginBottom: spacing.sm,
+  },
+
+  heroTitle: {
+    fontSize: 30,
+    lineHeight: 36,
+
+    fontWeight: "700",
+
+    color: colors.text,
+
+    maxWidth: 320,
+  },
+
+  heroDescription: {
+    marginTop: 10,
+
+    fontSize: typography.body,
+    lineHeight: 21,
+
+    color: colors.textSecondary,
+
+    maxWidth: 330,
+  },
+
+  progressCard: {
+    backgroundColor: colors.primary,
+
+    borderRadius: radius.xl,
+
+    padding: spacing.lg,
+
+    marginBottom: spacing.xl,
+  },
+
+  progressTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  progressLabel: {
+    fontSize: typography.caption,
+    color: "#D7E3DE",
+  },
+
+  progressValue: {
+    fontSize: typography.heading,
+    fontWeight: "700",
+
+    color: colors.surface,
+
+    marginTop: 3,
+  },
+
+  progressIcon: {
+    width: 42,
+    height: 42,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.primaryLight,
+
     alignItems: "center",
     justifyContent: "center",
-    marginRight: spacing.md,
   },
 
-  reelIcon: {
-    backgroundColor: colors.reel,
-  },
+  progressTrack: {
+    height: 6,
 
-  carouselIcon: {
-    backgroundColor: colors.carousel,
-  },
+    backgroundColor: "#456C61",
 
-  taskContent: {
-    flex: 1,
-  },
-
-  taskAction: {
-    fontSize: typography.body,
-    fontWeight: "700",
-    color: colors.text,
-  },
-
-  taskTitle: {
-    fontSize: typography.body,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-
-  taskType: {
-    fontSize: typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-
-  checkCircle: {
-    width: 24,
-    height: 24,
     borderRadius: radius.round,
-    borderWidth: 2,
-    borderColor: colors.textMuted,
+
+    marginTop: spacing.lg,
+
+    overflow: "hidden",
   },
 
-  primaryButton: {
-    backgroundColor: colors.text,
-    borderRadius: radius.md,
-    padding: 15,
-    alignItems: "center",
+  progressFill: {
+    width: "60%",
+    height: "100%",
+
+    backgroundColor: colors.surface,
+
+    borderRadius: radius.round,
+  },
+
+  progressHint: {
     marginTop: spacing.sm,
+
+    fontSize: typography.caption,
+
+    color: "#D7E3DE",
   },
 
-  primaryButtonText: {
-    color: colors.surface,
-    fontWeight: "700",
-    fontSize: typography.body,
+  section: {
+    marginBottom: spacing.xl,
   },
 
-  weekSection: {
-    marginTop: spacing.xl,
+  weekCard: {
+    backgroundColor: colors.surface,
+
+    borderRadius: radius.lg,
+
+    padding: spacing.md,
+
+    borderWidth: 1,
+    borderColor: colors.border,
+
+    ...shadows.card,
   },
 
   weekDays: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: spacing.md,
+
     marginBottom: spacing.md,
   },
 
-  dayCard: {
-    width: "18%",
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
+  day: {
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 
   dayName: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    fontWeight: "600",
-  },
-
-  dayNumber: {
-    fontSize: typography.subheading,
+    fontSize: typography.tiny,
     fontWeight: "700",
-    color: colors.text,
-    marginTop: 3,
+
+    color: colors.textMuted,
+
+    marginBottom: spacing.sm,
   },
 
-  dayStatus: {
-    width: 20,
-    height: 20,
+  dayCircle: {
+    width: 38,
+    height: 38,
+
     borderRadius: radius.round,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginTop: spacing.sm,
+
+    backgroundColor: colors.surfaceSoft,
+
     alignItems: "center",
     justifyContent: "center",
   },
 
-  dayStatusCompleted: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  dayCircleCompleted: {
+    backgroundColor: colors.primaryLight,
   },
 
-  dayCheck: {
-    color: colors.surface,
-    fontSize: 12,
+  dayNumber: {
+    fontSize: typography.body,
     fontWeight: "700",
+
+    color: colors.textSecondary,
   },
 
-  secondaryButton: {
+  dayNumberCompleted: {
+    color: colors.primary,
+  },
+
+  statusDot: {
+    width: 5,
+    height: 5,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.border,
+
+    marginTop: spacing.sm,
+  },
+
+  statusDotCompleted: {
     backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    padding: 15,
+  },
+
+  planButton: {
+    height: 46,
+
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+
+    gap: spacing.sm,
+
+    backgroundColor: colors.primary,
+
+    borderRadius: radius.md,
   },
 
-  secondaryButtonText: {
-    color: colors.surface,
+  planButtonText: {
+    fontSize: typography.body,
     fontWeight: "700",
+
+    color: colors.surface,
   },
 
   inspirationCard: {
-    marginTop: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.md,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: colors.border,
+
+    backgroundColor: colors.inspiration,
+
+    borderRadius: radius.lg,
+
+    padding: spacing.md,
+
+    marginBottom: spacing.xl,
+  },
+
+  inspirationIcon: {
+    width: 46,
+    height: 46,
+
+    borderRadius: radius.md,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginRight: spacing.md,
+  },
+
+  inspirationContent: {
+    flex: 1,
   },
 
   inspirationTitle: {
-    fontWeight: "700",
     fontSize: typography.subheading,
+    fontWeight: "700",
+
     color: colors.text,
   },
 
   inspirationSubtitle: {
-    color: colors.textSecondary,
     fontSize: typography.caption,
-    marginTop: spacing.xs,
-  },
+    lineHeight: 17,
 
-  arrow: {
-    fontSize: 28,
     color: colors.textSecondary,
+
+    marginTop: 3,
   },
 });
