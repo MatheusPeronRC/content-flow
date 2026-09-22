@@ -19,16 +19,14 @@ import { ContentFormat, CreatorObjective } from "../types/creatorProfile";
 
 import { colors, radius, spacing, typography } from "../constants/theme";
 
-const professions = [
+const professionSuggestions = [
   "Nutricionista",
   "Personal trainer",
   "Fisioterapeuta",
   "Dentista",
-  "Esteticista",
   "Psicólogo",
   "Fotógrafo",
   "Designer",
-  "Outro",
 ];
 
 const objectives: {
@@ -36,53 +34,88 @@ const objectives: {
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
+  background: string;
+  foreground: string;
 }[] = [
   {
     value: "clientes",
+
     title: "Atrair clientes",
-    description:
-      "Criar conteúdo para gerar oportunidades e novos atendimentos.",
+
+    description: "Transformar conteúdo em novas oportunidades e atendimentos.",
+
     icon: "people-outline",
+
+    background: colors.terracottaLight,
+
+    foreground: colors.terracotta,
   },
+
   {
     value: "autoridade",
+
     title: "Construir autoridade",
-    description: "Ser reconhecido como referência na sua área.",
+
+    description: "Ser lembrado como referência na sua área.",
+
     icon: "ribbon-outline",
+
+    background: colors.amberLight,
+
+    foreground: colors.amber,
   },
+
   {
     value: "audiencia",
+
     title: "Crescer audiência",
-    description: "Alcançar mais pessoas e aumentar sua comunidade.",
+
+    description: "Alcançar mais pessoas e construir uma comunidade.",
+
     icon: "trending-up-outline",
+
+    background: colors.blueLight,
+
+    foreground: colors.blue,
   },
+
   {
     value: "vendas",
+
     title: "Vender produtos ou serviços",
-    description: "Usar conteúdo para apoiar suas vendas.",
+
+    description: "Usar seu conteúdo para apoiar suas vendas.",
+
     icon: "bag-outline",
+
+    background: colors.sageLight,
+
+    foreground: colors.sage,
   },
 ];
 
 const frequencies = [
   {
     value: 2,
-    label: "1–2x",
+    title: "1–2x",
     description: "Começar com calma",
   },
+
   {
     value: 3,
-    label: "3x",
+    title: "3x",
     description: "Bom equilíbrio",
   },
+
   {
     value: 5,
-    label: "4–5x",
+    title: "4–5x",
     description: "Ritmo consistente",
   },
+
   {
     value: 7,
-    label: "Todos os dias",
+    title: "Todos os dias",
     description: "Alta frequência",
   },
 ];
@@ -90,22 +123,47 @@ const frequencies = [
 const formats: {
   value: ContentFormat;
   icon: keyof typeof Ionicons.glyphMap;
+  background: string;
+  foreground: string;
 }[] = [
   {
     value: "Reel",
+
     icon: "videocam-outline",
+
+    background: colors.terracottaLight,
+
+    foreground: colors.terracotta,
   },
+
   {
     value: "Carrossel",
+
     icon: "albums-outline",
+
+    background: colors.amberLight,
+
+    foreground: colors.amber,
   },
+
   {
     value: "Story",
+
     icon: "phone-portrait-outline",
+
+    background: colors.lavenderLight,
+
+    foreground: colors.lavender,
   },
+
   {
     value: "Foto",
+
     icon: "image-outline",
+
+    background: colors.blueLight,
+
+    foreground: colors.blue,
   },
 ];
 
@@ -113,7 +171,6 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(1);
 
   const [profession, setProfession] = useState("");
-  const [customProfession, setCustomProfession] = useState("");
 
   const [objective, setObjective] = useState<CreatorObjective | null>(null);
 
@@ -121,13 +178,12 @@ export default function OnboardingScreen() {
 
   const [selectedFormats, setSelectedFormats] = useState<ContentFormat[]>([]);
 
-  const finalProfession =
-    profession === "Outro" ? customProfession.trim() : profession;
+  const [saving, setSaving] = useState(false);
 
   function canContinue() {
     switch (step) {
       case 1:
-        return finalProfession.length > 0;
+        return profession.trim().length >= 2;
 
       case 2:
         return objective !== null;
@@ -144,20 +200,31 @@ export default function OnboardingScreen() {
   }
 
   function toggleFormat(format: ContentFormat) {
-    setSelectedFormats((current) =>
-      current.includes(format)
-        ? current.filter((item) => item !== format)
-        : [...current, format],
-    );
+    setSelectedFormats((current) => {
+      if (current.includes(format)) {
+        return current.filter((item) => item !== format);
+      }
+
+      return [...current, format];
+    });
+  }
+
+  function handleBack() {
+    if (step <= 1) {
+      return;
+    }
+
+    setStep((current) => current - 1);
   }
 
   async function handleContinue() {
-    if (!canContinue()) {
+    if (!canContinue() || saving) {
       return;
     }
 
     if (step < 4) {
       setStep((current) => current + 1);
+
       return;
     }
 
@@ -165,29 +232,32 @@ export default function OnboardingScreen() {
       return;
     }
 
-    const now = new Date().toISOString();
+    try {
+      setSaving(true);
 
-    await saveCreatorProfile({
-      profession: finalProfession,
-      objective,
-      postsPerWeek,
-      formats: selectedFormats,
+      const now = new Date().toISOString();
 
-      onboardingCompleted: true,
+      await saveCreatorProfile({
+        profession: profession.trim(),
 
-      createdAt: now,
-      updatedAt: now,
-    });
+        objective,
 
-    router.replace("/");
-  }
+        postsPerWeek,
 
-  function handleBack() {
-    if (step === 1) {
-      return;
+        formats: selectedFormats,
+
+        onboardingCompleted: true,
+
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      router.replace("/");
+    } catch (error) {
+      console.error("Erro ao salvar onboarding:", error);
+
+      setSaving(false);
     }
-
-    setStep((current) => current - 1);
   }
 
   return (
@@ -197,7 +267,7 @@ export default function OnboardingScreen() {
           <View style={styles.topRow}>
             {step > 1 ? (
               <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Ionicons name="arrow-back" size={21} color={colors.text} />
+                <Ionicons name="arrow-back" size={20} color={colors.text} />
               </TouchableOpacity>
             ) : (
               <View style={styles.backSpace} />
@@ -214,6 +284,7 @@ export default function OnboardingScreen() {
                 key={item}
                 style={[
                   styles.progressItem,
+
                   item <= step && styles.progressItemActive,
                 ]}
               />
@@ -223,215 +294,26 @@ export default function OnboardingScreen() {
 
         <ScrollView
           contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {step === 1 && (
-            <>
-              <Header
-                eyebrow="SOBRE VOCÊ"
-                title="O que você faz?"
-                description="Isso ajuda o ContentFlow a organizar melhor suas ideias e conteúdos."
-              />
-
-              <View style={styles.professions}>
-                {professions.map((item) => {
-                  const selected = profession === item;
-
-                  return (
-                    <TouchableOpacity
-                      key={item}
-                      style={[
-                        styles.profession,
-                        selected && styles.professionSelected,
-                      ]}
-                      onPress={() => setProfession(item)}
-                    >
-                      <Text
-                        style={[
-                          styles.professionText,
-                          selected && styles.professionTextSelected,
-                        ]}
-                      >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {profession === "Outro" && (
-                <TextInput
-                  value={customProfession}
-                  onChangeText={setCustomProfession}
-                  placeholder="Digite sua profissão ou nicho"
-                  placeholderTextColor={colors.textMuted}
-                  style={styles.input}
-                />
-              )}
-            </>
+            <ProfessionStep profession={profession} onChange={setProfession} />
           )}
 
           {step === 2 && (
-            <>
-              <Header
-                eyebrow="SEU OBJETIVO"
-                title="O que o conteúdo precisa fazer por você?"
-                description="Escolha o principal objetivo neste momento."
-              />
-
-              <View style={styles.optionList}>
-                {objectives.map((item) => {
-                  const selected = objective === item.value;
-
-                  return (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={[
-                        styles.objectiveCard,
-                        selected && styles.objectiveCardSelected,
-                      ]}
-                      onPress={() => setObjective(item.value)}
-                    >
-                      <View
-                        style={[
-                          styles.objectiveIcon,
-                          selected && styles.objectiveIconSelected,
-                        ]}
-                      >
-                        <Ionicons
-                          name={item.icon}
-                          size={22}
-                          color={selected ? colors.surface : colors.primary}
-                        />
-                      </View>
-
-                      <View style={styles.optionContent}>
-                        <Text style={styles.optionTitle}>{item.title}</Text>
-
-                        <Text style={styles.optionDescription}>
-                          {item.description}
-                        </Text>
-                      </View>
-
-                      <View
-                        style={[styles.radio, selected && styles.radioSelected]}
-                      >
-                        {selected && <View style={styles.radioDot} />}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
+            <ObjectiveStep value={objective} onChange={setObjective} />
           )}
 
           {step === 3 && (
-            <>
-              <Header
-                eyebrow="SUA ROTINA"
-                title="Quantas vezes você quer publicar por semana?"
-                description="Não precisa ser perfeito. Escolha um ritmo que pareça possível."
-              />
-
-              <View style={styles.frequencyGrid}>
-                {frequencies.map((item) => {
-                  const selected = postsPerWeek === item.value;
-
-                  return (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={[
-                        styles.frequencyCard,
-                        selected && styles.frequencyCardSelected,
-                      ]}
-                      onPress={() => setPostsPerWeek(item.value)}
-                    >
-                      <Text
-                        style={[
-                          styles.frequencyValue,
-                          selected && styles.frequencyValueSelected,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-
-                      <Text
-                        style={[
-                          styles.frequencyDescription,
-                          selected && styles.frequencyDescriptionSelected,
-                        ]}
-                      >
-                        {item.description}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
+            <FrequencyStep value={postsPerWeek} onChange={setPostsPerWeek} />
           )}
 
           {step === 4 && (
-            <>
-              <Header
-                eyebrow="SEUS FORMATOS"
-                title="O que você costuma publicar?"
-                description="Você pode escolher mais de uma opção."
-              />
-
-              <View style={styles.formatGrid}>
-                {formats.map((item) => {
-                  const selected = selectedFormats.includes(item.value);
-
-                  return (
-                    <TouchableOpacity
-                      key={item.value}
-                      style={[
-                        styles.formatCard,
-                        selected && styles.formatCardSelected,
-                      ]}
-                      onPress={() => toggleFormat(item.value)}
-                    >
-                      <View
-                        style={[
-                          styles.formatIcon,
-                          selected && styles.formatIconSelected,
-                        ]}
-                      >
-                        <Ionicons
-                          name={item.icon}
-                          size={25}
-                          color={selected ? colors.surface : colors.primary}
-                        />
-                      </View>
-
-                      <Text style={styles.formatTitle}>{item.value}</Text>
-
-                      {selected && (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color={colors.primary}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={styles.finishHint}>
-                <Ionicons
-                  name="sparkles-outline"
-                  size={20}
-                  color={colors.primary}
-                />
-
-                <Text style={styles.finishHintText}>
-                  Pronto. Com isso o ContentFlow já consegue entender melhor sua
-                  rotina de criação.
-                </Text>
-              </View>
-            </>
+            <FormatStep
+              selectedFormats={selectedFormats}
+              onToggle={toggleFormat}
+            />
           )}
         </ScrollView>
 
@@ -439,25 +321,34 @@ export default function OnboardingScreen() {
           <TouchableOpacity
             style={[
               styles.continueButton,
+
               !canContinue() && styles.continueButtonDisabled,
             ]}
-            disabled={!canContinue()}
+            disabled={!canContinue() || saving}
+            activeOpacity={0.85}
             onPress={handleContinue}
           >
             <Text
               style={[
                 styles.continueText,
+
                 !canContinue() && styles.continueTextDisabled,
               ]}
             >
-              {step === 4 ? "Começar a organizar" : "Continuar"}
+              {saving
+                ? "Salvando..."
+                : step === 4
+                  ? "Começar no ContentFlow"
+                  : "Continuar"}
             </Text>
 
-            <Ionicons
-              name={step === 4 ? "checkmark" : "arrow-forward"}
-              size={18}
-              color={canContinue() ? colors.surface : colors.textMuted}
-            />
+            {!saving && (
+              <Ionicons
+                name={step === 4 ? "sparkles-outline" : "arrow-forward"}
+                size={18}
+                color={canContinue() ? colors.surface : colors.textMuted}
+              />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -465,13 +356,314 @@ export default function OnboardingScreen() {
   );
 }
 
-type HeaderProps = {
+type ProfessionStepProps = {
+  profession: string;
+
+  onChange: (value: string) => void;
+};
+
+function ProfessionStep({ profession, onChange }: ProfessionStepProps) {
+  return (
+    <>
+      <StepHeader
+        eyebrow="SOBRE VOCÊ"
+        title="O que você faz?"
+        description="O ContentFlow vai usar isso para entender melhor o tipo de conteúdo que você cria."
+      />
+
+      <Text style={styles.inputLabel}>Sua profissão ou nicho</Text>
+
+      <View style={styles.professionInput}>
+        <Ionicons
+          name="briefcase-outline"
+          size={20}
+          color={colors.terracotta}
+        />
+
+        <TextInput
+          value={profession}
+          onChangeText={onChange}
+          placeholder="Ex.: Nutricionista"
+          placeholderTextColor={colors.textMuted}
+          style={styles.professionTextInput}
+          autoCapitalize="sentences"
+        />
+      </View>
+
+      <Text style={styles.suggestionLabel}>Algumas sugestões</Text>
+
+      <View style={styles.suggestions}>
+        {professionSuggestions.map((item) => {
+          const selected = profession === item;
+
+          return (
+            <TouchableOpacity
+              key={item}
+              style={[styles.suggestion, selected && styles.suggestionSelected]}
+              onPress={() => onChange(item)}
+            >
+              <Text
+                style={[
+                  styles.suggestionText,
+
+                  selected && styles.suggestionTextSelected,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.tip}>
+        <Ionicons
+          name="information-circle-outline"
+          size={19}
+          color={colors.blue}
+        />
+
+        <Text style={styles.tipText}>
+          Não encontrou sua profissão? Digite normalmente no campo acima.
+        </Text>
+      </View>
+    </>
+  );
+}
+
+type ObjectiveStepProps = {
+  value: CreatorObjective | null;
+
+  onChange: (objective: CreatorObjective) => void;
+};
+
+function ObjectiveStep({ value, onChange }: ObjectiveStepProps) {
+  return (
+    <>
+      <StepHeader
+        eyebrow="SEU OBJETIVO"
+        title="O que você quer conquistar com seu conteúdo?"
+        description="Escolha seu principal objetivo neste momento. Você poderá mudar isso depois."
+      />
+
+      <View style={styles.optionList}>
+        {objectives.map((item) => {
+          const selected = value === item.value;
+
+          return (
+            <TouchableOpacity
+              key={item.value}
+              style={[
+                styles.objectiveCard,
+
+                selected && styles.objectiveCardSelected,
+              ]}
+              onPress={() => onChange(item.value)}
+            >
+              <View
+                style={[
+                  styles.objectiveIcon,
+
+                  {
+                    backgroundColor: item.background,
+                  },
+                ]}
+              >
+                <Ionicons name={item.icon} size={22} color={item.foreground} />
+              </View>
+
+              <View style={styles.objectiveContent}>
+                <Text style={styles.objectiveTitle}>{item.title}</Text>
+
+                <Text style={styles.objectiveDescription}>
+                  {item.description}
+                </Text>
+              </View>
+
+              <View style={[styles.radio, selected && styles.radioSelected]}>
+                {selected && <View style={styles.radioDot} />}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </>
+  );
+}
+
+type FrequencyStepProps = {
+  value: number | null;
+
+  onChange: (value: number) => void;
+};
+
+function FrequencyStep({ value, onChange }: FrequencyStepProps) {
+  return (
+    <>
+      <StepHeader
+        eyebrow="SUA ROTINA"
+        title="Quantas vezes você quer publicar por semana?"
+        description="Escolha um ritmo realista. Consistência vale mais do que tentar publicar demais."
+      />
+
+      <View style={styles.frequencyList}>
+        {frequencies.map((item) => {
+          const selected = value === item.value;
+
+          return (
+            <TouchableOpacity
+              key={item.value}
+              style={[
+                styles.frequencyCard,
+
+                selected && styles.frequencyCardSelected,
+              ]}
+              onPress={() => onChange(item.value)}
+            >
+              <View>
+                <Text
+                  style={[
+                    styles.frequencyTitle,
+
+                    selected && styles.frequencyTitleSelected,
+                  ]}
+                >
+                  {item.title}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.frequencyDescription,
+
+                    selected && styles.frequencyDescriptionSelected,
+                  ]}
+                >
+                  {item.description}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.frequencyCheck,
+
+                  selected && styles.frequencyCheckSelected,
+                ]}
+              >
+                {selected && (
+                  <Ionicons name="checkmark" size={16} color={colors.surface} />
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.frequencyHint}>
+        <Ionicons name="calendar-outline" size={21} color={colors.blue} />
+
+        <Text style={styles.frequencyHintText}>
+          Essa escolha será usada como sua meta semanal no planejamento.
+        </Text>
+      </View>
+    </>
+  );
+}
+
+type FormatStepProps = {
+  selectedFormats: ContentFormat[];
+
+  onToggle: (format: ContentFormat) => void;
+};
+
+function FormatStep({ selectedFormats, onToggle }: FormatStepProps) {
+  return (
+    <>
+      <StepHeader
+        eyebrow="SEUS FORMATOS"
+        title="O que você gosta de publicar?"
+        description="Escolha todos que fizerem sentido para você."
+      />
+
+      <View style={styles.formatGrid}>
+        {formats.map((item) => {
+          const selected = selectedFormats.includes(item.value);
+
+          return (
+            <TouchableOpacity
+              key={item.value}
+              style={[
+                styles.formatCard,
+
+                selected && {
+                  borderColor: item.foreground,
+
+                  backgroundColor: item.background,
+                },
+              ]}
+              onPress={() => onToggle(item.value)}
+            >
+              <View
+                style={[
+                  styles.formatIcon,
+
+                  {
+                    backgroundColor: selected
+                      ? colors.surface
+                      : item.background,
+                  },
+                ]}
+              >
+                <Ionicons name={item.icon} size={25} color={item.foreground} />
+              </View>
+
+              <View>
+                <Text style={styles.formatTitle}>{item.value}</Text>
+
+                <Text style={styles.formatSubtitle}>
+                  {selected ? "Selecionado" : "Toque para selecionar"}
+                </Text>
+              </View>
+
+              {selected && (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={22}
+                  color={item.foreground}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.finishCard}>
+        <View style={styles.finishIcon}>
+          <Ionicons
+            name="sparkles-outline"
+            size={22}
+            color={colors.terracotta}
+          />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.finishTitle}>Tudo pronto</Text>
+
+          <Text style={styles.finishDescription}>
+            Essas preferências poderão ser alteradas depois no seu perfil.
+          </Text>
+        </View>
+      </View>
+    </>
+  );
+}
+
+type StepHeaderProps = {
   eyebrow: string;
   title: string;
   description: string;
 };
 
-function Header({ eyebrow, title, description }: HeaderProps) {
+function StepHeader({ eyebrow, title, description }: StepHeaderProps) {
   return (
     <View style={styles.intro}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -486,6 +678,7 @@ function Header({ eyebrow, title, description }: HeaderProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
     backgroundColor: colors.background,
   },
 
@@ -499,19 +692,28 @@ const styles = StyleSheet.create({
 
   topRow: {
     height: 58,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   backButton: {
     width: 38,
     height: 38,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -521,98 +723,196 @@ const styles = StyleSheet.create({
 
   stepText: {
     fontSize: typography.caption,
+
     fontWeight: "700",
+
     color: colors.textSecondary,
   },
 
   progress: {
     flexDirection: "row",
+
     gap: 6,
   },
 
   progressItem: {
     flex: 1,
-    height: 4,
+
+    height: 5,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.border,
   },
 
   progressItemActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.terracotta,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
+
     paddingBottom: spacing.xl,
   },
 
   intro: {
     paddingTop: spacing.xl,
+
     paddingBottom: spacing.xl,
   },
 
   eyebrow: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    color: colors.primary,
     marginBottom: spacing.sm,
+
+    fontSize: typography.tiny,
+
+    fontWeight: "800",
+
+    letterSpacing: 1.2,
+
+    color: colors.terracotta,
   },
 
   title: {
-    fontSize: 30,
-    lineHeight: 36,
+    maxWidth: 350,
+
+    fontSize: 29,
+
+    lineHeight: 35,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   description: {
     marginTop: spacing.sm,
+
+    maxWidth: 350,
+
     fontSize: typography.body,
+
     lineHeight: 21,
+
     color: colors.textSecondary,
   },
 
-  professions: {
+  inputLabel: {
+    marginBottom: spacing.sm,
+
+    fontSize: typography.caption,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  professionInput: {
+    minHeight: 56,
+
     flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: spacing.sm,
+
+    paddingHorizontal: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+  },
+
+  professionTextInput: {
+    flex: 1,
+
+    minHeight: 54,
+
+    fontSize: 16,
+
+    color: colors.text,
+  },
+
+  suggestionLabel: {
+    marginTop: spacing.xl,
+
+    marginBottom: spacing.sm,
+
+    fontSize: typography.caption,
+
+    fontWeight: "700",
+
+    color: colors.textSecondary,
+  },
+
+  suggestions: {
+    flexDirection: "row",
+
     flexWrap: "wrap",
+
     gap: spacing.sm,
   },
 
-  profession: {
+  suggestion: {
     paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+
+    paddingVertical: 10,
+
     borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceSoft,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
   },
 
-  professionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  suggestionSelected: {
+    backgroundColor: colors.terracottaLight,
+
+    borderColor: colors.terracotta,
   },
 
-  professionText: {
-    fontSize: typography.body,
+  suggestionText: {
+    fontSize: typography.caption,
+
     fontWeight: "600",
+
     color: colors.textSecondary,
   },
 
-  professionTextSelected: {
-    color: colors.surface,
+  suggestionTextSelected: {
+    color: colors.terracotta,
   },
 
-  input: {
-    height: 54,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    fontSize: typography.body,
-    color: colors.text,
+  tip: {
+    marginTop: spacing.xl,
+
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.sm,
+
+    padding: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.blueLight,
+  },
+
+  tipText: {
+    flex: 1,
+
+    fontSize: typography.caption,
+
+    lineHeight: 18,
+
+    color: colors.textSecondary,
   },
 
   optionList: {
@@ -620,59 +920,78 @@ const styles = StyleSheet.create({
   },
 
   objectiveCard: {
-    minHeight: 92,
+    minHeight: 94,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+
     borderRadius: radius.lg,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
   },
 
   objectiveCardSelected: {
     borderColor: colors.primary,
+
+    borderWidth: 1.5,
   },
 
   objectiveIcon: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
+
     borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+
     alignItems: "center",
+
     justifyContent: "center",
+
     marginRight: spacing.md,
   },
 
-  objectiveIconSelected: {
-    backgroundColor: colors.primary,
-  },
-
-  optionContent: {
+  objectiveContent: {
     flex: 1,
   },
 
-  optionTitle: {
+  objectiveTitle: {
     fontSize: typography.subheading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
-  optionDescription: {
+  objectiveDescription: {
     marginTop: 4,
+
     paddingRight: spacing.sm,
+
     fontSize: typography.caption,
+
     lineHeight: 17,
+
     color: colors.textSecondary,
   },
 
   radio: {
     width: 22,
     height: 22,
+
     borderRadius: radius.round,
+
     borderWidth: 1.5,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -683,134 +1002,249 @@ const styles = StyleSheet.create({
   radioDot: {
     width: 12,
     height: 12,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.primary,
   },
 
-  frequencyGrid: {
+  frequencyList: {
     gap: spacing.sm,
   },
 
   frequencyCard: {
     minHeight: 78,
-    padding: spacing.md,
-    justifyContent: "center",
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    paddingHorizontal: spacing.lg,
+
     borderRadius: radius.lg,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
   },
 
   frequencyCardSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.blue,
+
+    borderColor: colors.blue,
   },
 
-  frequencyValue: {
+  frequencyTitle: {
     fontSize: typography.heading,
+
     fontWeight: "800",
+
     color: colors.text,
   },
 
-  frequencyValueSelected: {
+  frequencyTitleSelected: {
     color: colors.surface,
   },
 
   frequencyDescription: {
     marginTop: 3,
+
     fontSize: typography.caption,
+
     color: colors.textSecondary,
   },
 
   frequencyDescriptionSelected: {
-    color: "#D7E3DE",
+    color: "#E5EFF3",
+  },
+
+  frequencyCheck: {
+    width: 28,
+    height: 28,
+
+    borderRadius: radius.round,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  frequencyCheckSelected: {
+    backgroundColor: colors.primary,
+
+    borderColor: colors.primary,
+  },
+
+  frequencyHint: {
+    marginTop: spacing.xl,
+
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.sm,
+
+    padding: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.blueLight,
+  },
+
+  frequencyHintText: {
+    flex: 1,
+
+    fontSize: typography.caption,
+
+    lineHeight: 18,
+
+    color: colors.textSecondary,
   },
 
   formatGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.sm,
   },
 
   formatCard: {
-    width: "48%",
-    minHeight: 120,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "space-between",
-  },
+    minHeight: 82,
 
-  formatCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    padding: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
   },
 
   formatIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    width: 46,
+    height: 46,
 
-  formatIconSelected: {
-    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    marginRight: spacing.md,
   },
 
   formatTitle: {
-    marginTop: spacing.md,
     fontSize: typography.subheading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
-  finishHint: {
-    marginTop: spacing.xl,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
+  formatSubtitle: {
+    marginTop: 3,
+
+    fontSize: typography.tiny,
+
+    color: colors.textSecondary,
   },
 
-  finishHintText: {
-    flex: 1,
+  finishCard: {
+    marginTop: spacing.xl,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    padding: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.terracottaLight,
+  },
+
+  finishIcon: {
+    width: 44,
+    height: 44,
+
+    borderRadius: radius.md,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    marginRight: spacing.md,
+  },
+
+  finishTitle: {
+    fontSize: typography.body,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  finishDescription: {
+    marginTop: 3,
+
     fontSize: typography.caption,
-    lineHeight: 18,
+
+    lineHeight: 17,
+
     color: colors.textSecondary,
   },
 
   footer: {
     padding: spacing.lg,
+
     paddingTop: spacing.md,
+
     borderTopWidth: 1,
+
     borderTopColor: colors.border,
+
     backgroundColor: colors.background,
   },
 
   continueButton: {
     height: 54,
+
     borderRadius: radius.md,
+
     backgroundColor: colors.primary,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     gap: spacing.sm,
   },
 
   continueButtonDisabled: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
   },
 
   continueText: {
-    color: colors.surface,
     fontSize: typography.body,
+
     fontWeight: "700",
+
+    color: colors.surface,
   },
 
   continueTextDisabled: {

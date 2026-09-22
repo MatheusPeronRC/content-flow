@@ -2,16 +2,31 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { CreatorProfile } from "../types/creatorProfile";
 
-const STORAGE_KEY = "@contentflow:creator-profile";
+const STORAGE_KEY =
+  "@contentflow:creator-profile";
 
 export async function getCreatorProfile(): Promise<CreatorProfile | null> {
-  const data = await AsyncStorage.getItem(STORAGE_KEY);
+  try {
+    const data =
+      await AsyncStorage.getItem(
+        STORAGE_KEY
+      );
 
-  if (!data) {
+    if (!data) {
+      return null;
+    }
+
+    return JSON.parse(
+      data
+    ) as CreatorProfile;
+  } catch (error) {
+    console.error(
+      "Erro ao carregar perfil:",
+      error
+    );
+
     return null;
   }
-
-  return JSON.parse(data);
 }
 
 export async function saveCreatorProfile(
@@ -26,7 +41,8 @@ export async function saveCreatorProfile(
 export async function updateCreatorProfile(
   updates: Partial<CreatorProfile>
 ): Promise<void> {
-  const current = await getCreatorProfile();
+  const current =
+    await getCreatorProfile();
 
   if (!current) {
     return;
@@ -35,8 +51,30 @@ export async function updateCreatorProfile(
   const updatedProfile: CreatorProfile = {
     ...current,
     ...updates,
-    updatedAt: new Date().toISOString(),
+
+    updatedAt:
+      new Date().toISOString(),
   };
 
-  await saveCreatorProfile(updatedProfile);
+  await saveCreatorProfile(
+    updatedProfile
+  );
+}
+
+export async function hasCompletedOnboarding(): Promise<boolean> {
+  const profile =
+    await getCreatorProfile();
+
+  return (
+    profile?.onboardingCompleted ===
+    true
+  );
+}
+
+// Útil apenas durante o desenvolvimento.
+// Não vamos colocar isso na interface agora.
+export async function resetCreatorProfile(): Promise<void> {
+  await AsyncStorage.removeItem(
+    STORAGE_KEY
+  );
 }

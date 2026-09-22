@@ -155,7 +155,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.notificationButton}
-            onPress={() => router.push("/onboarding")}
+            onPress={() => router.push("/perfil")}
           >
             <Ionicons name="person-outline" size={21} color={colors.blue} />
           </TouchableOpacity>

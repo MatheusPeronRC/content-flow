@@ -48,6 +48,13 @@ export default function RootLayout() {
           presentation: "card",
         }}
       />
+      <Stack.Screen
+        name="onboarding"
+        options={{
+          presentation: "card",
+          gestureEnabled: false,
+        }}
+      />
     </Stack>
   );
 }
