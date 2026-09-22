@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+
 import { router, useFocusEffect } from "expo-router";
 
 import { useCallback, useMemo, useState } from "react";
@@ -27,38 +28,6 @@ import {
   typography,
 } from "../../constants/theme";
 
-type Filter = "todos" | ContentStatus;
-
-const filters: {
-  key: Filter;
-  label: string;
-}[] = [
-  {
-    key: "todos",
-    label: "Todos",
-  },
-  {
-    key: "roteiro",
-    label: "Roteiro",
-  },
-  {
-    key: "gravar",
-    label: "Produzir",
-  },
-  {
-    key: "editar",
-    label: "Editar",
-  },
-  {
-    key: "pronto",
-    label: "Pronto",
-  },
-  {
-    key: "publicado",
-    label: "Publicado",
-  },
-];
-
 const statusOrder: ContentStatus[] = [
   "ideia",
   "roteiro",
@@ -68,10 +37,46 @@ const statusOrder: ContentStatus[] = [
   "publicado",
 ];
 
-export default function ConteudosScreen() {
+type FilterValue = "todos" | ContentStatus;
+
+const filters: {
+  value: FilterValue;
+  label: string;
+}[] = [
+  {
+    value: "todos",
+    label: "Todos",
+  },
+  {
+    value: "ideia",
+    label: "Ideias",
+  },
+  {
+    value: "roteiro",
+    label: "Roteiro",
+  },
+  {
+    value: "gravar",
+    label: "Produzir",
+  },
+  {
+    value: "editar",
+    label: "Editar",
+  },
+  {
+    value: "pronto",
+    label: "Pronto",
+  },
+  {
+    value: "publicado",
+    label: "Publicado",
+  },
+];
+
+export default function ContentsScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
 
-  const [filter, setFilter] = useState<Filter>("todos");
+  const [selectedFilter, setSelectedFilter] = useState<FilterValue>("todos");
 
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     null,
@@ -101,16 +106,20 @@ export default function ConteudosScreen() {
     }, []),
   );
 
-  const filteredContents = useMemo(() => {
-    if (filter === "todos") {
-      return contents;
-    }
+  const visibleContents = useMemo(() => {
+    const filtered =
+      selectedFilter === "todos"
+        ? contents
+        : contents.filter((content) => content.status === selectedFilter);
 
-    return contents.filter((content) => content.status === filter);
-  }, [contents, filter]);
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    );
+  }, [contents, selectedFilter]);
 
   const activeCount = contents.filter(
-    (content) => content.status !== "publicado",
+    (content) => content.status !== "publicado" && content.status !== "pronto",
   ).length;
 
   const readyCount = contents.filter(
@@ -121,33 +130,52 @@ export default function ConteudosScreen() {
     (content) => content.status === "publicado",
   ).length;
 
-  async function changeStatus(content: ContentItem, status: ContentStatus) {
-    await updateContent(content.id, {
-      status,
-    });
-
-    setContents((current) =>
-      current.map((item) =>
-        item.id === content.id
-          ? {
-              ...item,
-              status,
-            }
-          : item,
-      ),
-    );
-
-    setSelectedContent(null);
-  }
-
   async function advanceStatus(content: ContentItem) {
-    const currentIndex = statusOrder.indexOf(content.status);
+    const nextStatus = getNextStatus(content.status);
 
-    if (currentIndex < 0 || currentIndex === statusOrder.length - 1) {
+    if (!nextStatus) {
       return;
     }
 
-    await changeStatus(content, statusOrder[currentIndex + 1]);
+    await changeStatus(content, nextStatus);
+  }
+
+  async function changeStatus(content: ContentItem, status: ContentStatus) {
+    try {
+      await updateContent(content.id, {
+        status,
+      });
+
+      setContents((current) =>
+        current.map((item) =>
+          item.id === content.id
+            ? {
+                ...item,
+                status,
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        ),
+      );
+
+      setSelectedContent((current) => {
+        if (!current || current.id !== content.id) {
+          return current;
+        }
+
+        return {
+          ...current,
+          status,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+    } catch (error) {
+      console.error("Erro ao alterar etapa:", error);
+    }
+  }
+
+  function openContent(content: ContentItem) {
+    router.push(`/conteudo/${content.id}`);
   }
 
   return (
@@ -161,7 +189,7 @@ export default function ConteudosScreen() {
             <Text style={styles.title}>Conteúdos</Text>
 
             <Text style={styles.subtitle}>
-              Acompanhe tudo que está em produção.
+              Acompanhe o que está em produção e continue de onde parou.
             </Text>
           </View>
 
@@ -174,19 +202,22 @@ export default function ConteudosScreen() {
           <SummaryItem
             value={activeCount}
             label="Em andamento"
-            color={colors.terracotta}
+            background={colors.terracottaLight}
+            foreground={colors.terracotta}
           />
 
-          <View style={styles.summaryDivider} />
-
-          <SummaryItem value={readyCount} label="Prontos" color={colors.sage} />
-
-          <View style={styles.summaryDivider} />
+          <SummaryItem
+            value={readyCount}
+            label="Prontos"
+            background={colors.sageLight}
+            foreground={colors.sage}
+          />
 
           <SummaryItem
             value={publishedCount}
             label="Publicados"
-            color={colors.blue}
+            background={colors.blueLight}
+            foreground={colors.blue}
           />
         </View>
 
@@ -195,14 +226,14 @@ export default function ConteudosScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
         >
-          {filters.map((item) => {
-            const selected = filter === item.key;
+          {filters.map((filter) => {
+            const selected = selectedFilter === filter.value;
 
             return (
               <TouchableOpacity
-                key={item.key}
+                key={filter.value}
                 style={[styles.filter, selected && styles.filterSelected]}
-                onPress={() => setFilter(item.key)}
+                onPress={() => setSelectedFilter(filter.value)}
               >
                 <Text
                   style={[
@@ -211,42 +242,46 @@ export default function ConteudosScreen() {
                     selected && styles.filterTextSelected,
                   ]}
                 >
-                  {item.label}
+                  {filter.label}
+
+                  {filter.value !== "todos" && (
+                    <Text> {getStatusCount(contents, filter.value)}</Text>
+                  )}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>
-            {filter === "todos"
-              ? "Todos os conteúdos"
-              : filters.find((item) => item.key === filter)?.label}
-          </Text>
+        <View style={styles.usageHint}>
+          <Ionicons
+            name="information-circle-outline"
+            size={18}
+            color={colors.lavender}
+          />
 
-          <View style={styles.listCount}>
-            <Text style={styles.listCountText}>{filteredContents.length}</Text>
-          </View>
+          <Text style={styles.usageHintText}>
+            Toque no card para abrir e editar. Use “Avançar” para mover o
+            conteúdo no fluxo.
+          </Text>
         </View>
 
-        {filteredContents.length === 0 ? (
-          <EmptyState />
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>{getFilterTitle(selectedFilter)}</Text>
+
+          <Text style={styles.listCount}>{visibleContents.length}</Text>
+        </View>
+
+        {visibleContents.length === 0 ? (
+          <EmptyState filter={selectedFilter} />
         ) : (
-          filteredContents.map((content) => (
+          visibleContents.map((content) => (
             <ContentCard
               key={content.id}
               content={content}
-              onPress={() =>
-                router.push({
-                  pathname: "/conteudo/[id]",
-                  params: {
-                    id: content.id,
-                  },
-                })
-              }
-              onOptions={() => setSelectedContent(content)}
+              onPress={() => openContent(content)}
               onAdvance={() => advanceStatus(content)}
+              onOptions={() => setSelectedContent(content)}
             />
           ))
         )}
@@ -268,21 +303,37 @@ export default function ConteudosScreen() {
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
 
-            <Text style={styles.sheetTitle}>Alterar etapa</Text>
+            <View style={styles.sheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sheetTitle}>Alterar etapa</Text>
 
-            <Text style={styles.sheetContentTitle} numberOfLines={2}>
-              {selectedContent?.idea}
-            </Text>
+                <Text style={styles.sheetContentTitle} numberOfLines={2}>
+                  {selectedContent?.idea}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setSelectedContent(null)}
+              >
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.sheetDescription}>
-              Em qual etapa esse conteúdo está agora?
+              Use essa opção quando quiser mover o conteúdo manualmente para uma
+              etapa específica.
             </Text>
 
             <View style={styles.statusOptions}>
               {statusOrder.map((status) => {
+                if (!selectedContent) {
+                  return null;
+                }
+
                 const meta = getStatusMeta(status);
 
-                const selected = selectedContent?.status === status;
+                const selected = selectedContent.status === status;
 
                 return (
                   <TouchableOpacity
@@ -290,14 +341,12 @@ export default function ConteudosScreen() {
                     style={[
                       styles.statusOption,
 
-                      selected && {
-                        borderColor: meta.foreground,
-                      },
+                      selected && styles.statusOptionSelected,
                     ]}
-                    onPress={() => {
-                      if (selectedContent) {
-                        changeStatus(selectedContent, status);
-                      }
+                    onPress={async () => {
+                      await changeStatus(selectedContent, status);
+
+                      setSelectedContent(null);
                     }}
                   >
                     <View
@@ -316,22 +365,18 @@ export default function ConteudosScreen() {
                       />
                     </View>
 
-                    <Text
-                      style={[
-                        styles.statusOptionText,
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.statusOptionTitle}>{meta.label}</Text>
 
-                        selected && {
-                          color: meta.foreground,
-                        },
-                      ]}
-                    >
-                      {meta.label}
-                    </Text>
+                      <Text style={styles.statusOptionDescription}>
+                        {getStatusDescription(status)}
+                      </Text>
+                    </View>
 
                     {selected && (
                       <Ionicons
                         name="checkmark-circle"
-                        size={20}
+                        size={22}
                         color={meta.foreground}
                       />
                     )}
@@ -339,6 +384,27 @@ export default function ConteudosScreen() {
                 );
               })}
             </View>
+
+            <TouchableOpacity
+              style={styles.openContentButton}
+              onPress={() => {
+                if (!selectedContent) {
+                  return;
+                }
+
+                const content = selectedContent;
+
+                setSelectedContent(null);
+
+                setTimeout(() => {
+                  openContent(content);
+                }, 150);
+              }}
+            >
+              <Ionicons name="open-outline" size={18} color={colors.primary} />
+
+              <Text style={styles.openContentButtonText}>Abrir conteúdo</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -349,17 +415,32 @@ export default function ConteudosScreen() {
 type SummaryItemProps = {
   value: number;
   label: string;
-  color: string;
+  background: string;
+  foreground: string;
 };
 
-function SummaryItem({ value, label, color }: SummaryItemProps) {
+function SummaryItem({
+  value,
+  label,
+  background,
+  foreground,
+}: SummaryItemProps) {
   return (
-    <View style={styles.summaryItem}>
+    <View
+      style={[
+        styles.summaryItem,
+
+        {
+          backgroundColor: background,
+        },
+      ]}
+    >
       <Text
         style={[
           styles.summaryValue,
+
           {
-            color,
+            color: foreground,
           },
         ]}
       >
@@ -373,89 +454,127 @@ function SummaryItem({ value, label, color }: SummaryItemProps) {
 
 type ContentCardProps = {
   content: ContentItem;
+
   onPress: () => void;
-  onOptions: () => void;
+
   onAdvance: () => void;
+
+  onOptions: () => void;
 };
 
 function ContentCard({
   content,
   onPress,
-  onOptions,
   onAdvance,
+  onOptions,
 }: ContentCardProps) {
-  const meta = getStatusMeta(content.status);
+  const status = getStatusMeta(content.status);
 
   const nextStatus = getNextStatus(content.status);
 
   const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
-      <View
-        style={[
-          styles.cardAccent,
+    <TouchableOpacity
+      style={styles.contentCard}
+      activeOpacity={0.8}
+      onPress={onPress}
+    >
+      <View style={styles.cardTop}>
+        <View
+          style={[
+            styles.statusIcon,
 
-          {
-            backgroundColor: meta.background,
-          },
-        ]}
-      >
-        <Ionicons name={meta.icon} size={21} color={meta.foreground} />
-      </View>
+            {
+              backgroundColor: status.background,
+            },
+          ]}
+        >
+          <Ionicons name={status.icon} size={21} color={status.foreground} />
+        </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.cardMeta}>
-          <View
-            style={[
-              styles.statusBadge,
-
-              {
-                backgroundColor: meta.background,
-              },
-            ]}
-          >
+        <View style={styles.cardContent}>
+          <View style={styles.cardMeta}>
             <Text
               style={[
-                styles.statusBadgeText,
+                styles.statusLabel,
 
                 {
-                  color: meta.foreground,
+                  color: status.foreground,
                 },
               ]}
             >
-              {meta.label}
+              {status.label}
             </Text>
+
+            {content.format && (
+              <>
+                <View style={styles.metaDot} />
+
+                <Text style={styles.formatText}>{content.format}</Text>
+              </>
+            )}
+
+            {content.plannedDate && (
+              <>
+                <View style={styles.metaDot} />
+
+                <Ionicons
+                  name="calendar-outline"
+                  size={11}
+                  color={colors.textMuted}
+                />
+
+                <Text style={styles.dateText}>
+                  {formatDate(content.plannedDate)}
+                </Text>
+              </>
+            )}
           </View>
 
-          {content.format && (
-            <Text style={styles.format}>{content.format}</Text>
-          )}
+          <Text style={styles.contentTitle} numberOfLines={2}>
+            {content.idea}
+          </Text>
+
+          <Text style={styles.openHint}>Toque para abrir e editar</Text>
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {content.idea}
-        </Text>
+        <TouchableOpacity
+          style={styles.optionsButton}
+          activeOpacity={0.8}
+          onPress={(event) => {
+            event.stopPropagation();
 
-        {content.plannedDate && (
-          <View style={styles.dateRow}>
-            <Ionicons name="calendar-outline" size={13} color={colors.blue} />
+            onOptions();
+          }}
+        >
+          <Ionicons
+            name="ellipsis-horizontal"
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
 
-            <Text style={styles.dateText}>
-              {formatDate(content.plannedDate)}
-            </Text>
-          </View>
-        )}
+      {nextStatus && nextMeta && (
+        <TouchableOpacity
+          style={[
+            styles.advanceButton,
 
-        {nextStatus && nextMeta && (
-          <TouchableOpacity
-            style={styles.advanceButton}
-            onPress={(event) => {
-              event.stopPropagation();
+            {
+              backgroundColor: nextMeta.background,
+            },
+          ]}
+          activeOpacity={0.8}
+          onPress={(event) => {
+            event.stopPropagation();
 
-              onAdvance();
-            }}
-          >
+            onAdvance();
+          }}
+        >
+          <View style={styles.advanceContent}>
+            <Text style={styles.advancePrefix}>Próxima etapa</Text>
+
             <Text
               style={[
                 styles.advanceText,
@@ -467,42 +586,74 @@ function ContentCard({
             >
               Avançar para {nextMeta.label}
             </Text>
+          </View>
 
+          <View
+            style={[
+              styles.advanceIcon,
+
+              {
+                backgroundColor: colors.surface,
+              },
+            ]}
+          >
             <Ionicons
               name="arrow-forward"
-              size={14}
+              size={17}
               color={nextMeta.foreground}
             />
-          </TouchableOpacity>
-        )}
-      </View>
+          </View>
+        </TouchableOpacity>
+      )}
 
-      <TouchableOpacity
-        style={styles.optionsButton}
-        onPress={(event) => {
-          event.stopPropagation();
+      {content.status === "publicado" && (
+        <View style={styles.publishedArea}>
+          <Ionicons name="checkmark-circle" size={18} color={colors.sage} />
 
-          onOptions();
-        }}
-      >
-        <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
-      </TouchableOpacity>
+          <Text style={styles.publishedText}>Fluxo concluído</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
 
-function EmptyState() {
+type EmptyStateProps = {
+  filter: FilterValue;
+};
+
+function EmptyState({ filter }: EmptyStateProps) {
+  const isAll = filter === "todos";
+
   return (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="documents-outline" size={28} color={colors.lavender} />
+      <View style={styles.emptyStateIcon}>
+        <Ionicons
+          name={isAll ? "documents-outline" : "filter-outline"}
+          size={27}
+          color={colors.lavender}
+        />
       </View>
 
-      <Text style={styles.emptyTitle}>Nada por aqui</Text>
-
-      <Text style={styles.emptyDescription}>
-        Seus conteúdos aparecerão aqui conforme você for criando.
+      <Text style={styles.emptyStateTitle}>
+        {isAll ? "Nenhum conteúdo criado ainda" : "Nenhum conteúdo nessa etapa"}
       </Text>
+
+      <Text style={styles.emptyStateText}>
+        {isAll
+          ? "Quando você criar um conteúdo, ele aparecerá aqui para acompanhar o progresso."
+          : "Escolha outro filtro ou avance um conteúdo para esta etapa."}
+      </Text>
+
+      {isAll && (
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => router.push("/conteudo/manual")}
+        >
+          <Ionicons name="add" size={18} color={colors.surface} />
+
+          <Text style={styles.createButtonText}>Criar conteúdo</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -575,6 +726,57 @@ function getStatusMeta(status: ContentStatus) {
   }
 }
 
+function getStatusDescription(status: ContentStatus) {
+  switch (status) {
+    case "ideia":
+      return "Conteúdo ainda em desenvolvimento.";
+
+    case "roteiro":
+      return "Estruture o que será publicado.";
+
+    case "gravar":
+      return "Produza ou grave o conteúdo.";
+
+    case "editar":
+      return "Faça os ajustes finais.";
+
+    case "pronto":
+      return "Conteúdo pronto para publicar.";
+
+    case "publicado":
+      return "Conteúdo já finalizado e publicado.";
+  }
+}
+
+function getStatusCount(contents: ContentItem[], status: ContentStatus) {
+  return contents.filter((content) => content.status === status).length;
+}
+
+function getFilterTitle(filter: FilterValue) {
+  switch (filter) {
+    case "todos":
+      return "Todos os conteúdos";
+
+    case "ideia":
+      return "Ideias";
+
+    case "roteiro":
+      return "Em roteiro";
+
+    case "gravar":
+      return "Para produzir";
+
+    case "editar":
+      return "Para editar";
+
+    case "pronto":
+      return "Prontos";
+
+    case "publicado":
+      return "Publicados";
+  }
+}
+
 function formatDate(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
 
@@ -622,7 +824,11 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 4,
 
+    maxWidth: 290,
+
     fontSize: typography.body,
+
+    lineHeight: 20,
 
     color: colors.textSecondary,
   },
@@ -633,36 +839,35 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.md,
 
-    backgroundColor: colors.lavenderLight,
-
     alignItems: "center",
+
     justifyContent: "center",
+
+    backgroundColor: colors.lavenderLight,
   },
 
   summary: {
-    height: 92,
-
     flexDirection: "row",
 
-    alignItems: "center",
-
-    backgroundColor: colors.primaryDark,
-
-    borderRadius: radius.xl,
+    gap: spacing.sm,
 
     marginBottom: spacing.lg,
-
-    paddingHorizontal: spacing.sm,
   },
 
   summaryItem: {
     flex: 1,
 
-    alignItems: "center",
+    minHeight: 72,
+
+    borderRadius: radius.lg,
+
+    padding: spacing.md,
+
+    justifyContent: "center",
   },
 
   summaryValue: {
-    fontSize: 25,
+    fontSize: 22,
 
     fontWeight: "800",
   },
@@ -670,25 +875,17 @@ const styles = StyleSheet.create({
   summaryLabel: {
     marginTop: 3,
 
-    fontSize: typography.tiny,
+    fontSize: 9,
 
-    color: "#D7E3DE",
-  },
+    fontWeight: "600",
 
-  summaryDivider: {
-    width: 1,
-
-    height: 38,
-
-    backgroundColor: "#456C61",
+    color: colors.textSecondary,
   },
 
   filters: {
     gap: spacing.sm,
 
-    paddingRight: spacing.lg,
-
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.md,
   },
 
   filter: {
@@ -698,7 +895,7 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
 
     borderWidth: 1,
 
@@ -706,9 +903,9 @@ const styles = StyleSheet.create({
   },
 
   filterSelected: {
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
 
-    borderColor: colors.primaryDark,
+    borderColor: colors.primary,
   },
 
   filterText: {
@@ -723,12 +920,38 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
 
+  usageHint: {
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.sm,
+
+    padding: spacing.md,
+
+    marginBottom: spacing.xl,
+
+    borderRadius: radius.md,
+
+    backgroundColor: colors.lavenderLight,
+  },
+
+  usageHintText: {
+    flex: 1,
+
+    fontSize: typography.tiny,
+
+    lineHeight: 15,
+
+    color: colors.textSecondary,
+  },
+
   listHeader: {
     flexDirection: "row",
 
-    justifyContent: "space-between",
-
     alignItems: "center",
+
+    justifyContent: "space-between",
 
     marginBottom: spacing.md,
   },
@@ -742,33 +965,33 @@ const styles = StyleSheet.create({
   },
 
   listCount: {
-    minWidth: 28,
+    minWidth: 30,
 
-    height: 28,
+    height: 30,
+
+    paddingHorizontal: 8,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.lavenderLight,
+    backgroundColor: colors.surfaceMuted,
 
-    alignItems: "center",
+    textAlign: "center",
 
-    justifyContent: "center",
-  },
+    textAlignVertical: "center",
 
-  listCountText: {
+    lineHeight: 30,
+
     fontSize: typography.caption,
 
-    fontWeight: "800",
+    fontWeight: "700",
 
-    color: colors.lavender,
+    color: colors.textSecondary,
   },
 
-  card: {
-    flexDirection: "row",
+  contentCard: {
+    padding: spacing.md,
 
-    alignItems: "flex-start",
-
-    backgroundColor: colors.surface,
+    marginBottom: spacing.md,
 
     borderRadius: radius.lg,
 
@@ -776,20 +999,25 @@ const styles = StyleSheet.create({
 
     borderColor: colors.border,
 
-    padding: spacing.md,
-
-    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
 
     ...shadows.card,
   },
 
-  cardAccent: {
+  cardTop: {
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+  },
+
+  statusIcon: {
     width: 46,
     height: 46,
 
     borderRadius: radius.md,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginRight: spacing.md,
@@ -797,123 +1025,199 @@ const styles = StyleSheet.create({
 
   cardContent: {
     flex: 1,
+
+    minWidth: 0,
   },
 
   cardMeta: {
+    minHeight: 16,
+
+    flexDirection: "row",
+
+    flexWrap: "wrap",
+
+    alignItems: "center",
+  },
+
+  statusLabel: {
+    fontSize: typography.tiny,
+
+    fontWeight: "800",
+
+    letterSpacing: 0.6,
+  },
+
+  metaDot: {
+    width: 3,
+    height: 3,
+
+    marginHorizontal: 6,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.textMuted,
+  },
+
+  formatText: {
+    fontSize: typography.tiny,
+
+    color: colors.textMuted,
+  },
+
+  dateText: {
+    marginLeft: 3,
+
+    fontSize: typography.tiny,
+
+    color: colors.textMuted,
+  },
+
+  contentTitle: {
+    marginTop: 5,
+
+    fontSize: typography.subheading,
+
+    lineHeight: 21,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  openHint: {
+    marginTop: 5,
+
+    fontSize: 9,
+
+    color: colors.textMuted,
+  },
+
+  optionsButton: {
+    width: 36,
+    height: 36,
+
+    marginLeft: spacing.sm,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    backgroundColor: colors.surfaceSoft,
+  },
+
+  advanceButton: {
+    minHeight: 52,
+
+    marginTop: spacing.md,
+
+    paddingHorizontal: spacing.md,
+
+    borderRadius: radius.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  advanceContent: {
+    flex: 1,
+  },
+
+  advancePrefix: {
+    fontSize: 8,
+
+    fontWeight: "700",
+
+    letterSpacing: 0.5,
+
+    color: colors.textMuted,
+  },
+
+  advanceText: {
+    marginTop: 2,
+
+    fontSize: typography.caption,
+
+    fontWeight: "800",
+  },
+
+  advanceIcon: {
+    width: 32,
+    height: 32,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  publishedArea: {
+    minHeight: 44,
+
+    marginTop: spacing.md,
+
+    paddingHorizontal: spacing.md,
+
+    borderRadius: radius.md,
+
     flexDirection: "row",
 
     alignItems: "center",
 
     gap: spacing.sm,
+
+    backgroundColor: colors.sageLight,
   },
 
-  statusBadge: {
-    paddingHorizontal: 8,
-
-    paddingVertical: 4,
-
-    borderRadius: radius.round,
-  },
-
-  statusBadgeText: {
-    fontSize: 8,
-
-    fontWeight: "800",
-
-    letterSpacing: 0.5,
-  },
-
-  format: {
-    fontSize: typography.tiny,
-
-    color: colors.textMuted,
-  },
-
-  cardTitle: {
-    marginTop: spacing.sm,
-
-    paddingRight: spacing.sm,
-
-    fontSize: typography.body,
-
-    lineHeight: 20,
-
-    fontWeight: "600",
-
-    color: colors.text,
-  },
-
-  dateRow: {
-    marginTop: spacing.sm,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 4,
-  },
-
-  dateText: {
-    fontSize: typography.tiny,
-
-    color: colors.textMuted,
-  },
-
-  advanceButton: {
-    marginTop: spacing.md,
-
-    alignSelf: "flex-start",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  advanceText: {
-    fontSize: 11,
+  publishedText: {
+    fontSize: typography.caption,
 
     fontWeight: "700",
+
+    color: colors.sage,
   },
 
   emptyState: {
-    backgroundColor: colors.lavenderLight,
+    alignItems: "center",
+
+    paddingHorizontal: spacing.lg,
+
+    paddingVertical: spacing.xxl,
+  },
+
+  emptyStateIcon: {
+    width: 60,
+    height: 60,
 
     borderRadius: radius.xl,
 
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    padding: spacing.xl,
-
     alignItems: "center",
-  },
 
-  emptyIcon: {
-    width: 58,
-    height: 58,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
     justifyContent: "center",
 
     marginBottom: spacing.md,
+
+    backgroundColor: colors.lavenderLight,
   },
 
-  emptyTitle: {
-    fontSize: typography.subheading,
+  emptyStateTitle: {
+    textAlign: "center",
+
+    fontSize: typography.heading,
 
     fontWeight: "700",
 
     color: colors.text,
   },
 
-  emptyDescription: {
+  emptyStateText: {
+    maxWidth: 310,
+
     marginTop: spacing.sm,
 
     textAlign: "center",
@@ -925,39 +1229,75 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
+  createButton: {
+    minHeight: 48,
+
+    marginTop: spacing.xl,
+
+    paddingHorizontal: spacing.lg,
+
+    borderRadius: radius.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: spacing.sm,
+
+    backgroundColor: colors.terracotta,
+  },
+
+  createButtonText: {
+    fontSize: typography.body,
+
+    fontWeight: "700",
+
+    color: colors.surface,
+  },
+
   modalBackdrop: {
     flex: 1,
 
     justifyContent: "flex-end",
 
-    backgroundColor: "rgba(0,0,0,0.28)",
+    backgroundColor: "rgba(0, 0, 0, 0.28)",
   },
 
   sheet: {
-    backgroundColor: colors.background,
-
-    borderTopLeftRadius: radius.xxl,
-
-    borderTopRightRadius: radius.xxl,
-
     paddingHorizontal: spacing.lg,
 
     paddingTop: 12,
 
     paddingBottom: spacing.xl,
+
+    borderTopLeftRadius: radius.xxl,
+
+    borderTopRightRadius: radius.xxl,
+
+    backgroundColor: colors.background,
   },
 
   sheetHandle: {
     width: 42,
     height: 4,
 
-    borderRadius: radius.round,
-
-    backgroundColor: colors.border,
-
     alignSelf: "center",
 
     marginBottom: spacing.lg,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.border,
+  },
+
+  sheetHeader: {
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.md,
   },
 
   sheetTitle: {
@@ -971,21 +1311,36 @@ const styles = StyleSheet.create({
   sheetContentTitle: {
     marginTop: spacing.sm,
 
-    fontSize: typography.subheading,
+    fontSize: typography.body,
 
-    lineHeight: 22,
+    lineHeight: 20,
 
     fontWeight: "600",
 
     color: colors.text,
   },
 
+  closeButton: {
+    width: 38,
+    height: 38,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    backgroundColor: colors.surfaceMuted,
+  },
+
   sheetDescription: {
-    marginTop: 4,
+    marginTop: spacing.md,
 
     marginBottom: spacing.lg,
 
     fontSize: typography.caption,
+
+    lineHeight: 18,
 
     color: colors.textSecondary,
   },
@@ -995,53 +1350,81 @@ const styles = StyleSheet.create({
   },
 
   statusOption: {
-    minHeight: 58,
+    minHeight: 64,
+
+    paddingHorizontal: spacing.md,
+
+    borderRadius: radius.lg,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
 
     flexDirection: "row",
 
     alignItems: "center",
 
     backgroundColor: colors.surface,
+  },
 
-    borderRadius: radius.md,
+  statusOptionSelected: {
+    borderColor: colors.primary,
 
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    paddingHorizontal: spacing.md,
+    borderWidth: 1.5,
   },
 
   statusOptionIcon: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
+
+    marginRight: spacing.md,
 
     borderRadius: radius.md,
 
     alignItems: "center",
-    justifyContent: "center",
 
-    marginRight: spacing.md,
+    justifyContent: "center",
   },
 
-  statusOptionText: {
-    flex: 1,
+  statusOptionTitle: {
+    fontSize: typography.caption,
 
-    fontSize: typography.body,
-
-    fontWeight: "600",
+    fontWeight: "800",
 
     color: colors.text,
   },
-  optionsButton: {
-    width: 36,
-    height: 36,
 
-    borderRadius: radius.round,
+  statusOptionDescription: {
+    marginTop: 2,
+
+    fontSize: 9,
+
+    color: colors.textSecondary,
+  },
+
+  openContentButton: {
+    height: 48,
+
+    marginTop: spacing.lg,
+
+    borderRadius: radius.md,
+
+    flexDirection: "row",
 
     alignItems: "center",
+
     justifyContent: "center",
 
-    marginLeft: spacing.sm,
+    gap: spacing.sm,
+
+    backgroundColor: colors.primaryLight,
+  },
+
+  openContentButtonText: {
+    fontSize: typography.body,
+
+    fontWeight: "700",
+
+    color: colors.primary,
   },
 });
