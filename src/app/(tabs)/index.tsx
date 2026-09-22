@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+
 import { router, useFocusEffect } from "expo-router";
 
 import { useCallback, useState } from "react";
@@ -18,8 +19,10 @@ import { TaskCard } from "../../components/TaskCard";
 
 import { getContents } from "../../services/contentStorage";
 import { getInspirations } from "../../services/inspirationStorage";
+import { getCreatorProfile } from "../../services/profileStorage";
 
 import { ContentItem } from "../../types/content";
+import { CreatorProfile } from "../../types/creatorProfile";
 
 import {
   colors,
@@ -35,16 +38,20 @@ export default function HomeScreen() {
 
   const [inspirationCount, setInspirationCount] = useState(0);
 
+  const [profile, setProfile] = useState<CreatorProfile | null>(null);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
 
       async function loadHome() {
         try {
-          const [savedContents, savedInspirations] = await Promise.all([
-            getContents(),
-            getInspirations(),
-          ]);
+          const [savedContents, savedInspirations, savedProfile] =
+            await Promise.all([
+              getContents(),
+              getInspirations(),
+              getCreatorProfile(),
+            ]);
 
           if (!active) {
             return;
@@ -53,6 +60,8 @@ export default function HomeScreen() {
           setContents(savedContents);
 
           setInspirationCount(savedInspirations.length);
+
+          setProfile(savedProfile);
         } catch (error) {
           console.error("Erro ao carregar a Home:", error);
         }
@@ -96,10 +105,17 @@ export default function HomeScreen() {
     (content) => content.status === "pronto" || content.status === "publicado",
   ).length;
 
-  const weekProgress =
-    weeklyContents.length === 0
+  const weeklyGoal = profile?.postsPerWeek ?? 0;
+
+  const plannedThisWeek = weeklyContents.length;
+
+  const remainingToGoal =
+    weeklyGoal > 0 ? Math.max(weeklyGoal - plannedThisWeek, 0) : 0;
+
+  const planningProgress =
+    weeklyGoal === 0
       ? 0
-      : Math.round((completedThisWeek / weeklyContents.length) * 100);
+      : Math.min(Math.round((plannedThisWeek / weeklyGoal) * 100), 100);
 
   const homeWeekDays = Array.from({
     length: 7,
@@ -154,7 +170,7 @@ export default function HomeScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.notificationButton}
+            style={styles.profileButton}
             onPress={() => router.push("/perfil")}
           >
             <Ionicons name="person-outline" size={21} color={colors.blue} />
@@ -173,49 +189,81 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={styles.progressCard}>
-          <View style={styles.progressTop}>
+        <View style={styles.goalCard}>
+          <View style={styles.goalHeader}>
             <View>
-              <Text style={styles.progressLabel}>Ritmo da semana</Text>
+              <Text style={styles.goalLabel}>META DA SEMANA</Text>
 
-              <Text style={styles.progressValue}>
-                {weeklyContents.length === 0
-                  ? "Nada planejado ainda"
-                  : `${completedThisWeek} de ${weeklyContents.length} concluídos`}
+              <Text style={styles.goalValue}>
+                {weeklyGoal > 0
+                  ? `${plannedThisWeek} de ${weeklyGoal} planejados`
+                  : `${plannedThisWeek} planejados`}
               </Text>
             </View>
 
-            <View style={styles.progressIcon}>
+            <View style={styles.goalIcon}>
               <Ionicons
-                name="trending-up-outline"
+                name={
+                  remainingToGoal === 0 && weeklyGoal > 0
+                    ? "checkmark"
+                    : "calendar-outline"
+                }
                 size={21}
-                color={colors.blue}
+                color={
+                  remainingToGoal === 0 && weeklyGoal > 0
+                    ? colors.sage
+                    : colors.blue
+                }
               />
             </View>
           </View>
 
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${weekProgress}%` as `${number}%`,
-                },
-              ]}
-            />
-          </View>
+          {weeklyGoal > 0 && (
+            <>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${planningProgress}%` as `${number}%`,
+                    },
+                  ]}
+                />
+              </View>
 
-          <Text style={styles.progressHint}>
-            {weeklyContents.length === 0
-              ? "Planeje seus conteúdos para começar a organizar a semana."
-              : completedThisWeek === weeklyContents.length
-                ? "Tudo concluído nesta semana."
-                : `${weeklyContents.length - completedThisWeek} ${
-                    weeklyContents.length - completedThisWeek === 1
-                      ? "conteúdo ainda está"
-                      : "conteúdos ainda estão"
-                  } em andamento.`}
-          </Text>
+              <Text style={styles.goalHint}>
+                {remainingToGoal === 0
+                  ? plannedThisWeek === weeklyGoal
+                    ? "Sua semana já está planejada."
+                    : `Meta atingida — ${plannedThisWeek} conteúdos planejados.`
+                  : remainingToGoal === 1
+                    ? "Falta 1 conteúdo para completar sua meta."
+                    : `Faltam ${remainingToGoal} conteúdos para completar sua meta.`}
+              </Text>
+            </>
+          )}
+
+          <View style={styles.goalFooter}>
+            <View style={styles.goalStat}>
+              <View
+                style={[
+                  styles.goalStatDot,
+                  {
+                    backgroundColor: colors.sage,
+                  },
+                ]}
+              />
+
+              <Text style={styles.goalStatText}>
+                {completedThisWeek}{" "}
+                {completedThisWeek === 1 ? "concluído" : "concluídos"}
+              </Text>
+            </View>
+
+            <TouchableOpacity onPress={() => router.push("/planejar")}>
+              <Text style={styles.goalAction}>Planejar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -261,14 +309,7 @@ export default function HomeScreen() {
                   icon={task.icon}
                   iconBackground={task.background}
                   iconColor={task.foreground}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/conteudo/roteiro",
-                      params: {
-                        contentId: content.id,
-                      },
-                    })
-                  }
+                  onPress={() => router.push(`/conteudo/${content.id}`)}
                 />
               );
             })
@@ -502,7 +543,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  notificationButton: {
+  profileButton: {
     width: 42,
     height: 42,
 
@@ -516,6 +557,7 @@ const styles = StyleSheet.create({
 
   hero: {
     paddingTop: spacing.lg,
+
     paddingBottom: spacing.xl,
   },
 
@@ -553,7 +595,7 @@ const styles = StyleSheet.create({
     maxWidth: 340,
   },
 
-  progressCard: {
+  goalCard: {
     backgroundColor: colors.primaryDark,
 
     borderRadius: radius.xl,
@@ -563,50 +605,55 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
 
-  progressTop: {
+  goalHeader: {
     flexDirection: "row",
 
-    justifyContent: "space-between",
-
     alignItems: "center",
+
+    justifyContent: "space-between",
   },
 
-  progressLabel: {
-    fontSize: typography.caption,
+  goalLabel: {
+    fontSize: typography.tiny,
 
-    color: "#D7E3DE",
+    fontWeight: "800",
+
+    letterSpacing: 1,
+
+    color: "#BFCFC9",
   },
 
-  progressValue: {
+  goalValue: {
+    marginTop: 5,
+
     fontSize: typography.heading,
 
     fontWeight: "700",
 
     color: colors.surface,
-
-    marginTop: 3,
   },
 
-  progressIcon: {
-    width: 42,
-    height: 42,
+  goalIcon: {
+    width: 44,
+    height: 44,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.blueLight,
+    backgroundColor: colors.surface,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   progressTrack: {
-    height: 6,
+    height: 7,
+
+    marginTop: spacing.lg,
 
     backgroundColor: "#456C61",
 
     borderRadius: radius.round,
-
-    marginTop: spacing.lg,
 
     overflow: "hidden",
   },
@@ -619,12 +666,59 @@ const styles = StyleSheet.create({
     borderRadius: radius.round,
   },
 
-  progressHint: {
+  goalHint: {
     marginTop: spacing.sm,
 
     fontSize: typography.caption,
 
+    lineHeight: 17,
+
     color: "#D7E3DE",
+  },
+
+  goalFooter: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    marginTop: spacing.md,
+
+    paddingTop: spacing.md,
+
+    borderTopWidth: 1,
+
+    borderTopColor: "#456C61",
+  },
+
+  goalStat: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 7,
+  },
+
+  goalStatDot: {
+    width: 7,
+    height: 7,
+
+    borderRadius: radius.round,
+  },
+
+  goalStatText: {
+    fontSize: typography.caption,
+
+    color: "#D7E3DE",
+  },
+
+  goalAction: {
+    fontSize: typography.caption,
+
+    fontWeight: "700",
+
+    color: colors.terracottaLight,
   },
 
   section: {
@@ -633,6 +727,7 @@ const styles = StyleSheet.create({
 
   emptyTasks: {
     flexDirection: "row",
+
     alignItems: "center",
 
     backgroundColor: colors.amberLight,
@@ -642,6 +737,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
 
     borderWidth: 1,
+
     borderColor: colors.border,
   },
 
@@ -654,6 +750,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginRight: spacing.md,
@@ -667,17 +764,18 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
 
     fontWeight: "700",
+
     color: colors.text,
   },
 
   emptyTasksText: {
-    fontSize: typography.caption,
-
-    color: colors.textSecondary,
-
     marginTop: 3,
 
+    fontSize: typography.caption,
+
     lineHeight: 17,
+
+    color: colors.textSecondary,
   },
 
   weekCard: {
@@ -688,6 +786,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
 
     borderWidth: 1,
+
     borderColor: colors.border,
 
     ...shadows.card,
@@ -695,6 +794,7 @@ const styles = StyleSheet.create({
 
   weekDays: {
     flexDirection: "row",
+
     justifyContent: "space-between",
 
     marginBottom: spacing.md,
@@ -723,6 +823,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -773,7 +874,9 @@ const styles = StyleSheet.create({
     height: 46,
 
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "center",
 
     gap: spacing.sm,
@@ -793,6 +896,7 @@ const styles = StyleSheet.create({
 
   inspirationCard: {
     flexDirection: "row",
+
     alignItems: "center",
 
     backgroundColor: colors.roseLight,
@@ -804,6 +908,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
 
     borderWidth: 1,
+
     borderColor: "#E3CDD2",
   },
 
@@ -816,6 +921,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginRight: spacing.md,
@@ -834,12 +940,12 @@ const styles = StyleSheet.create({
   },
 
   inspirationSubtitle: {
+    marginTop: 3,
+
     fontSize: typography.caption,
 
     lineHeight: 17,
 
     color: colors.textSecondary,
-
-    marginTop: 3,
   },
 });

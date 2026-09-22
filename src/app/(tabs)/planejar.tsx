@@ -16,7 +16,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getContents, updateContent } from "../../services/contentStorage";
 
+import { getCreatorProfile } from "../../services/profileStorage";
+
 import { ContentItem, ContentStatus } from "../../types/content";
+
+import { CreatorProfile } from "../../types/creatorProfile";
 
 import {
     colors,
@@ -31,6 +35,8 @@ const DAY_NAMES = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 
 export default function PlanejarScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
+
+  const [profile, setProfile] = useState<CreatorProfile | null>(null);
 
   const [weekOffset, setWeekOffset] = useState(0);
 
@@ -82,19 +88,26 @@ export default function PlanejarScreen() {
     useCallback(() => {
       let active = true;
 
-      async function loadContents() {
+      async function loadData() {
         try {
-          const data = await getContents();
+          const [savedContents, savedProfile] = await Promise.all([
+            getContents(),
+            getCreatorProfile(),
+          ]);
 
-          if (active) {
-            setContents(data);
+          if (!active) {
+            return;
           }
+
+          setContents(savedContents);
+
+          setProfile(savedProfile);
         } catch (error) {
           console.error("Erro ao carregar planejamento:", error);
         }
       }
 
-      loadContents();
+      loadData();
 
       return () => {
         active = false;
@@ -102,13 +115,36 @@ export default function PlanejarScreen() {
     }, []),
   );
 
+  const weekStart = weekDays[0]?.key;
+
+  const weekEnd = weekDays[6]?.key;
+
+  const weekPlannedContents = contents.filter(
+    (content) =>
+      content.plannedDate &&
+      weekStart &&
+      weekEnd &&
+      content.plannedDate >= weekStart &&
+      content.plannedDate <= weekEnd,
+  );
+
+  const weeklyTarget = profile?.postsPerWeek ?? 0;
+
+  const plannedCount = weekPlannedContents.length;
+
+  const remaining = Math.max(weeklyTarget - plannedCount, 0);
+
+  const goalProgress =
+    weeklyTarget === 0
+      ? 0
+      : Math.min(Math.round((plannedCount / weeklyTarget) * 100), 100);
+
   const unplannedContents = contents.filter(
     (content) => !content.plannedDate && content.status !== "publicado",
   );
 
   const selectedDayContents = contents.filter(
-    (content) =>
-      content.plannedDate === selectedDate && content.status !== "publicado",
+    (content) => content.plannedDate === selectedDate,
   );
 
   async function handlePlan(date: string | null) {
@@ -135,10 +171,7 @@ export default function PlanejarScreen() {
   }
 
   function getContentCount(date: string) {
-    return contents.filter(
-      (content) =>
-        content.plannedDate === date && content.status !== "publicado",
-    ).length;
+    return contents.filter((content) => content.plannedDate === date).length;
   }
 
   const selectedDay =
@@ -162,6 +195,60 @@ export default function PlanejarScreen() {
           <View style={styles.calendarIcon}>
             <Ionicons name="calendar-outline" size={22} color={colors.blue} />
           </View>
+        </View>
+
+        <View style={styles.goalCard}>
+          <View style={styles.goalTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.goalLabel}>META SEMANAL</Text>
+
+              <Text style={styles.goalValue}>
+                {weeklyTarget === 0
+                  ? "Meta não definida"
+                  : `${plannedCount} de ${weeklyTarget} planejados`}
+              </Text>
+            </View>
+
+            <View style={styles.goalIcon}>
+              <Ionicons
+                name={
+                  remaining === 0 && weeklyTarget > 0
+                    ? "checkmark"
+                    : "flag-outline"
+                }
+                size={21}
+                color={
+                  remaining === 0 && weeklyTarget > 0
+                    ? colors.sage
+                    : colors.terracotta
+                }
+              />
+            </View>
+          </View>
+
+          <View style={styles.goalTrack}>
+            <View
+              style={[
+                styles.goalFill,
+
+                {
+                  width: `${goalProgress}%` as `${number}%`,
+                },
+              ]}
+            />
+          </View>
+
+          <Text style={styles.goalHint}>
+            {weeklyTarget === 0
+              ? "Defina sua frequência no perfil."
+              : remaining > 0
+                ? `Falta${remaining === 1 ? "" : "m"} ${remaining} ${
+                    remaining === 1 ? "conteúdo" : "conteúdos"
+                  } para completar a meta desta semana.`
+                : plannedCount > weeklyTarget
+                  ? `Meta superada: ${plannedCount} conteúdos planejados.`
+                  : "Semana planejada ✓"}
+          </Text>
         </View>
 
         <View style={styles.weekHeader}>
@@ -512,57 +599,43 @@ function getStatusMeta(status: ContentStatus) {
     case "ideia":
       return {
         label: "IDEIA",
-
         icon: "bulb-outline" as const,
-
         ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
         label: "ROTEIRO",
-
         icon: "create-outline" as const,
-
         ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
         label: "PRODUZIR",
-
         icon: "videocam-outline" as const,
-
         ...statusColors.gravar,
       };
 
     case "editar":
       return {
         label: "EDITAR",
-
         icon: "cut-outline" as const,
-
         ...statusColors.editar,
       };
 
     case "pronto":
       return {
         label: "PRONTO",
-
         icon: "checkmark-circle-outline" as const,
-
         ...statusColors.pronto,
       };
 
-    default:
+    case "publicado":
       return {
-        label: "CONTEÚDO",
-
-        icon: "document-outline" as const,
-
-        background: colors.blueLight,
-
-        foreground: colors.blue,
+        label: "PUBLICADO",
+        icon: "paper-plane-outline" as const,
+        ...statusColors.publicado,
       };
   }
 }
@@ -665,7 +738,97 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueLight,
 
     alignItems: "center",
+
     justifyContent: "center",
+  },
+
+  goalCard: {
+    padding: spacing.lg,
+
+    marginBottom: spacing.xl,
+
+    borderRadius: radius.xl,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    ...shadows.card,
+  },
+
+  goalTop: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    gap: spacing.md,
+  },
+
+  goalLabel: {
+    fontSize: typography.tiny,
+
+    fontWeight: "800",
+
+    letterSpacing: 1,
+
+    color: colors.blue,
+  },
+
+  goalValue: {
+    marginTop: 4,
+
+    fontSize: typography.heading,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  goalIcon: {
+    width: 44,
+    height: 44,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceSoft,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  goalTrack: {
+    height: 7,
+
+    marginTop: spacing.lg,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.blueLight,
+
+    overflow: "hidden",
+  },
+
+  goalFill: {
+    height: "100%",
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.terracotta,
+  },
+
+  goalHint: {
+    marginTop: spacing.sm,
+
+    fontSize: typography.caption,
+
+    lineHeight: 18,
+
+    color: colors.textSecondary,
   },
 
   weekHeader: {
@@ -687,6 +850,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueLight,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -798,6 +962,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueLight,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -868,6 +1033,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginRight: spacing.md,
@@ -920,6 +1086,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginRight: spacing.md,
@@ -981,6 +1148,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blueLight,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     marginLeft: spacing.sm,
@@ -1014,6 +1182,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.amberLight,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
