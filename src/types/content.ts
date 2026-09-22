@@ -23,7 +23,7 @@ export type ContentItem = {
   objective: string | null;
 
   status: ContentStatus;
-
+  plannedDate?: string | null;
   script: ContentScript;
 
   createdAt: string;

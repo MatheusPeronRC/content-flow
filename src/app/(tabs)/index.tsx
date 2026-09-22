@@ -8,10 +8,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { getContents } from "../../services/contentStorage";
-import { ContentItem } from "../../types/content";
-
 import { SafeAreaView } from "react-native-safe-area-context";
+import { getContents } from "../../services/contentStorage";
+import { getInspirations } from "../../services/inspirationStorage";
+import { ContentItem } from "../../types/content";
 
 import { SectionHeader } from "../../components/SectionHeader";
 import { TaskCard } from "../../components/TaskCard";
@@ -24,33 +24,6 @@ import {
   typography,
 } from "../../constants/theme";
 
-const weekDays = [
-  {
-    day: "SEG",
-    date: "21",
-    completed: true,
-  },
-  {
-    day: "TER",
-    date: "22",
-    completed: true,
-  },
-  {
-    day: "QUA",
-    date: "23",
-    completed: false,
-  },
-  {
-    day: "QUI",
-    date: "24",
-    completed: true,
-  },
-  {
-    day: "SEX",
-    date: "25",
-    completed: false,
-  },
-];
 function getTaskInfo(content: ContentItem) {
   switch (content.status) {
     case "ideia":
@@ -69,7 +42,7 @@ function getTaskInfo(content: ContentItem) {
 
     case "gravar":
       return {
-        action: "Gravar",
+        action: "Produzir conteúdo",
         icon: "videocam-outline" as const,
         color: colors.reel,
       };
@@ -98,30 +71,101 @@ function getTaskInfo(content: ContentItem) {
 }
 export default function HomeScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
+  const [inspirationCount, setInspirationCount] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
 
-      async function loadContents() {
+      async function loadHome() {
         try {
-          const data = await getContents();
+          const [savedContents, savedInspirations] = await Promise.all([
+            getContents(),
+            getInspirations(),
+          ]);
 
-          if (active) {
-            setContents(data);
+          if (!active) {
+            return;
           }
+
+          setContents(savedContents);
+          setInspirationCount(savedInspirations.length);
         } catch (error) {
-          console.error("Erro ao carregar conteúdos:", error);
+          console.error("Erro ao carregar a Home:", error);
         }
       }
 
-      loadContents();
+      loadHome();
 
       return () => {
         active = false;
       };
     }, []),
   );
+
+  const today = new Date();
+  const todayKey = toDateKey(today);
+
+  const monday = getMonday(today);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const weekStart = toDateKey(monday);
+  const weekEnd = toDateKey(sunday);
+
+  const weeklyContents = contents.filter(
+    (content) =>
+      content.plannedDate &&
+      content.plannedDate >= weekStart &&
+      content.plannedDate <= weekEnd,
+  );
+
+  const todayContents = contents.filter(
+    (content) =>
+      content.plannedDate === todayKey && content.status !== "publicado",
+  );
+
+  const completedThisWeek = weeklyContents.filter(
+    (content) => content.status === "pronto" || content.status === "publicado",
+  ).length;
+
+  const weekProgress =
+    weeklyContents.length === 0
+      ? 0
+      : Math.round((completedThisWeek / weeklyContents.length) * 100);
+
+  const homeWeekDays = Array.from({
+    length: 7,
+  }).map((_, index) => {
+    const date = new Date(monday);
+
+    date.setDate(monday.getDate() + index);
+
+    const key = toDateKey(date);
+
+    const dayContents = weeklyContents.filter(
+      (content) => content.plannedDate === key,
+    );
+
+    const completed =
+      dayContents.length > 0 &&
+      dayContents.every(
+        (content) =>
+          content.status === "pronto" || content.status === "publicado",
+      );
+
+    return {
+      key,
+      day: ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][index],
+
+      date: date.getDate(),
+
+      planned: dayContents.length > 0,
+
+      completed,
+    };
+  });
 
   const pendingContents = contents
     .filter((content) => content.status !== "publicado")
@@ -178,7 +222,11 @@ export default function HomeScreen() {
             <View>
               <Text style={styles.progressLabel}>Ritmo da semana</Text>
 
-              <Text style={styles.progressValue}>3 de 5 conteúdos</Text>
+              <Text style={styles.progressValue}>
+                {weeklyContents.length === 0
+                  ? "Nada planejado ainda"
+                  : `${completedThisWeek} de ${weeklyContents.length} concluídos`}
+              </Text>
             </View>
 
             <View style={styles.progressIcon}>
@@ -191,11 +239,26 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${weekProgress}%` as `${number}%`,
+                },
+              ]}
+            />
           </View>
 
           <Text style={styles.progressHint}>
-            Você está a 2 conteúdos de completar sua semana.
+            {weeklyContents.length === 0
+              ? "Planeje seus conteúdos para começar a organizar a semana."
+              : completedThisWeek === weeklyContents.length
+                ? "Tudo concluído nesta semana."
+                : `${weeklyContents.length - completedThisWeek} ${
+                    weeklyContents.length - completedThisWeek === 1
+                      ? "conteúdo ainda está"
+                      : "conteúdos ainda estão"
+                  } em andamento.`}
           </Text>
         </View>
 
@@ -204,31 +267,40 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="Hoje"
-            subtitle="Conteúdos que precisam da sua atenção"
+            subtitle={
+              todayContents.length === 0
+                ? "Nenhum conteúdo planejado para hoje"
+                : todayContents.length === 1
+                  ? "1 conteúdo precisa da sua atenção"
+                  : `${todayContents.length} conteúdos precisam da sua atenção`
+            }
+            actionLabel="Ver semana"
+            onActionPress={() => router.push("/planejar")}
           />
 
-          {pendingContents.length === 0 ? (
+          {todayContents.length === 0 ? (
             <View style={styles.emptyTasks}>
               <View style={styles.emptyTasksIcon}>
                 <Ionicons
-                  name="checkmark-circle-outline"
-                  size={25}
+                  name="sunny-outline"
+                  size={24}
                   color={colors.primary}
                 />
               </View>
 
               <View style={styles.emptyTasksContent}>
                 <Text style={styles.emptyTasksTitle}>
-                  Tudo tranquilo por aqui
+                  Nada planejado para hoje
                 </Text>
 
                 <Text style={styles.emptyTasksText}>
-                  Crie um conteúdo para começar seu fluxo.
+                  Você pode aproveitar o dia ou adicionar um conteúdo ao
+                  planejamento.
                 </Text>
               </View>
             </View>
           ) : (
-            pendingContents.map((content) => {
+            todayContents.slice(0, 3).map((content) => {
               const task = getTaskInfo(content);
 
               return (
@@ -258,24 +330,36 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="Sua semana"
-            subtitle="3 de 5 conteúdos planejados"
+            subtitle={
+              weeklyContents.length === 0
+                ? "Nenhum conteúdo planejado"
+                : weeklyContents.length === 1
+                  ? "1 conteúdo planejado"
+                  : `${weeklyContents.length} conteúdos planejados`
+            }
           />
 
           <View style={styles.weekCard}>
             <View style={styles.weekDays}>
-              {weekDays.map((item) => (
-                <View key={item.day} style={styles.day}>
+              {homeWeekDays.map((item) => (
+                <View style={styles.day} key={item.key}>
                   <Text style={styles.dayName}>{item.day}</Text>
 
                   <View
                     style={[
                       styles.dayCircle,
+
+                      item.planned && styles.dayCirclePlanned,
+
                       item.completed && styles.dayCircleCompleted,
                     ]}
                   >
                     <Text
                       style={[
                         styles.dayNumber,
+
+                        item.planned && styles.dayNumberPlanned,
+
                         item.completed && styles.dayNumberCompleted,
                       ]}
                     >
@@ -286,6 +370,9 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.statusDot,
+
+                      item.planned && styles.statusDotPlanned,
+
                       item.completed && styles.statusDotCompleted,
                     ]}
                   />
@@ -319,7 +406,11 @@ export default function HomeScreen() {
             <Text style={styles.inspirationTitle}>Suas inspirações</Text>
 
             <Text style={styles.inspirationSubtitle}>
-              7 referências esperando para virar conteúdo
+              {inspirationCount === 0
+                ? "Nenhuma referência salva ainda"
+                : inspirationCount === 1
+                  ? "1 referência esperando para virar conteúdo"
+                  : `${inspirationCount} referências esperando para virar conteúdo`}
             </Text>
           </View>
 
@@ -480,7 +571,6 @@ const styles = StyleSheet.create({
   },
 
   progressFill: {
-    width: "60%",
     height: "100%",
 
     backgroundColor: colors.surface,
@@ -546,7 +636,7 @@ const styles = StyleSheet.create({
   },
 
   dayCircleCompleted: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
   },
 
   dayNumber: {
@@ -557,7 +647,7 @@ const styles = StyleSheet.create({
   },
 
   dayNumberCompleted: {
-    color: colors.primary,
+    color: colors.surface,
   },
 
   statusDot: {
@@ -572,7 +662,7 @@ const styles = StyleSheet.create({
   },
 
   statusDotCompleted: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.success,
   },
 
   planButton: {
@@ -685,4 +775,36 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 3,
   },
+  dayCirclePlanned: {
+    backgroundColor: colors.primaryLight,
+  },
+
+  dayNumberPlanned: {
+    color: colors.primary,
+  },
+
+  statusDotPlanned: {
+    backgroundColor: colors.primary,
+  },
 });
+function getMonday(date: Date) {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const day = result.getDay();
+
+  const difference = day === 0 ? -6 : 1 - day;
+
+  result.setDate(result.getDate() + difference);
+
+  return result;
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
