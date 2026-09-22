@@ -496,7 +496,16 @@ function ContentCard({
   const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.88} onPress={onOpen}>
+    <TouchableOpacity
+      style={[
+        styles.card,
+        {
+          borderColor: status.background,
+        },
+      ]}
+      activeOpacity={0.88}
+      onPress={onOpen}
+    >
       <View
         style={[
           styles.cardAccent,
@@ -507,25 +516,28 @@ function ContentCard({
         ]}
       />
 
-      <View style={styles.cardBody}>
-        <View style={styles.cardTop}>
-          <View style={styles.cardMeta}>
-            <View
-              style={[
-                styles.statusMark,
+      <View
+        style={[
+          styles.statusMark,
 
-                {
-                  backgroundColor: status.background,
-                },
-              ]}
-            >
-              <Ionicons
-                name={status.icon}
-                size={17}
-                color={status.foreground}
-              />
-            </View>
+          {
+            backgroundColor: status.background,
+          },
+        ]}
+      >
+        <Ionicons name={status.icon} size={18} color={status.foreground} />
+      </View>
 
+      <View style={styles.cardMain}>
+        <View style={styles.cardMeta}>
+          <View
+            style={[
+              styles.statusPill,
+              {
+                backgroundColor: status.background,
+              },
+            ]}
+          >
             <Text
               style={[
                 styles.statusLabel,
@@ -537,117 +549,95 @@ function ContentCard({
             >
               {status.label}
             </Text>
-
-            {content.format && (
-              <>
-                <View style={styles.metaDot} />
-
-                <Text style={styles.metaText}>{content.format}</Text>
-              </>
-            )}
-
-            {content.plannedDate && (
-              <>
-                <View style={styles.metaDot} />
-
-                <Text style={styles.metaText}>
-                  {formatDate(content.plannedDate)}
-                </Text>
-              </>
-            )}
           </View>
 
-          <TouchableOpacity
-            style={styles.optionsButton}
-            activeOpacity={0.8}
-            onPress={(event) => {
-              event.stopPropagation();
+          {content.format && (
+            <View style={styles.metaPill}>
+              <Text style={styles.metaText}>{content.format}</Text>
+            </View>
+          )}
 
-              onOptions();
-            }}
-          >
-            <Ionicons
-              name="ellipsis-horizontal"
-              size={20}
-              color={colors.textSecondary}
-            />
-          </TouchableOpacity>
+          {content.plannedDate && (
+            <View style={styles.metaPill}>
+              <Ionicons
+                name="calendar-outline"
+                size={11}
+                color={colors.textSecondary}
+              />
+
+              <Text style={styles.metaText}>
+                {formatDate(content.plannedDate)}
+              </Text>
+            </View>
+          )}
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={3}>
+        <Text style={styles.cardTitle} numberOfLines={2}>
           {content.idea}
         </Text>
 
         {nextStatus && nextMeta ? (
-          <>
-            <View style={styles.cardDivider} />
+          <TouchableOpacity
+            style={[
+              styles.nextAction,
+              {
+                backgroundColor: nextMeta.background,
+              },
+            ]}
+            activeOpacity={0.82}
+            onPress={(event) => {
+              event.stopPropagation();
 
-            <TouchableOpacity
-              style={styles.nextAction}
-              activeOpacity={0.8}
-              onPress={(event) => {
-                event.stopPropagation();
+              onAdvance();
+            }}
+          >
+            <Text style={styles.nextEyebrow}>Próxima</Text>
 
-                onAdvance();
-              }}
+            <Text
+              style={[
+                styles.nextText,
+
+                {
+                  color: nextMeta.foreground,
+                },
+              ]}
             >
-              <View>
-                <Text style={styles.nextEyebrow}>PRÓXIMA ETAPA</Text>
+              {nextMeta.label}
+            </Text>
 
-                <Text
-                  style={[
-                    styles.nextText,
-
-                    {
-                      color: nextMeta.foreground,
-                    },
-                  ]}
-                >
-                  {nextMeta.label}
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.nextArrow,
-
-                  {
-                    backgroundColor: nextMeta.background,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="arrow-forward"
-                  size={17}
-                  color={nextMeta.foreground}
-                />
-              </View>
-            </TouchableOpacity>
-          </>
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color={nextMeta.foreground}
+            />
+          </TouchableOpacity>
         ) : (
-          <>
-            <View style={styles.cardDivider} />
+          <View style={styles.finishedPill}>
+            <Ionicons name="checkmark" size={13} color={colors.sage} />
 
-            <View style={styles.finishedArea}>
-              <View style={styles.finishedMark}>
-                <Ionicons name="checkmark" size={15} color={colors.sage} />
-              </View>
-
-              <View>
-                <Text style={styles.finishedTitle}>Fluxo concluído</Text>
-
-                <Text style={styles.finishedText}>
-                  Esse conteúdo já foi publicado.
-                </Text>
-              </View>
-            </View>
-          </>
+            <Text style={styles.finishedPillText}>Fluxo concluído</Text>
+          </View>
         )}
       </View>
+
+      <TouchableOpacity
+        style={styles.optionsButton}
+        activeOpacity={0.8}
+        onPress={(event) => {
+          event.stopPropagation();
+
+          onOptions();
+        }}
+      >
+        <Ionicons
+          name="ellipsis-horizontal"
+          size={18}
+          color={colors.textSecondary}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
-
 function EmptyState({ filter }: { filter: FilterValue }) {
   const all = filter === "todos";
 
@@ -1054,74 +1044,82 @@ const styles = StyleSheet.create({
   },
 
   list: {
-    gap: 12,
+    gap: 10,
   },
 
   card: {
+    minHeight: 106,
+
     position: "relative",
 
     overflow: "hidden",
 
-    borderRadius: 21,
+    paddingVertical: 13,
+
+    paddingRight: 11,
+
+    paddingLeft: 14,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    borderRadius: 19,
 
     borderWidth: 1,
 
-    borderColor: colors.border,
-
     backgroundColor: colors.surface,
 
-    ...shadows.soft,
+    ...shadows.card,
   },
 
   cardAccent: {
     position: "absolute",
 
     left: 0,
-    top: 15,
-    bottom: 15,
+    top: 11,
+    bottom: 11,
 
     width: 4,
 
     borderRadius: radius.round,
   },
 
-  cardBody: {
-    paddingTop: 16,
+  statusMark: {
+    width: 46,
+    height: 46,
 
-    paddingRight: 15,
+    marginRight: 11,
 
-    paddingBottom: 12,
-
-    paddingLeft: 18,
-  },
-
-  cardTop: {
-    flexDirection: "row",
+    borderRadius: 15,
 
     alignItems: "center",
 
-    justifyContent: "space-between",
-
-    gap: 8,
+    justifyContent: "center",
   },
 
-  cardMeta: {
+  cardMain: {
     flex: 1,
 
     minWidth: 0,
-
-    flexDirection: "row",
-
-    alignItems: "center",
   },
 
-  statusMark: {
-    width: 32,
-    height: 32,
+  cardMeta: {
+    flexDirection: "row",
 
-    marginRight: 9,
+    flexWrap: "wrap",
 
-    borderRadius: 10,
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  statusPill: {
+    minHeight: 23,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
 
     alignItems: "center",
 
@@ -1129,39 +1127,66 @@ const styles = StyleSheet.create({
   },
 
   statusLabel: {
-    fontSize: 10,
+    fontSize: 9,
 
-    letterSpacing: 0.5,
+    letterSpacing: 0.45,
 
     fontFamily: fonts.bold,
   },
 
-  metaDot: {
-    width: 3,
-    height: 3,
+  metaPill: {
+    minHeight: 23,
 
-    marginHorizontal: 6,
+    paddingHorizontal: 7,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.textMuted,
+    backgroundColor: colors.surfaceMuted,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 4,
+  },
+
+  metaDot: {
+    display: "none",
   },
 
   metaText: {
-    fontSize: 10,
+    fontSize: 9,
 
-    lineHeight: 15,
+    lineHeight: 14,
 
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
   },
 
-  optionsButton: {
-    width: 36,
-    height: 36,
+  cardTitle: {
+    marginTop: 7,
 
-    borderRadius: radius.round,
+    paddingRight: 4,
+
+    fontSize: 16,
+
+    lineHeight: 22,
+
+    letterSpacing: -0.15,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
+  },
+
+  optionsButton: {
+    width: 32,
+    height: 32,
+
+    marginLeft: 7,
+
+    borderRadius: 11,
 
     alignItems: "center",
 
@@ -1170,116 +1195,90 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSoft,
   },
 
-  cardTitle: {
-    maxWidth: 315,
-
-    marginTop: 14,
-
-    fontSize: 17,
-
-    lineHeight: 25,
-
-    letterSpacing: -0.2,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
-  },
-
-  cardDivider: {
-    height: 1,
-
-    marginTop: 16,
-
-    backgroundColor: colors.divider,
-  },
-
   nextAction: {
-    minHeight: 62,
+    alignSelf: "flex-start",
+
+    minHeight: 29,
+
+    marginTop: 9,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    justifyContent: "space-between",
+    gap: 5,
   },
 
   nextEyebrow: {
     fontSize: 9,
 
-    letterSpacing: 0.7,
-
-    fontFamily: fonts.bold,
+    fontFamily: fonts.medium,
 
     color: colors.textSecondary,
   },
 
   nextText: {
-    marginTop: 4,
+    fontSize: 10,
 
-    fontSize: 13,
-
-    lineHeight: 18,
-
-    letterSpacing: 0.1,
+    letterSpacing: 0.25,
 
     fontFamily: fonts.bold,
   },
 
   nextArrow: {
-    width: 36,
-    height: 36,
+    display: "none",
+  },
 
-    borderRadius: radius.round,
-
-    alignItems: "center",
-
-    justifyContent: "center",
+  cardDivider: {
+    display: "none",
   },
 
   finishedArea: {
-    minHeight: 62,
-
-    flexDirection: "row",
-
-    alignItems: "center",
+    display: "none",
   },
 
   finishedMark: {
-    width: 34,
-    height: 34,
+    display: "none",
+  },
 
-    marginRight: 10,
+  finishedTitle: {
+    display: "none",
+  },
+
+  finishedText: {
+    display: "none",
+  },
+
+  finishedPill: {
+    alignSelf: "flex-start",
+
+    minHeight: 29,
+
+    marginTop: 9,
+
+    paddingHorizontal: 9,
 
     borderRadius: radius.round,
 
     backgroundColor: colors.sageLight,
 
+    flexDirection: "row",
+
     alignItems: "center",
 
-    justifyContent: "center",
+    gap: 5,
   },
 
-  finishedTitle: {
-    fontSize: 12,
-
-    lineHeight: 17,
+  finishedPillText: {
+    fontSize: 10,
 
     fontFamily: fonts.semibold,
 
     color: colors.sage,
-  },
-
-  finishedText: {
-    marginTop: 2,
-
-    fontSize: 10,
-
-    lineHeight: 15,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
   },
 
   emptyState: {

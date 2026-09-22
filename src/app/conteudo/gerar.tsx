@@ -59,6 +59,10 @@ export default function GerarConteudoScreen() {
           source: inspiration.source,
           category: inspiration.category,
           note: inspiration.note,
+          thumbnailUrl: inspiration.thumbnailUrl ?? null,
+          mediaTitle: inspiration.mediaTitle ?? null,
+          authorName: inspiration.authorName ?? null,
+          metadataUpdatedAt: inspiration.metadataUpdatedAt ?? null,
         };
       }
     }

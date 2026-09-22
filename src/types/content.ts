@@ -18,6 +18,13 @@ export type ContentReference = {
   source: string;
   category: string | null;
   note: string;
+
+  // Snapshot visual da inspiração.
+  // Opcional para manter compatibilidade com conteúdos antigos.
+  thumbnailUrl?: string | null;
+  mediaTitle?: string | null;
+  authorName?: string | null;
+  metadataUpdatedAt?: string | null;
 };
 
 export type ContentItem = {
@@ -27,7 +34,7 @@ export type ContentItem = {
   inspirationId?: string;
 
   // Snapshot da referência no momento em que o conteúdo é criado.
-  // Assim o link continua disponível mesmo se a inspiração for apagada depois.
+  // Assim a referência continua disponível mesmo se a inspiração for apagada.
   reference?: ContentReference;
 
   idea: string;

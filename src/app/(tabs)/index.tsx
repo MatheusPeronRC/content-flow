@@ -392,14 +392,27 @@ function HomeContentRow({ content }: { content: ContentItem }) {
 
   return (
     <TouchableOpacity
-      style={styles.todayContent}
-      activeOpacity={0.8}
+      style={[
+        styles.todayContent,
+        {
+          borderColor: meta.background,
+        },
+      ]}
+      activeOpacity={0.84}
       onPress={() => router.push(`/conteudo/${content.id}`)}
     >
       <View
         style={[
-          styles.todayContentIcon,
+          styles.todayAccent,
+          {
+            backgroundColor: meta.foreground,
+          },
+        ]}
+      />
 
+      <View
+        style={[
+          styles.todayContentIcon,
           {
             backgroundColor: meta.background,
           },
@@ -408,25 +421,50 @@ function HomeContentRow({ content }: { content: ContentItem }) {
         <Ionicons name={meta.icon} size={19} color={meta.foreground} />
       </View>
 
-      <View style={{ flex: 1 }}>
-        <Text
-          style={[
-            styles.todayStatus,
+      <View style={styles.todayMain}>
+        <View style={styles.todayMetaRow}>
+          <View
+            style={[
+              styles.todayStatusPill,
+              {
+                backgroundColor: meta.background,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.todayStatus,
+                {
+                  color: meta.foreground,
+                },
+              ]}
+            >
+              {meta.label}
+            </Text>
+          </View>
 
-            {
-              color: meta.foreground,
-            },
-          ]}
-        >
-          {meta.label}
-        </Text>
+          {content.format && (
+            <View style={styles.todayFormatPill}>
+              <Text style={styles.todayFormatText}>{content.format}</Text>
+            </View>
+          )}
+        </View>
 
         <Text style={styles.todayContentTitle} numberOfLines={2}>
           {content.idea}
         </Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
+      <View
+        style={[
+          styles.todayArrow,
+          {
+            backgroundColor: meta.background,
+          },
+        ]}
+      >
+        <Ionicons name="chevron-forward" size={16} color={meta.foreground} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -843,28 +881,52 @@ const styles = StyleSheet.create({
   },
 
   todayList: {
-    gap: spacing.sm,
+    gap: 10,
   },
 
   todayContent: {
-    minHeight: 78,
+    minHeight: 82,
 
-    paddingVertical: 13,
+    position: "relative",
+
+    overflow: "hidden",
+
+    paddingVertical: 12,
+
+    paddingRight: 12,
+
+    paddingLeft: 15,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    borderBottomWidth: 1,
+    borderRadius: 18,
 
-    borderBottomColor: colors.divider,
+    borderWidth: 1,
+
+    backgroundColor: colors.surface,
+
+    ...shadows.soft,
+  },
+
+  todayAccent: {
+    position: "absolute",
+
+    left: 0,
+    top: 12,
+    bottom: 12,
+
+    width: 4,
+
+    borderRadius: radius.round,
   },
 
   todayContentIcon: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
 
-    marginRight: spacing.md,
+    marginRight: 11,
 
     borderRadius: 14,
 
@@ -873,24 +935,85 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  todayMain: {
+    flex: 1,
+
+    minWidth: 0,
+  },
+
+  todayMetaRow: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+  },
+
+  todayStatusPill: {
+    minHeight: 24,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
   todayStatus: {
-    fontSize: 10,
+    fontSize: 9,
 
     fontFamily: fonts.bold,
 
-    letterSpacing: 0.4,
+    letterSpacing: 0.45,
+  },
+
+  todayFormatPill: {
+    minHeight: 24,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  todayFormatText: {
+    fontSize: 9,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.textSecondary,
   },
 
   todayContentTitle: {
-    marginTop: 4,
+    marginTop: 6,
 
     fontSize: 15,
 
-    lineHeight: 22,
+    lineHeight: 21,
 
     fontFamily: fonts.semibold,
 
     color: colors.text,
+  },
+
+  todayArrow: {
+    width: 34,
+    height: 34,
+
+    marginLeft: 8,
+
+    borderRadius: 11,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   weekSectionHeader: {

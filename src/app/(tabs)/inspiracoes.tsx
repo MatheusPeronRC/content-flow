@@ -8,11 +8,14 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import InspirationThumbnail from "../../components/InspirationThumbnail";
 
 import { getInspirations } from "../../services/inspirationStorage";
 
@@ -34,6 +37,8 @@ export default function InspirationsScreen() {
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
 
   const [selectedFilter, setSelectedFilter] = useState("Todas");
+
+  const [search, setSearch] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -60,12 +65,35 @@ export default function InspirationsScreen() {
   );
 
   const filteredInspirations = useMemo(() => {
-    if (selectedFilter === "Todas") {
-      return inspirations;
-    }
+    const query = search.trim().toLowerCase();
 
-    return inspirations.filter((item) => item.category === selectedFilter);
-  }, [inspirations, selectedFilter]);
+    return inspirations.filter((item) => {
+      const matchesFilter =
+        selectedFilter === "Todas" || item.category === selectedFilter;
+
+      if (!matchesFilter) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchable = [
+        item.note,
+        item.mediaTitle,
+        item.authorName,
+        item.source,
+        item.category,
+        item.url,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [inspirations, selectedFilter, search]);
 
   function openInspiration(inspiration: Inspiration) {
     router.push(`/inspiracao/${inspiration.id}`);
@@ -91,112 +119,104 @@ export default function InspirationsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Inspirações</Text>
 
-            <Text style={styles.subtitle}>
-              Seu acervo criativo. Guarde o que acende uma ideia.
-            </Text>
+            <Text style={styles.subtitle}>Suas referências, sempre à mão.</Text>
           </View>
 
-          <View style={styles.headerMark}>
-            <Ionicons name="bulb-outline" size={22} color={colors.rose} />
-          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            activeOpacity={0.85}
+            onPress={() => router.push("/inspiracao/nova")}
+          >
+            <Ionicons
+              name="bookmark-outline"
+              size={17}
+              color={colors.terracotta}
+            />
+
+            <Text style={styles.addButtonText}>Salvar</Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.saveReference}
-          activeOpacity={0.86}
-          onPress={() => router.push("/inspiracao/nova")}
-        >
-          <View style={styles.saveReferenceMark}>
-            <Ionicons name="add" size={23} color={colors.surface} />
-          </View>
+        <View style={styles.searchField}>
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={colors.textSecondary}
+          />
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.saveReferenceTitle}>Salvar referência</Text>
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar inspirações..."
+            placeholderTextColor={colors.textMuted}
+            style={styles.searchInput}
+          />
 
-            <Text style={styles.saveReferenceText}>
-              Reel, TikTok, vídeo, post ou qualquer ideia que vale guardar.
-            </Text>
-          </View>
-
-          <Ionicons name="arrow-forward" size={19} color={colors.terracotta} />
-        </TouchableOpacity>
+          {search.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearSearch}
+              onPress={() => setSearch("")}
+            >
+              <Ionicons name="close" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
 
         {inspirations.length > 0 && (
-          <>
-            <View style={styles.libraryHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.libraryTitle}>Biblioteca</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            {filters.map((filter) => {
+              const selected = selectedFilter === filter;
 
-                <Text style={styles.librarySubtitle}>
-                  Tudo que você guardou para usar depois.
-                </Text>
-              </View>
-
-              <View style={styles.countPill}>
-                <Text style={styles.countText}>
-                  {inspirations.length}{" "}
-                  {inspirations.length === 1 ? "salva" : "salvas"}
-                </Text>
-              </View>
-            </View>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filters}
-            >
-              {filters.map((filter) => {
-                const selected = selectedFilter === filter;
-
-                return (
-                  <TouchableOpacity
-                    key={filter}
-                    activeOpacity={0.8}
-                    style={[styles.filter, selected && styles.filterSelected]}
-                    onPress={() => setSelectedFilter(filter)}
+              return (
+                <TouchableOpacity
+                  key={filter}
+                  activeOpacity={0.8}
+                  style={[styles.filter, selected && styles.filterSelected]}
+                  onPress={() => setSelectedFilter(filter)}
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      selected && styles.filterTextSelected,
+                    ]}
                   >
-                    <Text
-                      style={[
-                        styles.filterText,
-
-                        selected && styles.filterTextSelected,
-                      ]}
-                    >
-                      {filter}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </>
+                    {filter}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         )}
+
+        <View style={styles.libraryHeader}>
+          <Text style={styles.libraryTitle}>Biblioteca</Text>
+
+          {inspirations.length > 0 && (
+            <Text style={styles.libraryCount}>
+              {inspirations.length}{" "}
+              {inspirations.length === 1 ? "salva" : "salvas"}
+            </Text>
+          )}
+        </View>
 
         {inspirations.length === 0 ? (
           <EmptyState />
         ) : filteredInspirations.length === 0 ? (
-          <View style={styles.emptyFilter}>
-            <View style={styles.emptyFilterMark}>
-              <Ionicons
-                name="filter-outline"
-                size={21}
-                color={colors.textMuted}
-              />
-            </View>
+          <View style={styles.filterEmpty}>
+            <Text style={styles.filterEmptyTitle}>Nada por aqui.</Text>
 
-            <Text style={styles.emptyFilterTitle}>Nada por aqui ainda</Text>
-
-            <Text style={styles.emptyFilterText}>
-              Você não tem nenhuma referência em {selectedFilter}.
+            <Text style={styles.filterEmptyText}>
+              Tente outro filtro ou termo de busca.
             </Text>
-
-            <TouchableOpacity onPress={() => setSelectedFilter("Todas")}>
-              <Text style={styles.showAll}>Ver toda a biblioteca</Text>
-            </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.list}>
+          <View style={styles.grid}>
             {filteredInspirations.map((inspiration) => (
-              <InspirationCard
+              <InspirationGridCard
                 key={inspiration.id}
                 inspiration={inspiration}
                 onOpen={() => openInspiration(inspiration)}
@@ -210,114 +230,115 @@ export default function InspirationsScreen() {
   );
 }
 
-type InspirationCardProps = {
+type InspirationGridCardProps = {
   inspiration: Inspiration;
   onOpen: () => void;
   onCreate: () => void;
 };
 
-function InspirationCard({
+function InspirationGridCard({
   inspiration,
   onOpen,
   onCreate,
-}: InspirationCardProps) {
+}: InspirationGridCardProps) {
   const accent = getCategoryColor(inspiration.category);
 
-  const hasNote = inspiration.note.trim().length > 0;
+  const overlayTitle =
+    inspiration.mediaTitle?.trim() ||
+    inspiration.note?.trim() ||
+    `Referência do ${inspiration.source}`;
+
+  const cardCaption =
+    inspiration.note?.trim() || inspiration.category || inspiration.source;
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.88} onPress={onOpen}>
-      <View
-        style={[
-          styles.accentBar,
+    <View style={styles.gridItem}>
+      <TouchableOpacity
+        style={styles.visualCard}
+        activeOpacity={0.88}
+        onPress={onOpen}
+      >
+        <InspirationThumbnail
+          thumbnailUrl={inspiration.thumbnailUrl}
+          source={inspiration.source}
+          variant="wide"
+          style={styles.gridThumbnail}
+          showSourceBadge={false}
+        />
 
-          {
-            backgroundColor: accent.foreground,
-          },
-        ]}
-      />
+        <View style={styles.overlayShade} />
 
-      <View style={styles.cardBody}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardMeta}>
-            <View
-              style={[
-                styles.sourceMark,
-
-                {
-                  backgroundColor: accent.background,
-                },
-              ]}
-            >
-              <Ionicons
-                name={getSourceIcon(inspiration.source)}
-                size={17}
-                color={accent.foreground}
-              />
-            </View>
-
+        <View style={styles.overlayTop}>
+          <View
+            style={[
+              styles.categoryBadge,
+              {
+                backgroundColor: accent.background,
+              },
+            ]}
+          >
             <Text
               style={[
-                styles.category,
-
+                styles.categoryBadgeText,
                 {
                   color: accent.foreground,
                 },
               ]}
+              numberOfLines={1}
             >
-              {inspiration.category?.toUpperCase() ?? "INSPIRAÇÃO"}
+              {inspiration.category ?? inspiration.source}
             </Text>
-
-            <View style={styles.metaDot} />
-
-            <Text style={styles.source}>{inspiration.source}</Text>
           </View>
 
-          <Ionicons
-            name="chevron-forward"
-            size={18}
-            color={colors.textSecondary}
-          />
+          <View style={styles.sourceBadge}>
+            <Ionicons
+              name={getSourceIcon(inspiration.source)}
+              size={13}
+              color={colors.surface}
+            />
+          </View>
         </View>
 
-        <Text
-          style={hasNote ? styles.cardTitle : styles.cardFallback}
-          numberOfLines={3}
-        >
-          {hasNote ? inspiration.note : `Referência do ${inspiration.source}`}
-        </Text>
-
-        <Text style={styles.cardUrl} numberOfLines={1}>
-          {cleanUrl(inspiration.url)}
-        </Text>
-
-        <View style={styles.cardDivider} />
+        <View style={styles.overlayBottom}>
+          <Text style={styles.overlayTitle} numberOfLines={3}>
+            {overlayTitle}
+          </Text>
+        </View>
 
         <TouchableOpacity
-          style={styles.createAction}
-          activeOpacity={0.8}
+          style={styles.quickCreate}
+          activeOpacity={0.82}
           onPress={(event) => {
             event.stopPropagation();
-
             onCreate();
           }}
         >
-          <View style={styles.createActionLeft}>
-            <View style={styles.sparkleMark}>
-              <Ionicons name="sparkles" size={16} color={colors.terracotta} />
-            </View>
+          <Ionicons name="sparkles" size={16} color={colors.terracotta} />
+        </TouchableOpacity>
+      </TouchableOpacity>
 
-            <View>
-              <Text style={styles.createEyebrow}>TRANSFORMAR</Text>
+      <View style={styles.cardFooter}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardCaption} numberOfLines={1}>
+            {cardCaption}
+          </Text>
 
-              <Text style={styles.createText}>Criar minha versão</Text>
-            </View>
-          </View>
+          <Text style={styles.cardMeta} numberOfLines={1}>
+            {inspiration.source}
+            {" · "}
+            {formatRelativeDate(inspiration.createdAt)}
+          </Text>
+        </View>
 
-          <Ionicons name="arrow-forward" size={18} color={colors.terracotta} />
+        <TouchableOpacity style={styles.moreButton} onPress={onOpen}>
+          <Ionicons
+            name="ellipsis-vertical"
+            size={16}
+            color={colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -325,22 +346,13 @@ function EmptyState() {
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyArt}>
-        <View style={styles.emptyArtBack} />
-
-        <View style={styles.emptyArtFront}>
-          <Ionicons name="bookmark-outline" size={28} color={colors.rose} />
-        </View>
-
-        <View style={styles.emptySpark}>
-          <Ionicons name="sparkles" size={16} color={colors.terracotta} />
-        </View>
+        <Ionicons name="images-outline" size={30} color={colors.rose} />
       </View>
 
       <Text style={styles.emptyTitle}>Comece seu acervo criativo.</Text>
 
       <Text style={styles.emptyText}>
-        Encontrou algo que despertou uma ideia? Guarde aqui agora e transforme
-        depois.
+        Salve referências para encontrá-las visualmente depois.
       </Text>
 
       <TouchableOpacity
@@ -367,6 +379,9 @@ function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
     case "YouTube":
       return "logo-youtube";
 
+    case "Kwai":
+      return "play-outline";
+
     default:
       return "link-outline";
   }
@@ -377,268 +392,194 @@ function getCategoryColor(category: string | null) {
     case "Hook":
       return {
         background: colors.terracottaLight,
-
         foreground: colors.terracotta,
       };
 
     case "Tema":
       return {
         background: colors.roseLight,
-
         foreground: colors.rose,
       };
 
     case "Edição":
       return {
         background: colors.lavenderLight,
-
         foreground: colors.lavender,
       };
 
     case "Formato":
       return {
         background: colors.blueLight,
-
         foreground: colors.blue,
       };
 
     case "Roteiro":
       return {
         background: colors.amberLight,
-
         foreground: colors.amber,
       };
 
     case "CTA":
       return {
         background: colors.sageLight,
-
         foreground: colors.sage,
       };
 
     default:
       return {
         background: colors.primaryLight,
-
         foreground: colors.primary,
       };
   }
 }
 
-function cleanUrl(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+function formatRelativeDate(isoDate: string) {
+  const created = new Date(isoDate);
+
+  const today = new Date();
+
+  const createdDay = new Date(
+    created.getFullYear(),
+    created.getMonth(),
+    created.getDate(),
+  );
+
+  const todayDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const diffMs = todayDay.getTime() - createdDay.getTime();
+
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+  if (diffDays === 0) {
+    return "Hoje";
+  }
+
+  if (diffDays === 1) {
+    return "Há 1 dia";
+  }
+
+  if (diffDays < 30) {
+    return `Há ${diffDays} dias`;
+  }
+
+  return created.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
     paddingBottom: 140,
   },
 
   header: {
     paddingTop: spacing.lg,
-
-    paddingBottom: spacing.xl,
-
+    paddingBottom: 18,
     flexDirection: "row",
-
     alignItems: "flex-start",
-
     justifyContent: "space-between",
-
     gap: spacing.md,
   },
 
   title: {
     fontSize: 32,
-
     lineHeight: 40,
-
     letterSpacing: -0.9,
-
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   subtitle: {
-    maxWidth: 300,
-
-    marginTop: 7,
-
-    fontSize: 14,
-
-    lineHeight: 21,
-
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 19,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  headerMark: {
-    width: 44,
-    height: 44,
-
-    marginTop: 3,
-
+  addButton: {
+    minHeight: 42,
+    marginTop: 2,
+    paddingHorizontal: 12,
     borderRadius: 14,
-
-    backgroundColor: colors.roseLight,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  saveReference: {
-    minHeight: 88,
-
-    padding: spacing.md,
-
-    marginBottom: 34,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    borderRadius: radius.xl,
-
     backgroundColor: colors.terracottaLight,
-  },
-
-  saveReferenceMark: {
-    width: 46,
-    height: 46,
-
-    marginRight: spacing.md,
-
-    borderRadius: 15,
-
-    backgroundColor: colors.terracotta,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  saveReferenceTitle: {
-    fontSize: 16,
-
-    lineHeight: 22,
-
-    fontFamily: fonts.bold,
-
-    color: colors.text,
-  },
-
-  saveReferenceText: {
-    maxWidth: 245,
-
-    marginTop: 4,
-
-    paddingRight: spacing.sm,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  libraryHeader: {
-    marginBottom: spacing.md,
-
+    borderWidth: 1,
+    borderColor: "rgba(225, 116, 85, 0.18)",
     flexDirection: "row",
-
-    alignItems: "flex-end",
-
-    justifyContent: "space-between",
-
-    gap: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
 
-  libraryTitle: {
-    fontSize: 24,
-
-    lineHeight: 31,
-
-    letterSpacing: -0.5,
-
+  addButtonText: {
+    fontSize: 12,
     fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
 
+  searchField: {
+    minHeight: 46,
+    marginBottom: 13,
+    paddingHorizontal: 13,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceMuted,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
+    paddingVertical: 0,
+    fontSize: 13,
+    fontFamily: fonts.regular,
     color: colors.text,
   },
 
-  librarySubtitle: {
-    marginTop: 4,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  countPill: {
-    paddingHorizontal: 10,
-
-    paddingVertical: 7,
-
+  clearSearch: {
+    width: 28,
+    height: 28,
     borderRadius: radius.round,
-
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  countText: {
-    fontSize: 10,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   filters: {
     gap: 8,
-
-    paddingBottom: spacing.lg,
+    paddingBottom: 22,
   },
 
   filter: {
-    paddingHorizontal: 16,
-
-    paddingVertical: 10,
-
+    minHeight: 36,
+    paddingHorizontal: 14,
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   filterSelected: {
     backgroundColor: colors.text,
-
     borderColor: colors.text,
   },
 
   filterText: {
-    fontSize: 12,
-
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
     color: colors.textSecondary,
   },
 
@@ -646,396 +587,228 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
 
-  list: {
-    gap: 14,
+  libraryHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
-  card: {
+  libraryTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.45,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  libraryCount: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    rowGap: 22,
+  },
+
+  gridItem: {
+    width: "48.3%",
+  },
+
+  visualCard: {
+    width: "100%",
+    aspectRatio: 0.8,
     position: "relative",
-
     overflow: "hidden",
-
-    borderRadius: 22,
-
+    borderRadius: 18,
     backgroundColor: colors.surface,
+    ...shadows.card,
+  },
 
-    borderWidth: 1,
+  gridThumbnail: {
+    width: "100%",
+    height: "100%",
+    aspectRatio: undefined,
+    borderRadius: 18,
+  },
 
-    borderColor: colors.border,
+  overlayShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(24, 20, 18, 0.13)",
+  },
 
+  overlayTop: {
+    position: "absolute",
+    left: 9,
+    right: 9,
+    top: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+
+  categoryBadge: {
+    maxWidth: "72%",
+    minHeight: 26,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  categoryBadgeText: {
+    fontSize: 9,
+    fontFamily: fonts.bold,
+  },
+
+  sourceBadge: {
+    width: 27,
+    height: 27,
+    borderRadius: 9,
+    backgroundColor: "rgba(31, 28, 26, 0.62)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  overlayBottom: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 11,
+    paddingTop: 30,
+    paddingBottom: 12,
+    backgroundColor: "rgba(25, 21, 19, 0.48)",
+  },
+
+  overlayTitle: {
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+
+  quickCreate: {
+    position: "absolute",
+    right: 9,
+    bottom: 9,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
     ...shadows.soft,
   },
 
-  accentBar: {
-    position: "absolute",
-
-    left: 0,
-    top: 0,
-    bottom: 0,
-
-    width: 4,
-  },
-
-  cardBody: {
-    paddingTop: 16,
-
-    paddingRight: 16,
-
-    paddingBottom: 12,
-
-    paddingLeft: 19,
-  },
-
-  cardHeader: {
+  cardFooter: {
+    minHeight: 50,
+    paddingTop: 8,
     flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+  },
 
-    alignItems: "center",
-
-    justifyContent: "space-between",
-
-    gap: spacing.sm,
+  cardCaption: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.semibold,
+    color: colors.text,
   },
 
   cardMeta: {
-    flex: 1,
-
-    minWidth: 0,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  sourceMark: {
-    width: 30,
-    height: 30,
-
-    marginRight: 9,
-
-    borderRadius: 9,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  category: {
-    fontSize: 10,
-
-    fontFamily: fonts.bold,
-
-    letterSpacing: 0.6,
-  },
-
-  metaDot: {
-    width: 3,
-    height: 3,
-
-    marginHorizontal: 6,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.textMuted,
-  },
-
-  source: {
-    fontSize: 10,
-
-    fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  cardTitle: {
-    marginTop: 14,
-
-    maxWidth: 310,
-
-    fontSize: 17,
-
-    lineHeight: 24,
-
-    letterSpacing: -0.2,
-
-    fontFamily: fonts.bold,
-
-    color: colors.text,
-  },
-
-  cardFallback: {
-    marginTop: 14,
-
-    fontSize: 16,
-
-    lineHeight: 23,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.textSecondary,
-  },
-
-  cardUrl: {
-    marginTop: 8,
-
-    fontSize: 11,
-
-    lineHeight: 16,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  cardDivider: {
-    height: 1,
-
-    marginTop: 16,
-
-    backgroundColor: colors.divider,
-  },
-
-  createAction: {
-    minHeight: 60,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  createActionLeft: {
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  sparkleMark: {
-    width: 34,
-    height: 34,
-
-    marginRight: 10,
-
-    borderRadius: 11,
-
-    backgroundColor: colors.terracottaLight,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  createEyebrow: {
-    fontSize: 9,
-
-    letterSpacing: 0.7,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  createText: {
     marginTop: 2,
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
 
-    fontSize: 13,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.bold,
-
-    color: colors.terracotta,
+  moreButton: {
+    width: 26,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   emptyState: {
+    minHeight: 330,
+    paddingTop: 48,
     alignItems: "center",
-
-    paddingHorizontal: spacing.lg,
-
-    paddingTop: 45,
   },
 
   emptyArt: {
-    width: 90,
-    height: 86,
-
-    position: "relative",
-
-    marginBottom: spacing.lg,
-  },
-
-  emptyArtBack: {
-    position: "absolute",
-
-    width: 57,
-    height: 69,
-
-    left: 10,
-    top: 2,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.terracottaLight,
-
-    transform: [
-      {
-        rotate: "-8deg",
-      },
-    ],
-  },
-
-  emptyArtFront: {
-    position: "absolute",
-
-    width: 58,
-    height: 69,
-
-    right: 6,
-    bottom: 2,
-
-    borderRadius: 18,
-
+    width: 72,
+    height: 72,
+    marginBottom: 20,
+    borderRadius: 22,
     backgroundColor: colors.roseLight,
-
     alignItems: "center",
-
     justifyContent: "center",
-
-    transform: [
-      {
-        rotate: "5deg",
-      },
-    ],
-  },
-
-  emptySpark: {
-    position: "absolute",
-
-    width: 30,
-    height: 30,
-
-    right: 0,
-    top: 0,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    ...shadows.soft,
   },
 
   emptyTitle: {
-    fontSize: 22,
-
-    lineHeight: 29,
-
-    letterSpacing: -0.5,
-
+    fontSize: 20,
+    lineHeight: 27,
     fontFamily: fonts.bold,
-
-    textAlign: "center",
-
     color: colors.text,
+    textAlign: "center",
   },
 
   emptyText: {
-    maxWidth: 290,
-
-    marginTop: 8,
-
+    maxWidth: 280,
+    marginTop: 7,
     fontSize: 13,
-
-    lineHeight: 20,
-
-    textAlign: "center",
-
+    lineHeight: 19,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
+    textAlign: "center",
   },
 
   emptyButton: {
-    minHeight: 52,
-
-    marginTop: 24,
-
-    paddingHorizontal: 20,
-
-    borderRadius: 16,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    gap: 7,
-
+    minHeight: 48,
+    marginTop: 21,
+    paddingHorizontal: 17,
+    borderRadius: 15,
     backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
   },
 
   emptyButtonText: {
     fontSize: 13,
-
     fontFamily: fonts.bold,
-
     color: colors.surface,
   },
 
-  emptyFilter: {
+  filterEmpty: {
+    minHeight: 180,
+    paddingTop: 35,
     alignItems: "center",
-
-    paddingTop: 45,
-
-    paddingHorizontal: spacing.lg,
   },
 
-  emptyFilterMark: {
-    width: 48,
-    height: 48,
-
-    borderRadius: 16,
-
-    marginBottom: spacing.md,
-
-    backgroundColor: colors.surfaceMuted,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  emptyFilterTitle: {
+  filterEmptyTitle: {
     fontSize: 18,
-
+    lineHeight: 24,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
-  emptyFilterText: {
-    marginTop: 5,
-
+  filterEmptyText: {
+    maxWidth: 270,
+    marginTop: 6,
     fontSize: 13,
-
     lineHeight: 19,
-
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
-  },
-
-  showAll: {
-    marginTop: spacing.md,
-
-    fontSize: 12,
-
-    fontFamily: fonts.bold,
-
-    color: colors.terracotta,
+    textAlign: "center",
   },
 });

@@ -16,6 +16,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import InspirationThumbnail from "../../components/InspirationThumbnail";
+
 import {
     deleteContent,
     getContentById,
@@ -110,6 +112,10 @@ export default function ContentDetailsScreen() {
                 source: inspiration.source,
                 category: inspiration.category,
                 note: inspiration.note,
+                thumbnailUrl: inspiration.thumbnailUrl ?? null,
+                mediaTitle: inspiration.mediaTitle ?? null,
+                authorName: inspiration.authorName ?? null,
+                metadataUpdatedAt: inspiration.metadataUpdatedAt ?? null,
               };
 
               await updateContent(data.id, {
@@ -130,8 +136,47 @@ export default function ContentDetailsScreen() {
               data.reference.inspirationId,
             );
 
-            if (active) {
-              setInspirationExists(Boolean(inspiration));
+            if (inspiration) {
+              const enrichedReference: ContentReference = {
+                ...data.reference,
+                thumbnailUrl:
+                  data.reference.thumbnailUrl ??
+                  inspiration.thumbnailUrl ??
+                  null,
+                mediaTitle:
+                  data.reference.mediaTitle ?? inspiration.mediaTitle ?? null,
+                authorName:
+                  data.reference.authorName ?? inspiration.authorName ?? null,
+                metadataUpdatedAt:
+                  data.reference.metadataUpdatedAt ??
+                  inspiration.metadataUpdatedAt ??
+                  null,
+              };
+
+              const needsBackfill =
+                enrichedReference.thumbnailUrl !==
+                  data.reference.thumbnailUrl ||
+                enrichedReference.mediaTitle !== data.reference.mediaTitle ||
+                enrichedReference.authorName !== data.reference.authorName ||
+                enrichedReference.metadataUpdatedAt !==
+                  data.reference.metadataUpdatedAt;
+
+              if (needsBackfill) {
+                await updateContent(data.id, {
+                  reference: enrichedReference,
+                });
+
+                nextContent = {
+                  ...data,
+                  reference: enrichedReference,
+                };
+              }
+
+              if (active) {
+                setInspirationExists(true);
+              }
+            } else if (active) {
+              setInspirationExists(false);
             }
           }
 
@@ -732,25 +777,48 @@ export default function ContentDetailsScreen() {
                 </View>
 
                 <View style={styles.referenceCard}>
-                  <View style={styles.referenceTop}>
-                    <View style={styles.referenceIdentity}>
-                      <View style={styles.referenceMark}>
-                        <Ionicons
-                          name={getSourceIcon(content.reference.source)}
-                          size={18}
-                          color={colors.rose}
-                        />
-                      </View>
+                  <View style={styles.referenceVisualRow}>
+                    <InspirationThumbnail
+                      thumbnailUrl={content.reference.thumbnailUrl}
+                      source={content.reference.source}
+                      variant="compact"
+                      style={styles.referenceThumbnail}
+                    />
 
-                      <View>
+                    <View style={styles.referenceMain}>
+                      <View style={styles.referenceMetaRow}>
                         <Text style={styles.referenceSource}>
                           {content.reference.source}
                         </Text>
 
-                        <Text style={styles.referenceCategory}>
+                        <View style={styles.referenceMetaDot} />
+
+                        <Text
+                          style={styles.referenceCategory}
+                          numberOfLines={1}
+                        >
                           {content.reference.category ?? "Referência original"}
                         </Text>
                       </View>
+
+                      <Text
+                        style={styles.referenceMediaTitle}
+                        numberOfLines={3}
+                      >
+                        {content.reference.mediaTitle?.trim() ||
+                          content.reference.note?.trim() ||
+                          `Referência do ${content.reference.source}`}
+                      </Text>
+
+                      {content.reference.authorName?.trim() ? (
+                        <Text style={styles.referenceAuthor} numberOfLines={1}>
+                          {content.reference.authorName}
+                        </Text>
+                      ) : (
+                        <Text style={styles.referenceUrl} numberOfLines={1}>
+                          {cleanUrl(content.reference.url)}
+                        </Text>
+                      )}
                     </View>
 
                     <TouchableOpacity
@@ -766,15 +834,19 @@ export default function ContentDetailsScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  {content.reference.note?.trim() && (
-                    <Text style={styles.referenceNote}>
-                      {content.reference.note}
-                    </Text>
-                  )}
+                  {content.reference.note?.trim() &&
+                    content.reference.note.trim() !==
+                      content.reference.mediaTitle?.trim() && (
+                      <View style={styles.referenceNoteArea}>
+                        <Text style={styles.referenceNoteLabel}>
+                          O QUE TE CHAMOU ATENÇÃO
+                        </Text>
 
-                  <Text style={styles.referenceUrl} numberOfLines={1}>
-                    {cleanUrl(content.reference.url)}
-                  </Text>
+                        <Text style={styles.referenceNote}>
+                          {content.reference.note}
+                        </Text>
+                      </View>
+                    )}
 
                   <View style={styles.referenceActions}>
                     <TouchableOpacity
@@ -1030,6 +1102,9 @@ function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
 
     case "YouTube":
       return "logo-youtube";
+
+    case "Kwai":
+      return "play-outline";
 
     default:
       return "link-outline";
@@ -1725,54 +1800,101 @@ const styles = StyleSheet.create({
   referenceCard: {
     marginBottom: 32,
 
-    padding: 15,
+    padding: 14,
 
     borderRadius: 20,
 
     backgroundColor: colors.roseLight,
   },
 
-  referenceTop: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  referenceIdentity: {
+  referenceVisualRow: {
     flexDirection: "row",
 
     alignItems: "center",
   },
 
-  referenceMark: {
-    width: 38,
-    height: 38,
+  referenceThumbnail: {
+    width: 80,
+    height: 100,
 
-    marginRight: 10,
+    borderRadius: 15,
+  },
 
-    borderRadius: 12,
+  referenceMain: {
+    flex: 1,
 
-    backgroundColor: colors.surface,
+    minWidth: 0,
+
+    marginLeft: 12,
+  },
+
+  referenceMetaRow: {
+    flexDirection: "row",
 
     alignItems: "center",
 
-    justifyContent: "center",
+    minWidth: 0,
   },
 
   referenceSource: {
-    fontSize: 13,
+    fontSize: 12,
 
     fontFamily: fonts.semibold,
 
     color: colors.text,
   },
 
-  referenceCategory: {
-    marginTop: 3,
+  referenceMetaDot: {
+    width: 3,
+    height: 3,
 
-    fontSize: 12,
+    marginHorizontal: 6,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.textSecondary,
+  },
+
+  referenceCategory: {
+    flexShrink: 1,
+
+    fontSize: 11,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  referenceMediaTitle: {
+    marginTop: 7,
+
+    fontSize: 15,
+
+    lineHeight: 21,
+
+    fontFamily: fonts.bold,
+
+    color: colors.text,
+  },
+
+  referenceAuthor: {
+    marginTop: 6,
+
+    fontSize: 11,
+
+    lineHeight: 17,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  referenceUrl: {
+    marginTop: 6,
+
+    fontSize: 11,
+
+    lineHeight: 17,
 
     fontFamily: fonts.regular,
 
@@ -1783,6 +1905,8 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
 
+    marginLeft: 8,
+
     borderRadius: radius.round,
 
     backgroundColor: colors.surface,
@@ -1792,32 +1916,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  referenceNote: {
+  referenceNoteArea: {
     marginTop: 14,
 
-    fontSize: 15,
+    paddingTop: 13,
 
-    lineHeight: 23,
+    borderTopWidth: 1,
+
+    borderTopColor: "rgba(207,130,149,0.22)",
+  },
+
+  referenceNoteLabel: {
+    fontSize: 9,
+
+    letterSpacing: 0.7,
+
+    fontFamily: fonts.bold,
+
+    color: colors.textSecondary,
+  },
+
+  referenceNote: {
+    marginTop: 6,
+
+    fontSize: 14,
+
+    lineHeight: 22,
 
     fontFamily: fonts.medium,
 
     color: colors.text,
   },
 
-  referenceUrl: {
-    marginTop: 8,
-
-    fontSize: 12,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
   referenceActions: {
-    minHeight: 45,
+    minHeight: 46,
 
-    marginTop: 12,
+    marginTop: 13,
 
     borderTopWidth: 1,
 

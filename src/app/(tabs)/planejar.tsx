@@ -586,7 +586,12 @@ function PlanningCard({
 
   return (
     <TouchableOpacity
-      style={styles.contentCard}
+      style={[
+        styles.contentCard,
+        {
+          borderColor: status.background,
+        },
+      ]}
       activeOpacity={0.86}
       onPress={onOpen}
     >
@@ -614,28 +619,35 @@ function PlanningCard({
 
       <View style={styles.contentInfo}>
         <View style={styles.contentMeta}>
-          <Text
+          <View
             style={[
-              styles.statusText,
-
+              styles.statusPill,
               {
-                color: status.foreground,
+                backgroundColor: status.background,
               },
             ]}
           >
-            {status.label}
-          </Text>
+            <Text
+              style={[
+                styles.statusText,
+
+                {
+                  color: status.foreground,
+                },
+              ]}
+            >
+              {status.label}
+            </Text>
+          </View>
 
           {content.format && (
-            <>
-              <View style={styles.metaDot} />
-
+            <View style={styles.formatPill}>
               <Text style={styles.formatText}>{content.format}</Text>
-            </>
+            </View>
           )}
         </View>
 
-        <Text style={styles.contentTitle} numberOfLines={3}>
+        <Text style={styles.contentTitle} numberOfLines={2}>
           {content.idea}
         </Text>
       </View>
@@ -1238,50 +1250,50 @@ const styles = StyleSheet.create({
   },
 
   contentCard: {
-    minHeight: 88,
+    minHeight: 84,
 
     position: "relative",
 
     overflow: "hidden",
 
-    padding: 14,
+    paddingVertical: 12,
 
-    paddingLeft: 17,
+    paddingRight: 12,
+
+    paddingLeft: 15,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    borderRadius: 19,
+    borderRadius: 18,
 
     borderWidth: 1,
 
-    borderColor: colors.border,
-
     backgroundColor: colors.surface,
 
-    ...shadows.soft,
+    ...shadows.card,
   },
 
   contentAccent: {
     position: "absolute",
 
     left: 0,
-    top: 14,
-    bottom: 14,
+    top: 11,
+    bottom: 11,
 
-    width: 3,
+    width: 4,
 
     borderRadius: radius.round,
   },
 
   contentIcon: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
 
-    marginRight: 12,
+    marginRight: 11,
 
-    borderRadius: 13,
+    borderRadius: 14,
 
     alignItems: "center",
 
@@ -1298,41 +1310,62 @@ const styles = StyleSheet.create({
     flexDirection: "row",
 
     alignItems: "center",
+
+    gap: 6,
+  },
+
+  statusPill: {
+    minHeight: 23,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   statusText: {
-    fontSize: 10,
+    fontSize: 9,
 
-    letterSpacing: 0.5,
+    letterSpacing: 0.45,
 
     fontFamily: fonts.bold,
   },
 
-  metaDot: {
-    width: 3,
-    height: 3,
+  formatPill: {
+    minHeight: 23,
 
-    marginHorizontal: 5,
+    paddingHorizontal: 8,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.textMuted,
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  metaDot: {
+    display: "none",
   },
 
   formatText: {
-    fontSize: 10,
+    fontSize: 9,
 
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
   },
 
   contentTitle: {
-    marginTop: 5,
+    marginTop: 6,
 
     fontSize: 15,
 
-    lineHeight: 22,
+    lineHeight: 21,
 
     fontFamily: fonts.semibold,
 
@@ -1340,11 +1373,11 @@ const styles = StyleSheet.create({
   },
 
   planButton: {
-    minHeight: 38,
+    minHeight: 36,
 
     marginLeft: 8,
 
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
 
     borderRadius: 12,
 

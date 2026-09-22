@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
+    ActivityIndicator,
     Alert,
     KeyboardAvoidingView,
     Platform,
@@ -16,7 +17,16 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import InspirationThumbnail from "../../components/InspirationThumbnail";
+
 import { saveInspiration } from "../../services/inspirationStorage";
+
+import {
+    detectMediaSource,
+    getMediaMetadata,
+    MediaMetadata,
+    normalizeMediaUrl,
+} from "../../services/mediaMetadataService";
 
 import { colors, fonts, radius, spacing } from "../../constants/theme";
 
@@ -24,13 +34,66 @@ const categories = ["Hook", "Tema", "Roteiro", "Formato", "Edição", "CTA"];
 
 export default function NewInspirationScreen() {
   const [url, setUrl] = useState("");
+
   const [category, setCategory] = useState<string | null>(null);
+
   const [note, setNote] = useState("");
+
   const [saving, setSaving] = useState(false);
 
-  const source = useMemo(() => detectSource(url), [url]);
+  const [metadata, setMetadata] = useState<MediaMetadata | null>(null);
+
+  const [metadataUrl, setMetadataUrl] = useState("");
+
+  const [metadataLoading, setMetadataLoading] = useState(false);
+
+  const source = useMemo(
+    () => metadata?.source ?? detectMediaSource(url),
+    [metadata?.source, url],
+  );
+
+  const sourceMeta = useMemo(() => getSourceMeta(source), [source]);
 
   const canSave = url.trim().length > 0 && !saving;
+
+  useEffect(() => {
+    const normalized = normalizeMediaUrl(url);
+
+    setMetadata(null);
+    setMetadataUrl("");
+
+    if (!url.trim() || url.trim().length < 7) {
+      setMetadataLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const timeout = setTimeout(async () => {
+      try {
+        setMetadataLoading(true);
+
+        const resolved = await getMediaMetadata(normalized);
+
+        if (!active) {
+          return;
+        }
+
+        setMetadata(resolved);
+
+        setMetadataUrl(normalized);
+      } finally {
+        if (active) {
+          setMetadataLoading(false);
+        }
+      }
+    }, 650);
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, [url]);
 
   async function handleSave() {
     if (!url.trim() || saving) {
@@ -40,12 +103,23 @@ export default function NewInspirationScreen() {
     try {
       setSaving(true);
 
+      const normalized = normalizeMediaUrl(url);
+
+      const resolved =
+        metadata && metadataUrl === normalized
+          ? metadata
+          : await getMediaMetadata(normalized);
+
       await saveInspiration({
         id: Date.now().toString(),
-        url: url.trim(),
-        source: detectSource(url.trim()),
+        url: normalized,
+        source: resolved.source,
         category,
         note: note.trim(),
+        thumbnailUrl: resolved.thumbnailUrl,
+        mediaTitle: resolved.mediaTitle,
+        authorName: resolved.authorName,
+        metadataUpdatedAt: resolved.metadataUpdatedAt,
         createdAt: new Date().toISOString(),
       });
 
@@ -55,7 +129,7 @@ export default function NewInspirationScreen() {
 
       Alert.alert(
         "Não foi possível salvar",
-        "Confira os dados e tente novamente.",
+        "Confira o link e tente novamente.",
       );
     } finally {
       setSaving(false);
@@ -96,8 +170,8 @@ export default function NewInspirationScreen() {
             </Text>
 
             <Text style={styles.description}>
-              Salve uma referência enquanto ela ainda está fresca. Você pode
-              voltar, editar e transformar em conteúdo quando quiser.
+              Cole o link e o ContentFlow tenta reconhecer a plataforma, a capa
+              e as informações da referência.
             </Text>
           </View>
 
@@ -111,14 +185,14 @@ export default function NewInspirationScreen() {
                 style={[
                   styles.sourceMark,
                   {
-                    backgroundColor: getSourceMeta(source).background,
+                    backgroundColor: sourceMeta.background,
                   },
                 ]}
               >
                 <Ionicons
-                  name={getSourceMeta(source).icon}
+                  name={sourceMeta.icon}
                   size={20}
-                  color={getSourceMeta(source).color}
+                  color={sourceMeta.color}
                 />
               </View>
 
@@ -128,30 +202,68 @@ export default function NewInspirationScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
-                placeholder="Cole aqui o link do Reel, TikTok, vídeo ou post..."
+                placeholder="Cole o link do Reel, TikTok, YouTube ou Kwai..."
                 placeholderTextColor={colors.textMuted}
                 style={styles.urlInput}
               />
             </View>
 
-            {url.trim() ? (
+            {!url.trim() ? (
+              <Text style={styles.fieldHelper}>
+                Instagram, TikTok, YouTube, Kwai e outros links.
+              </Text>
+            ) : (
               <View style={styles.sourceDetected}>
-                <Ionicons
-                  name="checkmark-circle-outline"
-                  size={16}
-                  color={colors.sage}
-                />
+                {metadataLoading ? (
+                  <ActivityIndicator size="small" color={colors.terracotta} />
+                ) : (
+                  <Ionicons
+                    name="checkmark-circle-outline"
+                    size={17}
+                    color={colors.sage}
+                  />
+                )}
 
                 <Text style={styles.sourceDetectedText}>
-                  {source === "Outro"
-                    ? "Link reconhecido como referência externa."
-                    : `${source} reconhecido automaticamente.`}
+                  {metadataLoading
+                    ? "Buscando capa e informações..."
+                    : source === "Outro"
+                      ? "Link reconhecido como referência externa."
+                      : `${source} reconhecido automaticamente.`}
                 </Text>
               </View>
-            ) : (
-              <Text style={styles.fieldHelper}>
-                Instagram, TikTok, YouTube ou qualquer outro link funciona.
-              </Text>
+            )}
+
+            {url.trim() && (
+              <View style={styles.previewCard}>
+                <InspirationThumbnail
+                  thumbnailUrl={metadata?.thumbnailUrl}
+                  source={source}
+                  variant="preview"
+                />
+
+                <View style={styles.previewContent}>
+                  <Text style={styles.previewEyebrow}>REFERÊNCIA</Text>
+
+                  <Text style={styles.previewTitle} numberOfLines={3}>
+                    {metadataLoading
+                      ? "Preparando o preview..."
+                      : metadata?.mediaTitle || `Referência do ${source}`}
+                  </Text>
+
+                  {metadata?.authorName ? (
+                    <Text style={styles.previewAuthor} numberOfLines={1}>
+                      {metadata.authorName}
+                    </Text>
+                  ) : !metadataLoading &&
+                    !metadata?.thumbnailUrl &&
+                    (source === "Instagram" || source === "Kwai") ? (
+                    <Text style={styles.previewFallbackText}>
+                      Link salvo com fallback visual por enquanto.
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
             )}
           </View>
 
@@ -282,24 +394,6 @@ export default function NewInspirationScreen() {
   );
 }
 
-function detectSource(url: string) {
-  const normalized = url.toLowerCase();
-
-  if (normalized.includes("instagram.com")) {
-    return "Instagram";
-  }
-
-  if (normalized.includes("tiktok.com")) {
-    return "TikTok";
-  }
-
-  if (normalized.includes("youtube.com") || normalized.includes("youtu.be")) {
-    return "YouTube";
-  }
-
-  return "Outro";
-}
-
 function getSourceMeta(source: string): {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
@@ -325,6 +419,13 @@ function getSourceMeta(source: string): {
         icon: "logo-youtube",
         color: colors.rose,
         background: colors.roseLight,
+      };
+
+    case "Kwai":
+      return {
+        icon: "play-outline",
+        color: colors.amber,
+        background: colors.amberLight,
       };
 
     default:
@@ -588,13 +689,15 @@ const styles = StyleSheet.create({
   },
 
   sourceDetected: {
-    marginTop: 10,
+    minHeight: 28,
+
+    marginTop: 9,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    gap: 6,
+    gap: 7,
   },
 
   sourceDetectedText: {
@@ -606,7 +709,7 @@ const styles = StyleSheet.create({
 
     fontFamily: fonts.medium,
 
-    color: colors.sage,
+    color: colors.textSecondary,
   },
 
   fieldHelper: {
@@ -615,6 +718,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
 
     lineHeight: 18,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  previewCard: {
+    minHeight: 148,
+
+    marginTop: 13,
+
+    padding: 13,
+
+    borderRadius: 21,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  previewContent: {
+    flex: 1,
+
+    minWidth: 0,
+
+    marginLeft: 13,
+  },
+
+  previewEyebrow: {
+    fontSize: 10,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.terracotta,
+  },
+
+  previewTitle: {
+    marginTop: 6,
+
+    fontSize: 16,
+
+    lineHeight: 22,
+
+    fontFamily: fonts.bold,
+
+    color: colors.text,
+  },
+
+  previewAuthor: {
+    marginTop: 7,
+
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  previewFallbackText: {
+    marginTop: 7,
+
+    fontSize: 11,
+
+    lineHeight: 17,
 
     fontFamily: fonts.regular,
 
