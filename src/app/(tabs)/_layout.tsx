@@ -99,10 +99,10 @@ export default function TabsLayout() {
           tabBarInactiveTintColor: colors.textMuted,
 
           tabBarStyle: {
-            height: 76,
+            height: 82,
 
             paddingTop: 7,
-            paddingBottom: 7,
+            paddingBottom: 8,
 
             backgroundColor: "#FAF7F1",
 
@@ -147,9 +147,11 @@ export default function TabsLayout() {
 
             tabBarIcon: () => (
               <View style={styles.createTabButton}>
-                <Ionicons name="add" size={29} color={colors.surface} />
+                <Ionicons name="add" size={30} color={colors.surface} />
               </View>
             ),
+
+            tabBarLabel: () => <Text style={styles.createTabLabel}>Criar</Text>,
           }}
           listeners={{
             tabPress: (event) => {
@@ -311,7 +313,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 28,
 
-    marginTop: -21,
+    marginTop: -16,
 
     backgroundColor: colors.terracotta,
 
@@ -323,6 +325,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
 
     ...shadows.floating,
+  },
+
+  createTabLabel: {
+    marginTop: 5,
+
+    fontSize: 11,
+
+    lineHeight: 14,
+
+    fontWeight: "800",
+
+    color: colors.terracotta,
   },
 
   modalBackdrop: {

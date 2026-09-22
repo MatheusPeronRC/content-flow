@@ -13,6 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { saveContent } from "../../services/contentStorage";
+import { getInspirationById } from "../../services/inspirationStorage";
+
+import { ContentItem, ContentReference } from "../../types/content";
 
 import {
     colors,
@@ -50,10 +53,31 @@ export default function GerarConteudoScreen() {
   async function createContent(status: "roteiro" | "gravar") {
     const now = new Date().toISOString();
 
-    const content = {
+    let reference: ContentReference | undefined;
+
+    if (inspirationId) {
+      const inspiration = await getInspirationById(inspirationId);
+
+      if (inspiration) {
+        reference = {
+          inspirationId: inspiration.id,
+          url: inspiration.url,
+          source: inspiration.source,
+          category: inspiration.category,
+          note: inspiration.note,
+        };
+      }
+    }
+
+    const content: ContentItem = {
       id: Date.now().toString(),
 
+      // Mantemos o campo antigo para não quebrar conteúdos/rotas já existentes.
       inspirationId: inspirationId || undefined,
+
+      // A partir de agora, conteúdos vindos de inspiração também guardam
+      // uma cópia da referência original.
+      reference,
 
       idea: script.title,
 

@@ -2,10 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { router, useFocusEffect } from "expo-router";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
-    ActivityIndicator,
     ScrollView,
     StyleSheet,
     Text,
@@ -31,16 +30,14 @@ const filters = [
   "Todas",
   "Hook",
   "Tema",
-  "Edição",
-  "Formato",
   "Roteiro",
+  "Formato",
+  "Edição",
   "CTA",
 ];
 
-export default function InspiracoesScreen() {
+export default function InspirationsScreen() {
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
-
-  const [loading, setLoading] = useState(true);
 
   const [selectedFilter, setSelectedFilter] = useState("Todas");
 
@@ -48,10 +45,8 @@ export default function InspiracoesScreen() {
     useCallback(() => {
       let active = true;
 
-      async function loadInspirations() {
+      async function load() {
         try {
-          setLoading(true);
-
           const data = await getInspirations();
 
           if (active) {
@@ -59,14 +54,10 @@ export default function InspiracoesScreen() {
           }
         } catch (error) {
           console.error("Erro ao carregar inspirações:", error);
-        } finally {
-          if (active) {
-            setLoading(false);
-          }
         }
       }
 
-      loadInspirations();
+      load();
 
       return () => {
         active = false;
@@ -74,12 +65,27 @@ export default function InspiracoesScreen() {
     }, []),
   );
 
-  const filteredInspirations =
-    selectedFilter === "Todas"
-      ? inspirations
-      : inspirations.filter(
-          (inspiration) => inspiration.category === selectedFilter,
-        );
+  const filteredInspirations = useMemo(() => {
+    if (selectedFilter === "Todas") {
+      return inspirations;
+    }
+
+    return inspirations.filter((item) => item.category === selectedFilter);
+  }, [inspirations, selectedFilter]);
+
+  function openInspiration(inspiration: Inspiration) {
+    router.push(`/inspiracao/${inspiration.id}`);
+  }
+
+  function createFromInspiration(inspiration: Inspiration) {
+    router.push({
+      pathname: "/conteudo/adaptar",
+
+      params: {
+        inspirationId: inspiration.id,
+      },
+    });
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -88,76 +94,123 @@ export default function InspiracoesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.title}>Inspirações</Text>
 
             <Text style={styles.subtitle}>
-              Tudo que você salvou para criar depois.
+              Guarde referências que podem virar seus próximos conteúdos.
             </Text>
           </View>
 
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push("/inspiracao/nova")}
-          >
-            <Ionicons name="add" size={24} color={colors.surface} />
-          </TouchableOpacity>
+          <View style={styles.headerIcon}>
+            <Ionicons name="bulb-outline" size={23} color={colors.rose} />
+          </View>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
+        <TouchableOpacity
+          style={styles.saveButton}
+          activeOpacity={0.85}
+          onPress={() => router.push("/inspiracao/nova")}
         >
-          {filters.map((filter) => {
-            const selected = selectedFilter === filter;
-
-            return (
-              <TouchableOpacity
-                key={filter}
-                style={[styles.filter, selected && styles.filterActive]}
-                onPress={() => setSelectedFilter(filter)}
-              >
-                <Text
-                  style={[
-                    styles.filterText,
-
-                    selected && styles.filterTextActive,
-                  ]}
-                >
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={styles.sectionTitle}>Salvos recentemente</Text>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={colors.rose} />
-
-            <Text style={styles.loadingText}>Carregando inspirações...</Text>
+          <View style={styles.saveButtonIcon}>
+            <Ionicons
+              name="bookmark-outline"
+              size={20}
+              color={colors.surface}
+            />
           </View>
-        ) : inspirations.length === 0 ? (
-          <EmptyState />
-        ) : filteredInspirations.length === 0 ? (
-          <View style={styles.noResults}>
-            <View style={styles.noResultsIcon}>
-              <Ionicons name="filter-outline" size={25} color={colors.rose} />
-            </View>
 
-            <Text style={styles.noResultsTitle}>Nada nesta categoria</Text>
+          <View style={styles.saveButtonContent}>
+            <Text style={styles.saveButtonTitle}>Salvar inspiração</Text>
 
-            <Text style={styles.noResultsText}>
-              Tente outro filtro ou salve uma nova inspiração.
+            <Text style={styles.saveButtonDescription}>
+              Guarde um Reel, TikTok, vídeo ou qualquer outra referência.
             </Text>
           </View>
+
+          <Ionicons name="arrow-forward" size={19} color={colors.surface} />
+        </TouchableOpacity>
+
+        {inspirations.length > 0 && (
+          <>
+            <View style={styles.libraryHeader}>
+              <View>
+                <Text style={styles.libraryTitle}>Sua biblioteca</Text>
+
+                <Text style={styles.librarySubtitle}>
+                  {inspirations.length === 1
+                    ? "1 referência salva"
+                    : `${inspirations.length} referências salvas`}
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}
+            >
+              {filters.map((filter) => {
+                const selected = selectedFilter === filter;
+
+                return (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[styles.filter, selected && styles.filterSelected]}
+                    onPress={() => setSelectedFilter(filter)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterText,
+
+                        selected && styles.filterTextSelected,
+                      ]}
+                    >
+                      {filter}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
+        {inspirations.length === 0 ? (
+          <EmptyState />
+        ) : filteredInspirations.length === 0 ? (
+          <View style={styles.emptyFilter}>
+            <View style={styles.emptyFilterIcon}>
+              <Ionicons
+                name="filter-outline"
+                size={23}
+                color={colors.textMuted}
+              />
+            </View>
+
+            <Text style={styles.emptyFilterTitle}>
+              Nenhuma inspiração em “{selectedFilter}”
+            </Text>
+
+            <Text style={styles.emptyFilterText}>
+              Suas referências continuam salvas. Escolha outro filtro para
+              encontrá-las.
+            </Text>
+
+            <TouchableOpacity onPress={() => setSelectedFilter("Todas")}>
+              <Text style={styles.showAllText}>Ver todas</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          filteredInspirations.map((inspiration) => (
-            <InspirationCard key={inspiration.id} inspiration={inspiration} />
-          ))
+          <View style={styles.list}>
+            {filteredInspirations.map((inspiration) => (
+              <InspirationCard
+                key={inspiration.id}
+                inspiration={inspiration}
+                onOpen={() => openInspiration(inspiration)}
+                onCreate={() => createFromInspiration(inspiration)}
+              />
+            ))}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -166,122 +219,107 @@ export default function InspiracoesScreen() {
 
 type InspirationCardProps = {
   inspiration: Inspiration;
+
+  onOpen: () => void;
+
+  onCreate: () => void;
 };
 
-function InspirationCard({ inspiration }: InspirationCardProps) {
+function InspirationCard({
+  inspiration,
+  onOpen,
+  onCreate,
+}: InspirationCardProps) {
   const categoryColor = getCategoryColor(inspiration.category);
 
   const hasNote = inspiration.note.trim().length > 0;
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      activeOpacity={0.8}
-      onPress={() =>
-        router.push({
-          pathname: "/inspiracao/[id]",
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onOpen}>
+      <View style={styles.cardMain}>
+        <View
+          style={[
+            styles.preview,
 
-          params: {
-            id: inspiration.id,
-          },
-        })
-      }
-    >
-      <View
-        style={[
-          styles.preview,
-          {
-            backgroundColor: categoryColor.background,
-          },
-        ]}
-      >
-        <Ionicons
-          name={
-            inspiration.source === "TikTok"
-              ? "musical-note-outline"
-              : inspiration.source === "Instagram"
-                ? "logo-instagram"
-                : inspiration.source === "YouTube"
-                  ? "logo-youtube"
-                  : "link-outline"
-          }
-          size={27}
-          color={categoryColor.foreground}
-        />
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.cardTop}>
-          <Text
-            style={[
-              styles.category,
-              {
-                color: categoryColor.foreground,
-              },
-            ]}
-          >
-            {inspiration.category?.toUpperCase() ?? "INSPIRAÇÃO"}
-          </Text>
-
-          <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
+            {
+              backgroundColor: categoryColor.background,
+            },
+          ]}
+        >
+          <Ionicons
+            name={getSourceIcon(inspiration.source)}
+            size={26}
+            color={categoryColor.foreground}
+          />
         </View>
 
-        <Text
-          style={hasNote ? styles.inspirationText : styles.inspirationFallback}
-          numberOfLines={3}
-        >
-          {hasNote ? inspiration.note : `Referência do ${inspiration.source}`}
-        </Text>
+        <View style={styles.cardContent}>
+          <View style={styles.cardMeta}>
+            <Text
+              style={[
+                styles.category,
 
-        <View style={styles.sourceRow}>
-          <View style={styles.sourceBadge}>
-            <Ionicons
-              name={
-                inspiration.source === "Instagram"
-                  ? "logo-instagram"
-                  : inspiration.source === "TikTok"
-                    ? "musical-note-outline"
-                    : "link-outline"
-              }
-              size={12}
-              color={colors.textSecondary}
-            />
+                {
+                  color: categoryColor.foreground,
+                },
+              ]}
+            >
+              {inspiration.category?.toUpperCase() ?? "INSPIRAÇÃO"}
+            </Text>
+
+            <View style={styles.metaDot} />
 
             <Text style={styles.source}>{inspiration.source}</Text>
           </View>
-        </View>
 
-        <Text style={styles.cardUrl} numberOfLines={1}>
-          {inspiration.url}
-        </Text>
+          <Text
+            style={hasNote ? styles.cardTitle : styles.cardFallback}
+            numberOfLines={3}
+          >
+            {hasNote ? inspiration.note : `Referência do ${inspiration.source}`}
+          </Text>
 
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={(event) => {
-            event.stopPropagation();
+          <Text style={styles.cardUrl} numberOfLines={1}>
+            {cleanUrl(inspiration.url)}
+          </Text>
 
-            router.push({
-              pathname: "/conteudo/criar",
+          <View style={styles.openHintRow}>
+            <Text style={styles.openHint}>Toque para abrir</Text>
 
-              params: {
-                inspirationId: inspiration.id,
-              },
-            });
-          }}
-        >
-          <View style={styles.createButtonIcon}>
             <Ionicons
-              name="sparkles-outline"
-              size={14}
-              color={colors.terracotta}
+              name="chevron-forward"
+              size={12}
+              color={colors.textMuted}
             />
           </View>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.createButton}
+        activeOpacity={0.8}
+        onPress={(event) => {
+          event.stopPropagation();
+
+          onCreate();
+        }}
+      >
+        <View style={styles.createButtonIcon}>
+          <Ionicons
+            name="sparkles-outline"
+            size={17}
+            color={colors.terracotta}
+          />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.createButtonLabel}>TRANSFORMAR REFERÊNCIA</Text>
 
           <Text style={styles.createButtonText}>Criar minha versão</Text>
+        </View>
 
-          <Ionicons name="arrow-forward" size={14} color={colors.terracotta} />
-        </TouchableOpacity>
-      </View>
+        <Ionicons name="arrow-forward" size={17} color={colors.terracotta} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -289,26 +327,58 @@ function InspirationCard({ inspiration }: InspirationCardProps) {
 function EmptyState() {
   return (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
-        <Ionicons name="bulb-outline" size={30} color={colors.rose} />
+      <View style={styles.emptyStateIcon}>
+        <Ionicons name="bookmark-outline" size={30} color={colors.rose} />
       </View>
 
-      <Text style={styles.emptyTitle}>Nenhuma inspiração ainda</Text>
+      <Text style={styles.emptyStateTitle}>Sua biblioteca está vazia</Text>
 
-      <Text style={styles.emptyDescription}>
-        Salve uma referência para começar sua biblioteca de ideias.
+      <Text style={styles.emptyStateText}>
+        Quando encontrar um conteúdo interessante, salve aqui para não perder a
+        referência.
       </Text>
 
       <TouchableOpacity
-        style={styles.emptyButton}
+        style={styles.emptyStateButton}
         onPress={() => router.push("/inspiracao/nova")}
       >
-        <Ionicons name="add" size={18} color={colors.surface} />
+        <Ionicons name="bookmark-outline" size={18} color={colors.surface} />
 
-        <Text style={styles.emptyButtonText}>Salvar inspiração</Text>
+        <Text style={styles.emptyStateButtonText}>
+          Salvar primeira inspiração
+        </Text>
       </TouchableOpacity>
+
+      <View style={styles.emptyTip}>
+        <Ionicons
+          name="information-circle-outline"
+          size={18}
+          color={colors.blue}
+        />
+
+        <Text style={styles.emptyTipText}>
+          Você não precisa organizar tudo na hora. Salve primeiro e categorize
+          depois.
+        </Text>
+      </View>
     </View>
   );
+}
+
+function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
+  switch (source) {
+    case "Instagram":
+      return "logo-instagram";
+
+    case "TikTok":
+      return "musical-note-outline";
+
+    case "YouTube":
+      return "logo-youtube";
+
+    default:
+      return "link-outline";
+  }
 }
 
 function getCategoryColor(category: string | null) {
@@ -364,6 +434,10 @@ function getCategoryColor(category: string | null) {
   }
 }
 
+function cleanUrl(url: string) {
+  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -372,19 +446,23 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
 
     paddingBottom: 110,
   },
 
   header: {
-    flexDirection: "row",
+    paddingTop: spacing.md,
 
-    justifyContent: "space-between",
+    paddingBottom: spacing.xl,
+
+    flexDirection: "row",
 
     alignItems: "center",
 
-    marginBottom: spacing.lg,
+    justifyContent: "space-between",
+
+    gap: spacing.md,
   },
 
   title: {
@@ -396,53 +474,129 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
+    marginTop: 4,
+
+    maxWidth: 300,
+
     fontSize: typography.body,
 
-    color: colors.textSecondary,
+    lineHeight: 20,
 
-    marginTop: spacing.xs,
+    color: colors.textSecondary,
   },
 
-  addButton: {
-    width: 44,
-    height: 44,
+  headerIcon: {
+    width: 46,
+    height: 46,
 
-    borderRadius: radius.round,
+    borderRadius: radius.md,
+
+    backgroundColor: colors.roseLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  saveButton: {
+    minHeight: 82,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    padding: spacing.md,
+
+    marginBottom: spacing.xl,
+
+    borderRadius: radius.xl,
+
+    backgroundColor: colors.primary,
+  },
+
+  saveButtonIcon: {
+    width: 46,
+    height: 46,
+
+    marginRight: spacing.md,
+
+    borderRadius: radius.md,
 
     backgroundColor: colors.terracotta,
 
     alignItems: "center",
-    justifyContent: "center",
 
-    ...shadows.card,
+    justifyContent: "center",
+  },
+
+  saveButtonContent: {
+    flex: 1,
+
+    paddingRight: spacing.sm,
+  },
+
+  saveButtonTitle: {
+    fontSize: typography.subheading,
+
+    fontWeight: "700",
+
+    color: colors.surface,
+  },
+
+  saveButtonDescription: {
+    marginTop: 3,
+
+    fontSize: typography.tiny,
+
+    lineHeight: 15,
+
+    color: "#D7E3DE",
+  },
+
+  libraryHeader: {
+    marginBottom: spacing.md,
+  },
+
+  libraryTitle: {
+    fontSize: typography.heading,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  librarySubtitle: {
+    marginTop: 3,
+
+    fontSize: typography.caption,
+
+    color: colors.textSecondary,
   },
 
   filters: {
     gap: spacing.sm,
 
-    paddingRight: spacing.lg,
-
-    marginBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
 
   filter: {
     paddingHorizontal: spacing.md,
 
-    paddingVertical: spacing.sm,
+    paddingVertical: 9,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
 
     borderWidth: 1,
 
     borderColor: colors.border,
   },
 
-  filterActive: {
-    backgroundColor: colors.rose,
+  filterSelected: {
+    backgroundColor: colors.primary,
 
-    borderColor: colors.rose,
+    borderColor: colors.primary,
   },
 
   filterText: {
@@ -453,38 +607,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
-  filterTextActive: {
+  filterTextSelected: {
     color: colors.surface,
   },
 
-  sectionTitle: {
-    fontSize: typography.subheading,
-
-    fontWeight: "700",
-
-    color: colors.text,
-
-    marginBottom: spacing.md,
-  },
-
-  loadingContainer: {
-    paddingVertical: spacing.xxl,
-
-    alignItems: "center",
-
-    gap: spacing.sm,
-  },
-
-  loadingText: {
-    fontSize: typography.caption,
-
-    color: colors.textSecondary,
+  list: {
+    gap: spacing.md,
   },
 
   card: {
-    flexDirection: "row",
-
-    backgroundColor: colors.surface,
+    padding: spacing.md,
 
     borderRadius: radius.lg,
 
@@ -492,38 +624,42 @@ const styles = StyleSheet.create({
 
     borderColor: colors.border,
 
-    padding: spacing.md,
-
-    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
 
     ...shadows.card,
   },
 
+  cardMain: {
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+  },
+
   preview: {
-    width: 62,
-    height: 82,
+    width: 58,
+    height: 78,
+
+    marginRight: spacing.md,
 
     borderRadius: radius.md,
 
     alignItems: "center",
-    justifyContent: "center",
 
-    marginRight: spacing.md,
+    justifyContent: "center",
   },
 
   cardContent: {
     flex: 1,
+
     minWidth: 0,
   },
 
-  cardTop: {
+  cardMeta: {
     flexDirection: "row",
 
     alignItems: "center",
 
-    justifyContent: "space-between",
-
-    marginBottom: 6,
+    flexWrap: "wrap",
   },
 
   category: {
@@ -534,52 +670,41 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
 
-  inspirationText: {
-    fontSize: 15,
+  metaDot: {
+    width: 3,
+    height: 3,
 
-    lineHeight: 21,
-
-    fontWeight: "600",
-
-    color: colors.text,
-  },
-
-  inspirationFallback: {
-    fontSize: 15,
-
-    lineHeight: 21,
-
-    fontWeight: "600",
-
-    color: colors.textSecondary,
-  },
-
-  sourceRow: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    marginTop: spacing.sm,
-  },
-
-  sourceBadge: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-
-    paddingHorizontal: 8,
-
-    paddingVertical: 4,
+    marginHorizontal: 6,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.textMuted,
   },
 
   source: {
     fontSize: typography.tiny,
+
+    color: colors.textMuted,
+  },
+
+  cardTitle: {
+    marginTop: 6,
+
+    fontSize: 15,
+
+    lineHeight: 21,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  cardFallback: {
+    marginTop: 6,
+
+    fontSize: 15,
+
+    lineHeight: 21,
 
     fontWeight: "600",
 
@@ -594,100 +719,126 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  createButton: {
-    minHeight: 38,
-
-    marginTop: spacing.md,
+  openHintRow: {
+    marginTop: 6,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    alignSelf: "flex-start",
+    gap: 2,
+  },
 
-    gap: 6,
+  openHint: {
+    fontSize: 9,
 
-    paddingHorizontal: 10,
+    color: colors.textMuted,
+  },
 
-    paddingVertical: 7,
+  createButton: {
+    minHeight: 54,
 
-    borderRadius: radius.round,
+    marginTop: spacing.md,
+
+    paddingHorizontal: spacing.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    borderRadius: radius.md,
 
     backgroundColor: colors.terracottaLight,
   },
 
   createButtonIcon: {
-    alignItems: "center",
+    width: 34,
+    height: 34,
 
-    justifyContent: "center",
-  },
-
-  createButtonText: {
-    fontSize: 11,
-
-    fontWeight: "700",
-
-    color: colors.terracotta,
-  },
-
-  emptyState: {
-    backgroundColor: colors.roseLight,
-
-    borderRadius: radius.xl,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    padding: spacing.xl,
-
-    alignItems: "center",
-  },
-
-  emptyIcon: {
-    width: 58,
-    height: 58,
+    marginRight: spacing.sm,
 
     borderRadius: radius.round,
 
     backgroundColor: colors.surface,
 
     alignItems: "center",
-    justifyContent: "center",
 
-    marginBottom: spacing.md,
+    justifyContent: "center",
   },
 
-  emptyTitle: {
-    fontSize: typography.subheading,
+  createButtonLabel: {
+    fontSize: 7,
+
+    fontWeight: "800",
+
+    letterSpacing: 0.6,
+
+    color: colors.textMuted,
+  },
+
+  createButtonText: {
+    marginTop: 2,
+
+    fontSize: typography.caption,
+
+    fontWeight: "800",
+
+    color: colors.terracotta,
+  },
+
+  emptyState: {
+    alignItems: "center",
+
+    paddingTop: spacing.xl,
+
+    paddingHorizontal: spacing.lg,
+  },
+
+  emptyStateIcon: {
+    width: 68,
+    height: 68,
+
+    marginBottom: spacing.md,
+
+    borderRadius: radius.xl,
+
+    backgroundColor: colors.roseLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  emptyStateTitle: {
+    fontSize: typography.heading,
 
     fontWeight: "700",
+
+    textAlign: "center",
 
     color: colors.text,
   },
 
-  emptyDescription: {
-    textAlign: "center",
+  emptyStateText: {
+    maxWidth: 310,
+
+    marginTop: spacing.sm,
 
     fontSize: typography.body,
 
     lineHeight: 20,
 
-    color: colors.textSecondary,
+    textAlign: "center",
 
-    marginTop: spacing.sm,
+    color: colors.textSecondary,
   },
 
-  emptyButton: {
-    height: 46,
+  emptyStateButton: {
+    minHeight: 50,
+
+    marginTop: spacing.xl,
 
     paddingHorizontal: spacing.lg,
-
-    marginTop: spacing.lg,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.terracotta,
 
     flexDirection: "row",
 
@@ -696,63 +847,102 @@ const styles = StyleSheet.create({
     justifyContent: "center",
 
     gap: spacing.sm,
+
+    borderRadius: radius.md,
+
+    backgroundColor: colors.rose,
   },
 
-  emptyButtonText: {
-    color: colors.surface,
-
+  emptyStateButtonText: {
     fontSize: typography.body,
 
     fontWeight: "700",
+
+    color: colors.surface,
   },
 
-  noResults: {
-    alignItems: "center",
+  emptyTip: {
+    maxWidth: 330,
 
-    backgroundColor: colors.roseLight,
+    marginTop: spacing.xl,
 
-    borderWidth: 1,
+    padding: spacing.md,
 
-    borderColor: colors.border,
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.sm,
 
     borderRadius: radius.lg,
 
-    padding: spacing.xl,
+    backgroundColor: colors.blueLight,
   },
 
-  noResultsIcon: {
-    width: 48,
-    height: 48,
+  emptyTipText: {
+    flex: 1,
 
-    borderRadius: radius.round,
+    fontSize: typography.tiny,
 
-    backgroundColor: colors.surface,
+    lineHeight: 16,
+
+    color: colors.textSecondary,
+  },
+
+  emptyFilter: {
+    alignItems: "center",
+
+    paddingTop: spacing.xxl,
+
+    paddingHorizontal: spacing.lg,
+  },
+
+  emptyFilterIcon: {
+    width: 54,
+    height: 54,
+
+    marginBottom: spacing.md,
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.surfaceMuted,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
-  noResultsTitle: {
-    marginTop: spacing.sm,
-
+  emptyFilterTitle: {
     fontSize: typography.subheading,
 
     fontWeight: "700",
 
+    textAlign: "center",
+
     color: colors.text,
   },
 
-  noResultsText: {
-    marginTop: 4,
+  emptyFilterText: {
+    maxWidth: 300,
 
-    maxWidth: 240,
-
-    textAlign: "center",
+    marginTop: spacing.sm,
 
     fontSize: typography.caption,
 
     lineHeight: 18,
 
+    textAlign: "center",
+
     color: colors.textSecondary,
+  },
+
+  showAllText: {
+    marginTop: spacing.md,
+
+    fontSize: typography.body,
+
+    fontWeight: "700",
+
+    color: colors.primary,
   },
 });

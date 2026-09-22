@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Linking,
     ScrollView,
     StyleSheet,
     Text,
@@ -23,7 +24,13 @@ import {
     updateContent,
 } from "../../services/contentStorage";
 
-import { ContentItem, ContentStatus } from "../../types/content";
+import { getInspirationById } from "../../services/inspirationStorage";
+
+import {
+    ContentItem,
+    ContentReference,
+    ContentStatus,
+} from "../../types/content";
 
 import {
     colors,
@@ -43,6 +50,11 @@ export default function ContentDetailsScreen() {
   }>();
 
   const [content, setContent] = useState<ContentItem | null>(null);
+
+  const [reference, setReference] = useState<ContentReference | null>(null);
+
+  const [originalInspirationAvailable, setOriginalInspirationAvailable] =
+    useState(false);
 
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +83,50 @@ export default function ContentDetailsScreen() {
             return;
           }
 
-          setContent(data);
+          let resolvedReference = data.reference ?? null;
+
+          const relatedInspirationId =
+            data.reference?.inspirationId ?? data.inspirationId;
+
+          let relatedInspiration = null;
+
+          if (relatedInspirationId) {
+            relatedInspiration = await getInspirationById(relatedInspirationId);
+          }
+
+          // Compatibilidade com conteúdos antigos:
+          // se ainda não existe snapshot, criamos um automaticamente ao abrir
+          // o conteúdo, desde que a inspiração original ainda exista.
+          if (!resolvedReference && relatedInspiration) {
+            resolvedReference = {
+              inspirationId: relatedInspiration.id,
+              url: relatedInspiration.url,
+              source: relatedInspiration.source,
+              category: relatedInspiration.category,
+              note: relatedInspiration.note,
+            };
+
+            await updateContent(data.id, {
+              reference: resolvedReference,
+            });
+          }
+
+          if (!active) {
+            return;
+          }
+
+          const hydratedContent = resolvedReference
+            ? {
+                ...data,
+                reference: resolvedReference,
+              }
+            : data;
+
+          setContent(hydratedContent);
+
+          setReference(resolvedReference);
+
+          setOriginalInspirationAvailable(Boolean(relatedInspiration));
 
           setIdea(data.idea);
 
@@ -144,6 +199,42 @@ export default function ContentDetailsScreen() {
       },
     });
   }
+  async function handleOpenReference() {
+    if (!reference?.url) {
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(reference.url);
+
+      if (!supported) {
+        Alert.alert(
+          "Não foi possível abrir",
+          "Confira se o link da referência está correto.",
+        );
+
+        return;
+      }
+
+      await Linking.openURL(reference.url);
+    } catch (error) {
+      console.error("Erro ao abrir referência:", error);
+
+      Alert.alert(
+        "Não foi possível abrir",
+        "Tente novamente em alguns instantes.",
+      );
+    }
+  }
+
+  function handleViewInspiration() {
+    if (!reference?.inspirationId || !originalInspirationAvailable) {
+      return;
+    }
+
+    router.push(`/inspiracao/${reference.inspirationId}`);
+  }
+
   function handleDelete() {
     if (!content) {
       return;
@@ -381,6 +472,114 @@ export default function ContentDetailsScreen() {
           )}
         </View>
 
+        {reference && (
+          <View style={styles.referenceSection}>
+            <Text style={styles.sectionLabel}>REFERÊNCIA ORIGINAL</Text>
+
+            <View style={styles.referenceCard}>
+              <View style={styles.referenceHeader}>
+                <View style={styles.referenceSourceIcon}>
+                  <Ionicons
+                    name={getSourceIcon(reference.source)}
+                    size={20}
+                    color={colors.rose}
+                  />
+                </View>
+
+                <View style={styles.referenceHeaderContent}>
+                  <View style={styles.referenceMeta}>
+                    <Text style={styles.referenceSource}>
+                      {reference.source}
+                    </Text>
+
+                    {reference.category && (
+                      <>
+                        <View style={styles.referenceMetaDot} />
+
+                        <Text style={styles.referenceCategory}>
+                          {reference.category}
+                        </Text>
+                      </>
+                    )}
+                  </View>
+
+                  <Text style={styles.referenceTitle}>
+                    {reference.note.trim()
+                      ? reference.note
+                      : `Referência do ${reference.source}`}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.referenceLink}>
+                <Ionicons
+                  name="link-outline"
+                  size={16}
+                  color={colors.textMuted}
+                />
+
+                <Text style={styles.referenceUrl} numberOfLines={1}>
+                  {cleanUrl(reference.url)}
+                </Text>
+              </View>
+
+              <Text style={styles.referenceHint}>
+                Abra a referência para rever formato, edição e estrutura antes
+                de produzir.
+              </Text>
+
+              <View style={styles.referenceActions}>
+                <TouchableOpacity
+                  style={styles.openReferenceButton}
+                  activeOpacity={0.8}
+                  onPress={handleOpenReference}
+                >
+                  <Ionicons
+                    name="open-outline"
+                    size={17}
+                    color={colors.surface}
+                  />
+
+                  <Text style={styles.openReferenceButtonText}>
+                    Abrir referência
+                  </Text>
+                </TouchableOpacity>
+
+                {originalInspirationAvailable ? (
+                  <TouchableOpacity
+                    style={styles.viewInspirationButton}
+                    activeOpacity={0.8}
+                    onPress={handleViewInspiration}
+                  >
+                    <Text style={styles.viewInspirationButtonText}>
+                      Ver inspiração salva
+                    </Text>
+
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.rose}
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.referenceSnapshotNotice}>
+                    <Ionicons
+                      name="archive-outline"
+                      size={16}
+                      color={colors.textMuted}
+                    />
+
+                    <Text style={styles.referenceSnapshotNoticeText}>
+                      A inspiração foi removida da biblioteca, mas esta
+                      referência continua salva no conteúdo.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
         {editing ? (
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Ionicons name="checkmark" size={19} color={colors.surface} />
@@ -528,6 +727,26 @@ function ScriptSection({ label, text, color }: ScriptSectionProps) {
       </Text>
     </View>
   );
+}
+
+function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
+  switch (source) {
+    case "Instagram":
+      return "logo-instagram";
+
+    case "TikTok":
+      return "musical-note-outline";
+
+    case "YouTube":
+      return "logo-youtube";
+
+    default:
+      return "link-outline";
+  }
+}
+
+function cleanUrl(url: string) {
+  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
 }
 
 function getStatusMeta(status: ContentStatus) {
@@ -805,6 +1024,153 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     fontWeight: "600",
     color: colors.text,
+  },
+
+  referenceSection: {
+    marginBottom: spacing.xl,
+  },
+
+  referenceCard: {
+    backgroundColor: colors.roseLight,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3CDD2",
+    padding: spacing.md,
+  },
+
+  referenceHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+
+  referenceSourceIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+
+  referenceHeaderContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  referenceMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+
+  referenceSource: {
+    fontSize: typography.tiny,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    color: colors.rose,
+  },
+
+  referenceMetaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: radius.round,
+    backgroundColor: colors.textMuted,
+    marginHorizontal: 6,
+  },
+
+  referenceCategory: {
+    fontSize: typography.tiny,
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
+
+  referenceTitle: {
+    marginTop: 5,
+    fontSize: typography.body,
+    lineHeight: 20,
+    fontWeight: "700",
+    color: colors.text,
+  },
+
+  referenceLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+
+  referenceUrl: {
+    flex: 1,
+    fontSize: typography.tiny,
+    color: colors.textMuted,
+  },
+
+  referenceHint: {
+    marginTop: spacing.sm,
+    fontSize: typography.caption,
+    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+
+  referenceActions: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+
+  openReferenceButton: {
+    minHeight: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.rose,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+
+  openReferenceButtonText: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.surface,
+  },
+
+  viewInspirationButton: {
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+
+  viewInspirationButtonText: {
+    fontSize: typography.caption,
+    fontWeight: "700",
+    color: colors.rose,
+  },
+
+  referenceSnapshotNotice: {
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+
+  referenceSnapshotNoticeText: {
+    flex: 1,
+    fontSize: typography.tiny,
+    lineHeight: 16,
+    color: colors.textMuted,
   },
 
   saveButton: {
