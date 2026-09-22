@@ -1,26 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+
 import {
+    ActivityIndicator,
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
-import { saveContent } from "../../services/contentStorage";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getInspirationById } from "../../services/inspirationStorage";
 import { Inspiration } from "../../types/inspiration";
 
-import { colors, radius, spacing, typography } from "../../constants/theme";
-
-const formats = ["Reel", "Carrossel", "Story", "Foto"];
-
-const objectives = ["Atrair clientes", "Gerar autoridade", "Educar", "Engajar"];
+import {
+    colors,
+    radius,
+    shadows,
+    spacing,
+    typography,
+} from "../../constants/theme";
 
 export default function CriarConteudoScreen() {
   const { inspirationId } = useLocalSearchParams<{
@@ -29,62 +31,62 @@ export default function CriarConteudoScreen() {
 
   const [inspiration, setInspiration] = useState<Inspiration | null>(null);
 
-  const [idea, setIdea] = useState("");
-  const [format, setFormat] = useState<string | null>(null);
-  const [objective, setObjective] = useState<string | null>(null);
-  async function handleContinue() {
-    if (!idea.trim()) {
-      return;
-    }
+  const [loading, setLoading] = useState(Boolean(inspirationId));
 
-    const now = new Date().toISOString();
-
-    const content = {
-      id: Date.now().toString(),
-
-      inspirationId: inspirationId || undefined,
-
-      idea: idea.trim(),
-
-      format,
-      objective,
-
-      status: "roteiro" as const,
-
-      script: {
-        hook: "",
-        points: ["", "", ""],
-        cta: "",
-      },
-
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await saveContent(content);
-
-    router.push({
-      pathname: "/conteudo/roteiro",
-      params: {
-        contentId: content.id,
-      },
-    });
-  }
   useEffect(() => {
     async function loadInspiration() {
       if (!inspirationId) {
+        setLoading(false);
         return;
       }
 
-      const data = await getInspirationById(inspirationId);
+      try {
+        const data = await getInspirationById(inspirationId);
 
-      if (data) {
         setInspiration(data);
+      } finally {
+        setLoading(false);
       }
     }
 
     loadInspiration();
   }, [inspirationId]);
+
+  function handleAdapt() {
+    if (!inspiration) {
+      return;
+    }
+
+    router.push({
+      pathname: "/conteudo/adaptar",
+      params: {
+        inspirationId: inspiration.id,
+      },
+    });
+  }
+
+  function handleManual() {
+    router.push({
+      pathname: "/conteudo/manual",
+      params: inspirationId
+        ? {
+            inspirationId,
+          }
+        : {},
+    });
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.primary} />
+
+          <Text style={styles.loadingText}>Preparando sua referência...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -106,124 +108,108 @@ export default function CriarConteudoScreen() {
         </View>
 
         <View style={styles.intro}>
-          <Text style={styles.title}>Crie sua versão.</Text>
+          <Text style={styles.eyebrow}>NOVO CONTEÚDO</Text>
 
-          <Text style={styles.subtitle}>
-            Use a referência como ponto de partida, sem precisar copiar o
-            conteúdo original.
+          <Text style={styles.title}>
+            {inspiration
+              ? "O que você quer fazer com essa inspiração?"
+              : "Como você quer criar seu conteúdo?"}
+          </Text>
+
+          <Text style={styles.description}>
+            {inspiration
+              ? "Use a referência como ponto de partida sem precisar começar do zero."
+              : "Você pode montar seu conteúdo manualmente e organizar o roteiro depois."}
           </Text>
         </View>
 
         {inspiration && (
           <View style={styles.referenceCard}>
             <View style={styles.referenceIcon}>
-              <Ionicons name="bulb-outline" size={22} color={colors.primary} />
+              <Ionicons name="bulb-outline" size={21} color={colors.primary} />
             </View>
 
             <View style={styles.referenceContent}>
-              <Text style={styles.referenceLabel}>REFERÊNCIA</Text>
+              <Text style={styles.referenceLabel}>SUA REFERÊNCIA</Text>
 
-              <Text style={styles.referenceUrl} numberOfLines={1}>
+              <Text numberOfLines={1} style={styles.referenceUrl}>
                 {inspiration.url}
               </Text>
 
-              {inspiration.note && (
-                <Text style={styles.referenceNote} numberOfLines={2}>
+              {inspiration.note ? (
+                <Text numberOfLines={2} style={styles.referenceNote}>
                   {inspiration.note}
                 </Text>
-              )}
+              ) : null}
             </View>
           </View>
         )}
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Qual é a sua ideia?</Text>
+        {inspiration && (
+          <TouchableOpacity
+            style={styles.primaryOption}
+            activeOpacity={0.85}
+            onPress={handleAdapt}
+          >
+            <View style={styles.primaryOptionIcon}>
+              <Ionicons name="sparkles" size={23} color={colors.primary} />
+            </View>
 
-          <TextInput
-            value={idea}
-            onChangeText={setIdea}
-            placeholder="Ex.: explicar por que creatina não engorda..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            style={styles.ideaInput}
-          />
-        </View>
+            <View style={styles.optionContent}>
+              <View style={styles.recommendedRow}>
+                <Text style={styles.primaryOptionTitle}>Adaptar para mim</Text>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Formato</Text>
+                <View style={styles.recommendedBadge}>
+                  <Text style={styles.recommendedText}>RECOMENDADO</Text>
+                </View>
+              </View>
 
-          <View style={styles.options}>
-            {formats.map((item) => (
-              <OptionButton
-                key={item}
-                label={item}
-                selected={format === item}
-                onPress={() => setFormat(item)}
-              />
-            ))}
-          </View>
-        </View>
+              <Text style={styles.primaryOptionDescription}>
+                Transforme essa referência em uma versão própria e mais fácil de
+                produzir.
+              </Text>
+            </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Objetivo do conteúdo</Text>
-
-          <View style={styles.options}>
-            {objectives.map((item) => (
-              <OptionButton
-                key={item}
-                label={item}
-                selected={objective === item}
-                onPress={() => setObjective(item)}
-              />
-            ))}
-          </View>
-        </View>
+            <Ionicons name="arrow-forward" size={20} color={colors.surface} />
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
-          style={[
-            styles.continueButton,
-            !idea.trim() && styles.continueButtonDisabled,
-          ]}
-          disabled={!idea.trim()}
-          onPress={handleContinue}
+          style={styles.secondaryOption}
+          activeOpacity={0.8}
+          onPress={handleManual}
         >
-          <Text
-            style={[
-              styles.continueButtonText,
-              !idea.trim() && styles.continueButtonTextDisabled,
-            ]}
-          >
-            Continuar para o roteiro
-          </Text>
+          <View style={styles.secondaryOptionIcon}>
+            <Ionicons name="create-outline" size={22} color={colors.primary} />
+          </View>
 
-          <Ionicons
-            name="arrow-forward"
-            size={18}
-            color={idea.trim() ? colors.surface : colors.textMuted}
-          />
+          <View style={styles.optionContent}>
+            <Text style={styles.secondaryOptionTitle}>Criar manualmente</Text>
+
+            <Text style={styles.secondaryOptionDescription}>
+              Já sei o que quero falar e prefiro montar minha ideia e roteiro.
+            </Text>
+          </View>
+
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
+
+        {inspiration && (
+          <View style={styles.tip}>
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={colors.primary}
+            />
+
+            <Text style={styles.tipText}>
+              A ideia é usar a referência como inspiração, não reproduzir o
+              conteúdo original palavra por palavra.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-type OptionButtonProps = {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-};
-
-function OptionButton({ label, selected, onPress }: OptionButtonProps) {
-  return (
-    <TouchableOpacity
-      style={[styles.option, selected && styles.optionSelected]}
-      onPress={onPress}
-    >
-      <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }
 
@@ -235,7 +221,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 50,
+    paddingBottom: spacing.xxl,
   },
 
   header: {
@@ -271,24 +257,33 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
 
+  eyebrow: {
+    fontSize: typography.tiny,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
+
   title: {
-    fontSize: typography.title,
+    fontSize: 29,
+    lineHeight: 35,
     fontWeight: "700",
     color: colors.text,
   },
 
-  subtitle: {
+  description: {
+    marginTop: spacing.sm,
     fontSize: typography.body,
     lineHeight: 21,
     color: colors.textSecondary,
-    marginTop: spacing.sm,
   },
 
   referenceCard: {
     flexDirection: "row",
     backgroundColor: colors.primaryLight,
-    padding: spacing.md,
     borderRadius: radius.lg,
+    padding: spacing.md,
     marginBottom: spacing.xl,
   },
 
@@ -313,92 +308,137 @@ const styles = StyleSheet.create({
   },
 
   referenceUrl: {
+    marginTop: 3,
     fontSize: typography.body,
     fontWeight: "600",
     color: colors.text,
-    marginTop: 3,
   },
 
   referenceNote: {
+    marginTop: 4,
     fontSize: typography.caption,
+    lineHeight: 17,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
   },
 
-  formGroup: {
-    marginBottom: spacing.xl,
-  },
-
-  label: {
-    fontSize: typography.body,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-
-  ideaInput: {
-    minHeight: 120,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    fontSize: typography.body,
-    lineHeight: 21,
-    color: colors.text,
-  },
-
-  options: {
+  primaryOption: {
+    minHeight: 116,
     flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.card,
+  },
+
+  primaryOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+
+  optionContent: {
+    flex: 1,
+  },
+
+  recommendedRow: {
+    flexDirection: "row",
+    alignItems: "center",
     flexWrap: "wrap",
     gap: spacing.sm,
   },
 
-  option: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+  primaryOptionTitle: {
+    fontSize: typography.subheading,
+    fontWeight: "700",
+    color: colors.surface,
+  },
+
+  primaryOptionDescription: {
+    marginTop: 6,
+    fontSize: typography.caption,
+    lineHeight: 18,
+    color: "#D7E3DE",
+    paddingRight: spacing.sm,
+  },
+
+  recommendedBadge: {
+    backgroundColor: "#41695E",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: radius.round,
   },
 
-  optionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-
-  optionText: {
-    fontSize: typography.caption,
-    fontWeight: "600",
-    color: colors.textSecondary,
-  },
-
-  optionTextSelected: {
+  recommendedText: {
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 0.6,
     color: colors.surface,
   },
 
-  continueButton: {
-    height: 52,
+  secondaryOption: {
+    minHeight: 100,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  secondaryOptionIcon: {
+    width: 46,
+    height: 46,
     borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
   },
 
-  continueButtonDisabled: {
-    backgroundColor: colors.border,
-  },
-
-  continueButtonText: {
-    color: colors.surface,
-    fontSize: typography.body,
+  secondaryOptionTitle: {
+    fontSize: typography.subheading,
     fontWeight: "700",
+    color: colors.text,
   },
 
-  continueButtonTextDisabled: {
+  secondaryOptionDescription: {
+    marginTop: 4,
+    fontSize: typography.caption,
+    lineHeight: 17,
+    color: colors.textSecondary,
+    paddingRight: spacing.sm,
+  },
+
+  tip: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.sm,
+  },
+
+  tipText: {
+    flex: 1,
+    fontSize: typography.caption,
+    lineHeight: 18,
     color: colors.textMuted,
+  },
+
+  loading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+
+  loadingText: {
+    color: colors.textSecondary,
   },
 });

@@ -30,6 +30,18 @@ export default function RootLayout() {
           presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="conteudo/gravar"
+        options={{
+          presentation: "modal",
+        }}
+      />
+      <Stack.Screen
+        name="conteudo/gerar"
+        options={{
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }
