@@ -15,13 +15,7 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-    colors,
-    radius,
-    shadows,
-    spacing,
-    typography,
-} from "../../constants/theme";
+import { colors, radius, shadows, spacing } from "../../constants/theme";
 
 import { getCreatorProfile } from "../../services/profileStorage";
 
@@ -64,26 +58,18 @@ export default function TabsLayout() {
     };
   }, []);
 
-  function handleFromInspiration() {
+  function closeAndNavigate(route: string) {
     setCreateModalVisible(false);
 
     setTimeout(() => {
-      router.push("/conteudo/escolher-inspiracao");
-    }, 150);
-  }
-
-  function handleFromScratch() {
-    setCreateModalVisible(false);
-
-    setTimeout(() => {
-      router.push("/conteudo/manual");
-    }, 150);
+      router.push(route as any);
+    }, 160);
   }
 
   if (!ready) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="small" color={colors.terracotta} />
+        <ActivityIndicator color={colors.terracotta} />
       </View>
     );
   }
@@ -94,25 +80,52 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
 
-          tabBarActiveTintColor: colors.primary,
+          tabBarActiveTintColor: colors.text,
 
           tabBarInactiveTintColor: colors.textMuted,
 
+          tabBarHideOnKeyboard: true,
+
           tabBarStyle: {
-            height: 82,
+            position: "absolute",
 
-            paddingTop: 7,
-            paddingBottom: 8,
+            left: 14,
+            right: 14,
+            bottom: 12,
 
-            backgroundColor: "#FAF7F1",
+            height: 78,
 
-            borderTopWidth: 1,
+            paddingTop: 8,
+            paddingBottom: 9,
 
-            borderTopColor: colors.border,
+            borderTopWidth: 0,
+
+            borderRadius: 24,
+
+            backgroundColor: colors.surface,
+
+            shadowColor: "#231F1C",
+
+            shadowOffset: {
+              width: 0,
+              height: 7,
+            },
+
+            shadowOpacity: 0.1,
+
+            shadowRadius: 18,
+
+            elevation: 10,
+          },
+
+          tabBarItemStyle: {
+            borderRadius: 18,
           },
 
           tabBarLabelStyle: {
-            fontSize: 10,
+            marginTop: -1,
+
+            fontSize: 9,
 
             fontWeight: "600",
           },
@@ -123,8 +136,12 @@ export default function TabsLayout() {
           options={{
             title: "Hoje",
 
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home-outline" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "home" : "home-outline"}
+                size={21}
+                color={color}
+              />
             ),
           }}
         />
@@ -134,8 +151,12 @@ export default function TabsLayout() {
           options={{
             title: "Inspirações",
 
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="bulb-outline" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "bulb" : "bulb-outline"}
+                size={21}
+                color={color}
+              />
             ),
           }}
         />
@@ -145,13 +166,13 @@ export default function TabsLayout() {
           options={{
             title: "Criar",
 
+            tabBarLabel: () => <Text style={styles.createLabel}>Criar</Text>,
+
             tabBarIcon: () => (
-              <View style={styles.createTabButton}>
-                <Ionicons name="add" size={30} color={colors.surface} />
+              <View style={styles.createIcon}>
+                <Ionicons name="add" size={25} color={colors.surface} />
               </View>
             ),
-
-            tabBarLabel: () => <Text style={styles.createTabLabel}>Criar</Text>,
           }}
           listeners={{
             tabPress: (event) => {
@@ -167,8 +188,12 @@ export default function TabsLayout() {
           options={{
             title: "Planejar",
 
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="calendar-outline" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "calendar" : "calendar-outline"}
+                size={21}
+                color={color}
+              />
             ),
           }}
         />
@@ -178,8 +203,12 @@ export default function TabsLayout() {
           options={{
             title: "Conteúdos",
 
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="layers-outline" size={size} color={color} />
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "layers" : "layers-outline"}
+                size={21}
+                color={color}
+              />
             ),
           }}
         />
@@ -199,14 +228,14 @@ export default function TabsLayout() {
           />
 
           <SafeAreaView edges={["bottom"]} style={styles.sheet}>
-            <View style={styles.sheetHandle} />
+            <View style={styles.handle} />
 
             <View style={styles.sheetHeader}>
-              <View>
-                <Text style={styles.sheetTitle}>Criar conteúdo</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sheetTitle}>O que vamos criar?</Text>
 
                 <Text style={styles.sheetSubtitle}>
-                  Como você quer começar?
+                  Escolha como você quer começar.
                 </Text>
               </View>
 
@@ -214,81 +243,80 @@ export default function TabsLayout() {
                 style={styles.closeButton}
                 onPress={() => setCreateModalVisible(false)}
               >
-                <Ionicons name="close" size={21} color={colors.textSecondary} />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-              style={styles.createOption}
-              activeOpacity={0.8}
-              onPress={handleFromInspiration}
+              style={[styles.option, styles.inspirationOption]}
+              activeOpacity={0.85}
+              onPress={() => closeAndNavigate("/conteudo/escolher-inspiracao")}
             >
               <View
                 style={[
-                  styles.optionIcon,
+                  styles.optionMark,
 
                   {
-                    backgroundColor: colors.roseLight,
+                    backgroundColor: colors.surface,
                   },
                 ]}
               >
-                <Ionicons
-                  name="sparkles-outline"
-                  size={23}
-                  color={colors.rose}
-                />
+                <Ionicons name="sparkles" size={22} color={colors.rose} />
               </View>
 
-              <View style={styles.optionContent}>
+              <View style={{ flex: 1 }}>
                 <View style={styles.optionTitleRow}>
                   <Text style={styles.optionTitle}>
                     A partir de uma inspiração
                   </Text>
 
-                  <View style={styles.recommendedBadge}>
+                  <View style={styles.recommended}>
                     <Text style={styles.recommendedText}>RECOMENDADO</Text>
                   </View>
                 </View>
 
-                <Text style={styles.optionDescription}>
-                  Escolha algo que você salvou e transforme na sua própria
-                  versão.
+                <Text style={styles.optionText}>
+                  Transforme algo que você salvou na sua própria versão.
                 </Text>
               </View>
 
-              <Ionicons name="chevron-forward" size={20} color={colors.rose} />
+              <Ionicons name="arrow-forward" size={18} color={colors.rose} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.createOption}
-              activeOpacity={0.8}
-              onPress={handleFromScratch}
+              style={[styles.option, styles.scratchOption]}
+              activeOpacity={0.85}
+              onPress={() => closeAndNavigate("/conteudo/manual")}
             >
               <View
                 style={[
-                  styles.optionIcon,
+                  styles.optionMark,
 
                   {
-                    backgroundColor: colors.amberLight,
+                    backgroundColor: colors.surface,
                   },
                 ]}
               >
                 <Ionicons
                   name="create-outline"
-                  size={23}
-                  color={colors.amber}
+                  size={22}
+                  color={colors.terracotta}
                 />
               </View>
 
-              <View style={styles.optionContent}>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.optionTitle}>Começar do zero</Text>
 
-                <Text style={styles.optionDescription}>
-                  Comece com uma ideia sua e construa o conteúdo manualmente.
+                <Text style={styles.optionText}>
+                  Pegue uma ideia sua e construa o conteúdo.
                 </Text>
               </View>
 
-              <Ionicons name="chevron-forward" size={20} color={colors.amber} />
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color={colors.terracotta}
+              />
             </TouchableOpacity>
           </SafeAreaView>
         </View>
@@ -302,41 +330,38 @@ const styles = StyleSheet.create({
     flex: 1,
 
     alignItems: "center",
+
     justifyContent: "center",
 
     backgroundColor: colors.background,
   },
 
-  createTabButton: {
-    width: 56,
-    height: 56,
+  createIcon: {
+    width: 44,
+    height: 44,
 
-    borderRadius: 28,
-
-    marginTop: -16,
+    borderRadius: 15,
 
     backgroundColor: colors.terracotta,
-
-    borderWidth: 5,
-
-    borderColor: "#FAF7F1",
 
     alignItems: "center",
     justifyContent: "center",
 
-    ...shadows.floating,
+    // sobe só um pouco
+    marginTop: -4,
+
+    ...shadows.elevated,
   },
 
-  createTabLabel: {
-    marginTop: 5,
+  createLabel: {
+    fontSize: 10,
 
-    fontSize: 11,
-
-    lineHeight: 14,
-
-    fontWeight: "800",
+    fontWeight: "700",
 
     color: colors.terracotta,
+
+    // separa o texto do botão
+    marginTop: 4,
   },
 
   modalBackdrop: {
@@ -344,25 +369,27 @@ const styles = StyleSheet.create({
 
     justifyContent: "flex-end",
 
-    backgroundColor: "rgba(25, 32, 29, 0.35)",
+    backgroundColor: colors.overlay,
   },
 
   sheet: {
+    marginHorizontal: 10,
+
+    marginBottom: 8,
+
     paddingHorizontal: spacing.lg,
 
     paddingTop: 12,
 
     paddingBottom: spacing.lg,
 
-    backgroundColor: colors.background,
+    borderRadius: radius.xxl,
 
-    borderTopLeftRadius: radius.xxl,
-
-    borderTopRightRadius: radius.xxl,
+    backgroundColor: colors.surface,
   },
 
-  sheetHandle: {
-    width: 42,
+  handle: {
+    width: 36,
     height: 4,
 
     alignSelf: "center",
@@ -379,13 +406,13 @@ const styles = StyleSheet.create({
 
     alignItems: "flex-start",
 
-    justifyContent: "space-between",
-
     marginBottom: spacing.lg,
   },
 
   sheetTitle: {
-    fontSize: typography.heading,
+    fontSize: 24,
+
+    letterSpacing: -0.5,
 
     fontWeight: "700",
 
@@ -393,9 +420,9 @@ const styles = StyleSheet.create({
   },
 
   sheetSubtitle: {
-    marginTop: 4,
+    marginTop: 5,
 
-    fontSize: typography.body,
+    fontSize: 13,
 
     color: colors.textSecondary,
   },
@@ -413,43 +440,39 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  createOption: {
-    minHeight: 100,
+  option: {
+    minHeight: 96,
+
+    padding: spacing.md,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    padding: spacing.md,
+    borderRadius: radius.xl,
 
     marginBottom: spacing.sm,
-
-    borderRadius: radius.lg,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    backgroundColor: colors.surface,
   },
 
-  optionIcon: {
-    width: 50,
-    height: 50,
+  inspirationOption: {
+    backgroundColor: colors.roseLight,
+  },
 
-    borderRadius: radius.md,
+  scratchOption: {
+    backgroundColor: colors.terracottaLight,
+  },
+
+  optionMark: {
+    width: 46,
+    height: 46,
+
+    marginRight: spacing.md,
+
+    borderRadius: 15,
 
     alignItems: "center",
 
     justifyContent: "center",
-
-    marginRight: spacing.md,
-  },
-
-  optionContent: {
-    flex: 1,
-
-    paddingRight: spacing.sm,
   },
 
   optionTitleRow: {
@@ -463,39 +486,43 @@ const styles = StyleSheet.create({
   },
 
   optionTitle: {
-    fontSize: typography.subheading,
+    fontSize: 15,
 
     fontWeight: "700",
 
     color: colors.text,
   },
 
-  optionDescription: {
-    marginTop: 5,
+  optionText: {
+    maxWidth: 240,
 
-    fontSize: typography.caption,
+    marginTop: 4,
 
-    lineHeight: 18,
+    paddingRight: spacing.sm,
+
+    fontSize: 11,
+
+    lineHeight: 16,
 
     color: colors.textSecondary,
   },
 
-  recommendedBadge: {
+  recommended: {
     paddingHorizontal: 7,
 
     paddingVertical: 3,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.roseLight,
+    backgroundColor: colors.surface,
   },
 
   recommendedText: {
     fontSize: 7,
 
-    fontWeight: "800",
+    letterSpacing: 0.4,
 
-    letterSpacing: 0.5,
+    fontWeight: "800",
 
     color: colors.rose,
   },

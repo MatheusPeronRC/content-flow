@@ -1,55 +1,111 @@
 export const colors = {
   // BASE
-  background: "#F3F0E9",
-  backgroundSoft: "#EEEAE2",
+  background: "#F7F4EF",
+  backgroundSoft: "#F2EEE8",
 
   surface: "#FFFDFC",
-  surfaceSoft: "#F8F5EF",
-  surfaceMuted: "#EAE5DC",
+  surfaceSoft: "#FAF7F3",
+  surfaceMuted: "#ECE7E1",
 
-  // MARCA
-  primary: "#25463E",
-  primaryDark: "#19332D",
-  primaryLight: "#DFE9E4",
+  // IDENTIDADE
+  // O "primary" deixa de ser verde e vira carvão.
+  primary: "#292624",
+  primaryDark: "#1F1C1A",
+  primaryLight: "#EEEAE5",
 
-  // ACENTOS
-  terracotta: "#C9785C",
-  terracottaLight: "#F3E2DB",
+  // CRIAÇÃO / MARCA
+  terracotta: "#E17455",
+  terracottaLight: "#F9E6DF",
 
-  amber: "#D6A34B",
-  amberLight: "#F4E9D3",
+  // ROTEIRO
+  amber: "#C99A45",
+  amberLight: "#F7EDD8",
 
-  lavender: "#8E82B8",
-  lavenderLight: "#E9E5F3",
+  // EDIÇÃO
+  lavender: "#8E7FC2",
+  lavenderLight: "#EDE9F7",
 
-  blue: "#6E94A6",
-  blueLight: "#DFEAF0",
+  // PLANEJAMENTO
+  blue: "#79A5B8",
+  blueLight: "#E6F0F4",
 
-  rose: "#B97B87",
-  roseLight: "#F0DFE3",
+  // INSPIRAÇÃO
+  rose: "#CF8295",
+  roseLight: "#F6E6EB",
 
-  sage: "#6F957E",
-  sageLight: "#E1ECE4",
+  // CONCLUSÃO
+  sage: "#7B9E88",
+  sageLight: "#E6EFE9",
 
   // TEXTO
-  text: "#202824",
-  textSecondary: "#646C68",
-  textMuted: "#969D99",
+  text: "#252220",
+  textSecondary: "#726D67",
+  textMuted: "#A29C95",
 
   // ESTRUTURA
-  border: "#DED9CF",
-  divider: "#E7E2D9",
+  border: "#E5DED6",
+  divider: "#EEE8E1",
 
-  // ESTADOS
-  success: "#5F8B70",
-  warning: "#D09A45",
-  danger: "#B95D58",
+  // FEEDBACK
+  success: "#72947F",
+  warning: "#C69440",
+  danger: "#BD615A",
 
   // COMPATIBILIDADE
-  reel: "#F3E2DB",
-  carousel: "#F4E9D3",
-  story: "#E9E5F3",
-  inspiration: "#F0DFE3",
+  reel: "#F9E6DF",
+  carousel: "#F7EDD8",
+  story: "#EDE9F7",
+  inspiration: "#F6E6EB",
+
+  // NOVOS TOKENS
+  ink: "#292624",
+  inkDark: "#1F1C1A",
+  inkSoft: "#3B3734",
+
+  brand: "#E17455",
+  brandSoft: "#F9E6DF",
+
+  cream: "#FBF7F1",
+  white: "#FFFFFF",
+
+  overlay: "rgba(32, 28, 26, 0.38)",
+};
+
+export const sectionColors = {
+  brand: {
+    background: colors.primaryLight,
+    foreground: colors.primary,
+  },
+
+  create: {
+    background: colors.terracottaLight,
+    foreground: colors.terracotta,
+  },
+
+  inspiration: {
+    background: colors.roseLight,
+    foreground: colors.rose,
+  },
+
+  planning: {
+    background: colors.blueLight,
+    foreground: colors.blue,
+  },
+
+  script: {
+    background: colors.amberLight,
+    foreground: colors.amber,
+  },
+
+  editing: {
+    background: colors.lavenderLight,
+    foreground: colors.lavender,
+  },
+
+  success: {
+    background: colors.sageLight,
+    foreground: colors.sage,
+  },
 };
 
 export const statusColors = {
@@ -60,7 +116,7 @@ export const statusColors = {
 
   roteiro: {
     background: colors.amberLight,
-    foreground: "#A87829",
+    foreground: "#A8782C",
   },
 
   gravar: {
@@ -85,12 +141,14 @@ export const statusColors = {
 };
 
 export const spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 16,
   lg: 20,
   xl: 28,
   xxl: 40,
+  xxxl: 56,
 };
 
 export const radius = {
@@ -98,7 +156,8 @@ export const radius = {
   md: 12,
   lg: 18,
   xl: 24,
-  xxl: 32,
+  xxl: 30,
+  xxxl: 36,
   round: 999,
 };
 
@@ -112,26 +171,77 @@ export const typography = {
   tiny: 10,
 };
 
+export const fontWeight = {
+  regular: "400" as const,
+  medium: "500" as const,
+  semibold: "600" as const,
+  bold: "700" as const,
+  heavy: "800" as const,
+};
+
+export const lineHeight = {
+  display: 41,
+  title: 34,
+  heading: 26,
+  subheading: 22,
+  body: 21,
+  caption: 17,
+  tiny: 14,
+};
+
 export const shadows = {
+  soft: {
+    shadowColor: "#29231F",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.035,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+
   card: {
-    shadowColor: "#352F28",
+    shadowColor: "#29231F",
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
   },
 
-  floating: {
-    shadowColor: "#352F28",
+  elevated: {
+    shadowColor: "#29231F",
     shadowOffset: {
       width: 0,
-      height: 7,
+      height: 8,
     },
-    shadowOpacity: 0.12,
-    shadowRadius: 15,
-    elevation: 6,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
+  },
+
+  floating: {
+    shadowColor: "#29231F",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 7,
+  },
+
+  hero: {
+    shadowColor: "#1F1C1A",
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 22,
+    elevation: 5,
   },
 };

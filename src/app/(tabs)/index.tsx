@@ -14,14 +14,12 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { SectionHeader } from "../../components/SectionHeader";
-import { TaskCard } from "../../components/TaskCard";
-
 import { getContents } from "../../services/contentStorage";
 import { getInspirations } from "../../services/inspirationStorage";
 import { getCreatorProfile } from "../../services/profileStorage";
 
-import { ContentItem } from "../../types/content";
+import { ContentItem, ContentStatus } from "../../types/content";
+
 import { CreatorProfile } from "../../types/creatorProfile";
 
 import {
@@ -63,7 +61,7 @@ export default function HomeScreen() {
 
           setProfile(savedProfile);
         } catch (error) {
-          console.error("Erro ao carregar a Home:", error);
+          console.error("Erro ao carregar Home:", error);
         }
       }
 
@@ -101,23 +99,22 @@ export default function HomeScreen() {
       content.plannedDate === todayKey && content.status !== "publicado",
   );
 
+  const weeklyTarget = profile?.postsPerWeek ?? 0;
+
+  const plannedThisWeek = weeklyContents.length;
+
+  const remainingToPlan = Math.max(weeklyTarget - plannedThisWeek, 0);
+
   const completedThisWeek = weeklyContents.filter(
     (content) => content.status === "pronto" || content.status === "publicado",
   ).length;
 
-  const weeklyGoal = profile?.postsPerWeek ?? 0;
-
-  const plannedThisWeek = weeklyContents.length;
-
-  const remainingToGoal =
-    weeklyGoal > 0 ? Math.max(weeklyGoal - plannedThisWeek, 0) : 0;
-
-  const planningProgress =
-    weeklyGoal === 0
+  const progress =
+    weeklyTarget === 0
       ? 0
-      : Math.min(Math.round((plannedThisWeek / weeklyGoal) * 100), 100);
+      : Math.min(Math.round((plannedThisWeek / weeklyTarget) * 100), 100);
 
-  const homeWeekDays = Array.from({
+  const weekDays = Array.from({
     length: 7,
   }).map((_, index) => {
     const date = new Date(monday);
@@ -140,9 +137,11 @@ export default function HomeScreen() {
     return {
       key,
 
-      day: ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][index],
+      label: ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][index],
 
-      date: date.getDate(),
+      number: date.getDate(),
+
+      isToday: key === todayKey,
 
       planned: dayContents.length > 0,
 
@@ -158,12 +157,8 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.brand}>
-            <View style={styles.brandIcon}>
-              <Ionicons
-                name="sparkles-outline"
-                size={20}
-                color={colors.surface}
-              />
+            <View style={styles.brandMark}>
+              <Ionicons name="sparkles" size={17} color={colors.surface} />
             </View>
 
             <Text style={styles.brandName}>ContentFlow</Text>
@@ -171,311 +166,329 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.profileButton}
+            activeOpacity={0.8}
             onPress={() => router.push("/perfil")}
           >
-            <Ionicons name="person-outline" size={21} color={colors.blue} />
+            <Ionicons name="person-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.hero}>
-          <Text style={styles.heroLabel}>SEU FOCO DE HOJE</Text>
+          <Text style={styles.greeting}>{getGreeting()} 👋</Text>
 
           <Text style={styles.heroTitle}>
-            Transforme suas ideias em conteúdo.
+            O que você vai{"\n"}
+            criar hoje?
           </Text>
 
-          <Text style={styles.heroDescription}>
-            Organize o que precisa ser produzido e avance um passo de cada vez.
+          <Text style={styles.heroText}>
+            Suas ideias, referências e próximos conteúdos estão organizados por
+            aqui.
           </Text>
         </View>
 
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
+        <TouchableOpacity
+          style={styles.weekGoal}
+          activeOpacity={0.92}
+          onPress={() => router.push("/planejar")}
+        >
+          <View style={styles.weekGoalHeader}>
             <View>
-              <Text style={styles.goalLabel}>META DA SEMANA</Text>
+              <Text style={styles.weekGoalLabel}>SUA SEMANA</Text>
 
-              <Text style={styles.goalValue}>
-                {weeklyGoal > 0
-                  ? `${plannedThisWeek} de ${weeklyGoal} planejados`
-                  : `${plannedThisWeek} planejados`}
+              <Text style={styles.weekGoalTitle}>
+                {weeklyTarget > 0
+                  ? `${plannedThisWeek} de ${weeklyTarget} planejados`
+                  : "Defina sua meta semanal"}
               </Text>
             </View>
 
-            <View style={styles.goalIcon}>
-              <Ionicons
-                name={
-                  remainingToGoal === 0 && weeklyGoal > 0
-                    ? "checkmark"
-                    : "calendar-outline"
-                }
-                size={21}
-                color={
-                  remainingToGoal === 0 && weeklyGoal > 0
-                    ? colors.sage
-                    : colors.blue
-                }
-              />
+            <View style={styles.weekGoalArrow}>
+              <Ionicons name="arrow-forward" size={18} color={colors.ink} />
             </View>
           </View>
 
-          {weeklyGoal > 0 && (
-            <>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${planningProgress}%` as `${number}%`,
-                    },
-                  ]}
-                />
-              </View>
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
 
-              <Text style={styles.goalHint}>
-                {remainingToGoal === 0
-                  ? plannedThisWeek === weeklyGoal
-                    ? "Sua semana já está planejada."
-                    : `Meta atingida — ${plannedThisWeek} conteúdos planejados.`
-                  : remainingToGoal === 1
-                    ? "Falta 1 conteúdo para completar sua meta."
-                    : `Faltam ${remainingToGoal} conteúdos para completar sua meta.`}
-              </Text>
-            </>
-          )}
+                {
+                  width: `${progress}%` as `${number}%`,
+                },
+              ]}
+            />
+          </View>
 
           <View style={styles.goalFooter}>
-            <View style={styles.goalStat}>
-              <View
-                style={[
-                  styles.goalStatDot,
-                  {
-                    backgroundColor: colors.sage,
-                  },
-                ]}
-              />
+            <Text style={styles.goalHint}>
+              {weeklyTarget === 0
+                ? "Escolha sua frequência no perfil"
+                : remainingToPlan > 0
+                  ? `Falta${
+                      remainingToPlan === 1 ? "" : "m"
+                    } ${remainingToPlan} ${
+                      remainingToPlan === 1 ? "conteúdo" : "conteúdos"
+                    } para planejar`
+                  : "Semana planejada ✓"}
+            </Text>
 
-              <Text style={styles.goalStatText}>
-                {completedThisWeek}{" "}
-                {completedThisWeek === 1 ? "concluído" : "concluídos"}
+            {completedThisWeek > 0 && (
+              <Text style={styles.completedText}>
+                {completedThisWeek} concluído
+                {completedThisWeek > 1 ? "s" : ""}
               </Text>
-            </View>
-
-            <TouchableOpacity onPress={() => router.push("/planejar")}>
-              <Text style={styles.goalAction}>Planejar</Text>
-            </TouchableOpacity>
+            )}
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.section}>
-          <SectionHeader
-            title="Hoje"
-            subtitle={
-              todayContents.length === 0
-                ? "Nenhum conteúdo planejado para hoje"
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>Hoje</Text>
+
+            <Text style={styles.sectionSubtitle}>
+              {todayContents.length === 0
+                ? "Sua agenda está livre."
                 : todayContents.length === 1
-                  ? "1 conteúdo precisa da sua atenção"
-                  : `${todayContents.length} conteúdos precisam da sua atenção`
-            }
-            actionLabel="Ver semana"
-            onActionPress={() => router.push("/planejar")}
-          />
+                  ? "1 conteúdo para continuar."
+                  : `${todayContents.length} conteúdos para continuar.`}
+            </Text>
+          </View>
 
-          {todayContents.length === 0 ? (
-            <View style={styles.emptyTasks}>
-              <View style={styles.emptyTasksIcon}>
-                <Ionicons name="sunny-outline" size={24} color={colors.amber} />
-              </View>
-
-              <View style={styles.emptyTasksContent}>
-                <Text style={styles.emptyTasksTitle}>
-                  Nada planejado para hoje
-                </Text>
-
-                <Text style={styles.emptyTasksText}>
-                  Aproveite o dia ou adicione um conteúdo ao planejamento.
-                </Text>
-              </View>
-            </View>
-          ) : (
-            todayContents.slice(0, 3).map((content) => {
-              const task = getTaskInfo(content);
-
-              return (
-                <TaskCard
-                  key={content.id}
-                  action={task.action}
-                  title={content.idea}
-                  type={content.format ?? "Conteúdo"}
-                  icon={task.icon}
-                  iconBackground={task.background}
-                  iconColor={task.foreground}
-                  onPress={() => router.push(`/conteudo/${content.id}`)}
-                />
-              );
-            })
-          )}
+          <TouchableOpacity onPress={() => router.push("/planejar")}>
+            <Text style={styles.textAction}>Ver semana</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.section}>
-          <SectionHeader
-            title="Sua semana"
-            subtitle={
-              weeklyContents.length === 0
-                ? "Nenhum conteúdo planejado"
-                : weeklyContents.length === 1
-                  ? "1 conteúdo planejado"
-                  : `${weeklyContents.length} conteúdos planejados`
-            }
-          />
+        {todayContents.length === 0 ? (
+          <View style={styles.emptyToday}>
+            <View style={styles.emptyTodayIcon}>
+              <Ionicons name="sunny-outline" size={22} color={colors.amber} />
+            </View>
 
-          <View style={styles.weekCard}>
-            <View style={styles.weekDays}>
-              {homeWeekDays.map((item) => (
-                <View style={styles.day} key={item.key}>
-                  <Text style={styles.dayName}>{item.day}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.emptyTodayTitle}>Nada urgente por aqui</Text>
 
-                  <View
-                    style={[
-                      styles.dayCircle,
-
-                      item.planned && styles.dayCirclePlanned,
-
-                      item.completed && styles.dayCircleCompleted,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.dayNumber,
-
-                        item.planned && styles.dayNumberPlanned,
-
-                        item.completed && styles.dayNumberCompleted,
-                      ]}
-                    >
-                      {item.date}
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.statusDot,
-
-                      item.planned && styles.statusDotPlanned,
-
-                      item.completed && styles.statusDotCompleted,
-                    ]}
-                  />
-                </View>
-              ))}
+              <Text style={styles.emptyTodayText}>
+                Que tal transformar uma inspiração em algo seu?
+              </Text>
             </View>
 
             <TouchableOpacity
-              style={styles.planButton}
-              onPress={() => router.push("/planejar")}
+              style={styles.emptyTodayAction}
+              onPress={() => router.push("/inspiracoes")}
             >
-              <Text style={styles.planButtonText}>Planejar minha semana</Text>
-
-              <Ionicons name="arrow-forward" size={17} color={colors.surface} />
+              <Ionicons name="arrow-forward" size={17} color={colors.ink} />
             </TouchableOpacity>
           </View>
+        ) : (
+          <View style={styles.todayList}>
+            {todayContents.slice(0, 3).map((content) => (
+              <HomeContentRow key={content.id} content={content} />
+            ))}
+          </View>
+        )}
+
+        <View style={[styles.sectionHeader, styles.weekSectionHeader]}>
+          <View>
+            <Text style={styles.sectionTitle}>Sua semana</Text>
+
+            <Text style={styles.sectionSubtitle}>
+              {plannedThisWeek === 0
+                ? "Nada planejado ainda."
+                : plannedThisWeek === 1
+                  ? "1 conteúdo planejado."
+                  : `${plannedThisWeek} conteúdos planejados.`}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.weekSurface}>
+          <View style={styles.weekDays}>
+            {weekDays.map((day) => (
+              <View key={day.key} style={styles.day}>
+                <Text style={styles.dayLabel}>{day.label}</Text>
+
+                <View
+                  style={[
+                    styles.dayCircle,
+
+                    day.isToday && styles.dayToday,
+
+                    day.planned && styles.dayPlanned,
+
+                    day.completed && styles.dayCompleted,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumber,
+
+                      day.isToday && styles.dayNumberToday,
+
+                      day.planned && styles.dayNumberPlanned,
+
+                      day.completed && styles.dayNumberCompleted,
+                    ]}
+                  >
+                    {day.number}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.dayDot,
+
+                    day.planned && styles.dayDotPlanned,
+
+                    day.completed && styles.dayDotCompleted,
+                  ]}
+                />
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={styles.weekAction}
+            activeOpacity={0.85}
+            onPress={() => router.push("/planejar")}
+          >
+            <Text style={styles.weekActionText}>Planejar minha semana</Text>
+
+            <Ionicons name="arrow-forward" size={17} color={colors.blue} />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
           style={styles.inspirationCard}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
           onPress={() => router.push("/inspiracoes")}
         >
-          <View style={styles.inspirationIcon}>
-            <Ionicons name="bulb-outline" size={23} color={colors.rose} />
+          <View style={styles.inspirationMark}>
+            <Ionicons name="bulb-outline" size={21} color={colors.rose} />
           </View>
 
-          <View style={styles.inspirationContent}>
+          <View style={{ flex: 1 }}>
             <Text style={styles.inspirationTitle}>Suas inspirações</Text>
 
-            <Text style={styles.inspirationSubtitle}>
+            <Text style={styles.inspirationText}>
               {inspirationCount === 0
-                ? "Nenhuma referência salva ainda"
+                ? "Comece salvando uma referência."
                 : inspirationCount === 1
-                  ? "1 referência esperando para virar conteúdo"
-                  : `${inspirationCount} referências esperando para virar conteúdo`}
+                  ? "1 referência esperando para virar conteúdo."
+                  : `${inspirationCount} referências esperando para virar conteúdo.`}
             </Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={20} color={colors.rose} />
+          <Ionicons name="arrow-forward" size={18} color={colors.rose} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function getTaskInfo(content: ContentItem) {
-  switch (content.status) {
+function HomeContentRow({ content }: { content: ContentItem }) {
+  const meta = getStatusMeta(content.status);
+
+  return (
+    <TouchableOpacity
+      style={styles.todayContent}
+      activeOpacity={0.8}
+      onPress={() => router.push(`/conteudo/${content.id}`)}
+    >
+      <View
+        style={[
+          styles.todayContentIcon,
+
+          {
+            backgroundColor: meta.background,
+          },
+        ]}
+      >
+        <Ionicons name={meta.icon} size={19} color={meta.foreground} />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text
+          style={[
+            styles.todayStatus,
+
+            {
+              color: meta.foreground,
+            },
+          ]}
+        >
+          {meta.label}
+        </Text>
+
+        <Text style={styles.todayContentTitle} numberOfLines={2}>
+          {content.idea}
+        </Text>
+      </View>
+
+      <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
+    </TouchableOpacity>
+  );
+}
+
+function getStatusMeta(status: ContentStatus) {
+  switch (status) {
     case "ideia":
       return {
-        action: "Desenvolver ideia",
-
+        label: "IDEIA",
         icon: "bulb-outline" as const,
-
-        background: statusColors.ideia.background,
-
-        foreground: statusColors.ideia.foreground,
+        ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
-        action: "Finalizar roteiro",
-
+        label: "ROTEIRO",
         icon: "create-outline" as const,
-
-        background: statusColors.roteiro.background,
-
-        foreground: statusColors.roteiro.foreground,
+        ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
-        action: "Produzir conteúdo",
-
+        label: "PRODUZIR",
         icon: "videocam-outline" as const,
-
-        background: statusColors.gravar.background,
-
-        foreground: statusColors.gravar.foreground,
+        ...statusColors.gravar,
       };
 
     case "editar":
       return {
-        action: "Editar",
-
+        label: "EDITAR",
         icon: "cut-outline" as const,
-
-        background: statusColors.editar.background,
-
-        foreground: statusColors.editar.foreground,
+        ...statusColors.editar,
       };
 
     case "pronto":
       return {
-        action: "Publicar",
-
-        icon: "paper-plane-outline" as const,
-
-        background: statusColors.pronto.background,
-
-        foreground: statusColors.pronto.foreground,
+        label: "PRONTO",
+        icon: "checkmark-circle-outline" as const,
+        ...statusColors.pronto,
       };
 
-    default:
+    case "publicado":
       return {
-        action: "Continuar",
-
-        icon: "document-text-outline" as const,
-
-        background: colors.blueLight,
-
-        foreground: colors.blue,
+        label: "PUBLICADO",
+        icon: "paper-plane-outline" as const,
+        ...statusColors.publicado,
       };
   }
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Bom dia";
+  }
+
+  if (hour < 18) {
+    return "Boa tarde";
+  }
+
+  return "Boa noite";
 }
 
 function getMonday(date: Date) {
@@ -508,50 +521,65 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 110,
+
+    paddingBottom: 135,
   },
 
   header: {
-    height: 68,
+    height: 66,
 
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   brand: {
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: 10,
   },
 
-  brandIcon: {
-    width: 36,
-    height: 36,
+  brandMark: {
+    width: 34,
+    height: 34,
 
-    borderRadius: 12,
+    borderRadius: 11,
 
-    backgroundColor: colors.primary,
+    backgroundColor: colors.brand,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   brandName: {
-    fontSize: 17,
+    fontSize: 16,
+
     fontWeight: "700",
+
     color: colors.text,
+
+    letterSpacing: -0.2,
   },
 
   profileButton: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.blueLight,
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
 
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -561,85 +589,91 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
 
-  heroLabel: {
-    fontSize: typography.tiny,
+  greeting: {
+    marginBottom: spacing.sm,
 
-    fontWeight: "800",
-    letterSpacing: 1.3,
+    fontSize: typography.body,
+
+    fontWeight: "600",
 
     color: colors.terracotta,
-
-    marginBottom: spacing.sm,
   },
 
   heroTitle: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 34,
+
+    lineHeight: 39,
+
+    letterSpacing: -1.1,
 
     fontWeight: "700",
 
     color: colors.text,
-
-    maxWidth: 330,
   },
 
-  heroDescription: {
-    marginTop: 10,
+  heroText: {
+    maxWidth: 320,
 
-    fontSize: typography.body,
+    marginTop: 12,
+
+    fontSize: 14,
 
     lineHeight: 21,
 
     color: colors.textSecondary,
-
-    maxWidth: 340,
   },
 
-  goalCard: {
-    backgroundColor: colors.primaryDark,
+  weekGoal: {
+    padding: spacing.lg,
+
+    marginBottom: 32,
 
     borderRadius: radius.xl,
 
-    padding: spacing.lg,
+    backgroundColor: colors.ink,
 
-    marginBottom: spacing.xl,
+    ...shadows.hero,
   },
 
-  goalHeader: {
+  weekGoalHeader: {
     flexDirection: "row",
 
     alignItems: "center",
 
     justifyContent: "space-between",
+
+    gap: spacing.md,
   },
 
-  goalLabel: {
-    fontSize: typography.tiny,
+  weekGoalLabel: {
+    fontSize: 9,
 
-    fontWeight: "800",
+    letterSpacing: 1.2,
 
-    letterSpacing: 1,
+    fontWeight: "700",
 
-    color: "#BFCFC9",
+    color: colors.terracotta,
   },
 
-  goalValue: {
+  weekGoalTitle: {
     marginTop: 5,
 
-    fontSize: typography.heading,
+    fontSize: 22,
+
+    letterSpacing: -0.4,
 
     fontWeight: "700",
 
     color: colors.surface,
   },
 
-  goalIcon: {
-    width: 44,
-    height: 44,
+  weekGoalArrow: {
+    width: 38,
+    height: 38,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surface,
+    backgroundColor: colors.terracotta,
 
     alignItems: "center",
 
@@ -647,304 +681,387 @@ const styles = StyleSheet.create({
   },
 
   progressTrack: {
-    height: 7,
+    height: 6,
 
     marginTop: spacing.lg,
 
-    backgroundColor: "#456C61",
+    overflow: "hidden",
 
     borderRadius: radius.round,
 
-    overflow: "hidden",
+    backgroundColor: "#47423E",
   },
 
   progressFill: {
     height: "100%",
 
-    backgroundColor: colors.terracotta,
-
     borderRadius: radius.round,
-  },
 
-  goalHint: {
-    marginTop: spacing.sm,
-
-    fontSize: typography.caption,
-
-    lineHeight: 17,
-
-    color: "#D7E3DE",
+    backgroundColor: colors.terracotta,
   },
 
   goalFooter: {
+    marginTop: spacing.md,
+
     flexDirection: "row",
 
     alignItems: "center",
 
     justifyContent: "space-between",
 
-    marginTop: spacing.md,
-
-    paddingTop: spacing.md,
-
-    borderTopWidth: 1,
-
-    borderTopColor: "#456C61",
+    gap: spacing.sm,
   },
 
-  goalStat: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 7,
-  },
-
-  goalStatDot: {
-    width: 7,
-    height: 7,
-
-    borderRadius: radius.round,
-  },
-
-  goalStatText: {
-    fontSize: typography.caption,
-
-    color: "#D7E3DE",
-  },
-
-  goalAction: {
-    fontSize: typography.caption,
-
-    fontWeight: "700",
-
-    color: colors.terracottaLight,
-  },
-
-  section: {
-    marginBottom: spacing.xl,
-  },
-
-  emptyTasks: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    backgroundColor: colors.amberLight,
-
-    borderRadius: radius.lg,
-
-    padding: spacing.md,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-  },
-
-  emptyTasksIcon: {
-    width: 44,
-    height: 44,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    marginRight: spacing.md,
-  },
-
-  emptyTasksContent: {
+  goalHint: {
     flex: 1,
+
+    fontSize: 11,
+
+    lineHeight: 16,
+
+    color: "#CFC8C1",
   },
 
-  emptyTasksTitle: {
-    fontSize: typography.body,
+  completedText: {
+    fontSize: 10,
 
-    fontWeight: "700",
+    fontWeight: "600",
 
-    color: colors.text,
+    color: colors.sageLight,
   },
 
-  emptyTasksText: {
-    marginTop: 3,
-
-    fontSize: typography.caption,
-
-    lineHeight: 17,
-
-    color: colors.textSecondary,
-  },
-
-  weekCard: {
-    backgroundColor: colors.surfaceSoft,
-
-    borderRadius: radius.lg,
-
-    padding: spacing.md,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    ...shadows.card,
-  },
-
-  weekDays: {
+  sectionHeader: {
     flexDirection: "row",
+
+    alignItems: "flex-end",
 
     justifyContent: "space-between",
 
     marginBottom: spacing.md,
   },
 
-  day: {
-    alignItems: "center",
-  },
+  sectionTitle: {
+    fontSize: 22,
 
-  dayName: {
-    fontSize: typography.tiny,
-
-    fontWeight: "700",
-
-    color: colors.textMuted,
-
-    marginBottom: spacing.sm,
-  },
-
-  dayCircle: {
-    width: 38,
-    height: 38,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  dayCirclePlanned: {
-    backgroundColor: colors.blueLight,
-  },
-
-  dayCircleCompleted: {
-    backgroundColor: colors.sage,
-  },
-
-  dayNumber: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
-    color: colors.textSecondary,
-  },
-
-  dayNumberPlanned: {
-    color: colors.blue,
-  },
-
-  dayNumberCompleted: {
-    color: colors.surface,
-  },
-
-  statusDot: {
-    width: 5,
-    height: 5,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.border,
-
-    marginTop: spacing.sm,
-  },
-
-  statusDotPlanned: {
-    backgroundColor: colors.blue,
-  },
-
-  statusDotCompleted: {
-    backgroundColor: colors.sage,
-  },
-
-  planButton: {
-    height: 46,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    gap: spacing.sm,
-
-    backgroundColor: colors.blue,
-
-    borderRadius: radius.md,
-  },
-
-  planButtonText: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
-    color: colors.surface,
-  },
-
-  inspirationCard: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    backgroundColor: colors.roseLight,
-
-    borderRadius: radius.lg,
-
-    padding: spacing.md,
-
-    marginBottom: spacing.xl,
-
-    borderWidth: 1,
-
-    borderColor: "#E3CDD2",
-  },
-
-  inspirationIcon: {
-    width: 46,
-    height: 46,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    marginRight: spacing.md,
-  },
-
-  inspirationContent: {
-    flex: 1,
-  },
-
-  inspirationTitle: {
-    fontSize: typography.subheading,
+    letterSpacing: -0.5,
 
     fontWeight: "700",
 
     color: colors.text,
   },
 
-  inspirationSubtitle: {
+  sectionSubtitle: {
     marginTop: 3,
 
-    fontSize: typography.caption,
+    fontSize: 12,
 
-    lineHeight: 17,
+    color: colors.textSecondary,
+  },
+
+  textAction: {
+    fontSize: 12,
+
+    fontWeight: "700",
+
+    color: colors.primary,
+  },
+
+  emptyToday: {
+    minHeight: 88,
+
+    padding: spacing.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    borderRadius: radius.lg,
+
+    backgroundColor: colors.amberLight,
+  },
+
+  emptyTodayIcon: {
+    width: 42,
+    height: 42,
+
+    marginRight: spacing.md,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  emptyTodayTitle: {
+    fontSize: 14,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  emptyTodayText: {
+    marginTop: 3,
+
+    fontSize: 11,
+
+    lineHeight: 16,
+
+    color: colors.textSecondary,
+  },
+
+  emptyTodayAction: {
+    width: 34,
+    height: 34,
+
+    marginLeft: spacing.sm,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  todayList: {
+    gap: spacing.sm,
+  },
+
+  todayContent: {
+    minHeight: 72,
+
+    paddingVertical: 12,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    borderBottomWidth: 1,
+
+    borderBottomColor: colors.divider,
+  },
+
+  todayContentIcon: {
+    width: 42,
+    height: 42,
+
+    marginRight: spacing.md,
+
+    borderRadius: 14,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  todayStatus: {
+    fontSize: 9,
+
+    fontWeight: "700",
+
+    letterSpacing: 0.5,
+  },
+
+  todayContentTitle: {
+    marginTop: 3,
+
+    fontSize: 14,
+
+    lineHeight: 19,
+
+    fontWeight: "600",
+
+    color: colors.text,
+  },
+
+  weekSectionHeader: {
+    marginTop: 32,
+  },
+
+  weekSurface: {
+    padding: spacing.md,
+
+    borderRadius: radius.xl,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+  },
+
+  weekDays: {
+    flexDirection: "row",
+
+    justifyContent: "space-between",
+  },
+
+  day: {
+    alignItems: "center",
+  },
+
+  dayLabel: {
+    marginBottom: 8,
+
+    fontSize: 8,
+
+    fontWeight: "700",
+
+    color: colors.textMuted,
+  },
+
+  dayCircle: {
+    width: 36,
+    height: 36,
+
+    borderRadius: radius.round,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    backgroundColor: colors.surfaceSoft,
+  },
+
+  dayToday: {
+    borderWidth: 1.5,
+
+    borderColor: colors.primary,
+  },
+
+  dayPlanned: {
+    backgroundColor: colors.terracottaLight,
+
+    borderWidth: 0,
+  },
+
+  dayCompleted: {
+    backgroundColor: colors.sage,
+  },
+
+  dayNumber: {
+    fontSize: 13,
+
+    fontWeight: "600",
+
+    color: colors.textSecondary,
+  },
+
+  dayNumberToday: {
+    color: colors.primary,
+
+    fontWeight: "700",
+  },
+
+  dayNumberPlanned: {
+    color: colors.terracotta,
+
+    fontWeight: "700",
+  },
+
+  dayNumberCompleted: {
+    color: colors.surface,
+
+    fontWeight: "700",
+  },
+
+  dayDot: {
+    width: 4,
+    height: 4,
+
+    marginTop: 7,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "transparent",
+  },
+
+  dayDotPlanned: {
+    backgroundColor: colors.terracotta,
+  },
+
+  dayDotCompleted: {
+    backgroundColor: colors.sage,
+  },
+
+  weekAction: {
+    minHeight: 44,
+
+    marginTop: spacing.md,
+
+    paddingHorizontal: 4,
+
+    borderTopWidth: 1,
+
+    borderTopColor: colors.divider,
+
+    flexDirection: "row",
+
+    alignItems: "flex-end",
+
+    justifyContent: "space-between",
+  },
+
+  weekActionText: {
+    fontSize: 13,
+
+    fontWeight: "700",
+
+    color: colors.blue,
+  },
+
+  inspirationCard: {
+    minHeight: 82,
+
+    marginTop: spacing.xl,
+
+    padding: spacing.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    borderRadius: radius.xl,
+
+    backgroundColor: colors.roseLight,
+  },
+
+  inspirationMark: {
+    width: 44,
+    height: 44,
+
+    marginRight: spacing.md,
+
+    borderRadius: 15,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  inspirationTitle: {
+    fontSize: 15,
+
+    fontWeight: "700",
+
+    color: colors.text,
+  },
+
+  inspirationText: {
+    marginTop: 3,
+
+    paddingRight: spacing.sm,
+
+    fontSize: 11,
+
+    lineHeight: 16,
 
     color: colors.textSecondary,
   },
