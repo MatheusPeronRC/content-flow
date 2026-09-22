@@ -41,3 +41,41 @@ export async function getInspirationById(
     ) ?? null
   );
 }
+export async function updateInspiration(
+  id: string,
+  updates: Partial<Inspiration>
+): Promise<void> {
+  const inspirations = await getInspirations();
+
+  const updatedInspirations = inspirations.map(
+    (inspiration) =>
+      inspiration.id === id
+        ? {
+            ...inspiration,
+            ...updates,
+          }
+        : inspiration
+  );
+
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updatedInspirations)
+  );
+}
+
+export async function deleteInspiration(
+  id: string
+): Promise<void> {
+  const inspirations = await getInspirations();
+
+  const updatedInspirations =
+    inspirations.filter(
+      (inspiration) =>
+        inspiration.id !== id
+    );
+
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(updatedInspirations)
+  );
+}

@@ -42,6 +42,12 @@ export default function RootLayout() {
           presentation: "modal",
         }}
       />
+      <Stack.Screen
+        name="inspiracao/[id]"
+        options={{
+          presentation: "card",
+        }}
+      />
     </Stack>
   );
 }

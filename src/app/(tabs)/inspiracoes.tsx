@@ -18,12 +18,26 @@ import { Inspiration } from "../../types/inspiration";
 
 import { colors, radius, spacing, typography } from "../../constants/theme";
 
-const filters = ["Todas", "Reels", "Hooks", "Edição", "Tema"];
+const filters = [
+  "Todas",
+  "Hook",
+  "Tema",
+  "Edição",
+  "Formato",
+  "Roteiro",
+  "CTA",
+];
 
 export default function InspiracoesScreen() {
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [selectedFilter, setSelectedFilter] = useState("Todas");
+  const filteredInspirations =
+    selectedFilter === "Todas"
+      ? inspirations
+      : inspirations.filter(
+          (inspiration) => inspiration.category === selectedFilter,
+        );
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -86,21 +100,26 @@ export default function InspiracoesScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
         >
-          {filters.map((filter, index) => (
-            <TouchableOpacity
-              key={filter}
-              style={[styles.filter, index === 0 && styles.filterActive]}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  index === 0 && styles.filterTextActive,
-                ]}
+          {filters.map((filter) => {
+            const selected = selectedFilter === filter;
+
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[styles.filter, selected && styles.filterActive]}
+                onPress={() => setSelectedFilter(filter)}
               >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.filterText,
+                    selected && styles.filterTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* CONTEÚDO */}
@@ -113,10 +132,18 @@ export default function InspiracoesScreen() {
 
             <Text style={styles.loadingText}>Carregando inspirações...</Text>
           </View>
-        ) : inspirations.length === 0 ? (
-          <EmptyState />
+        ) : filteredInspirations.length === 0 ? (
+          <View style={styles.noResults}>
+            <Ionicons name="filter-outline" size={25} color={colors.primary} />
+
+            <Text style={styles.noResultsTitle}>Nada nesta categoria</Text>
+
+            <Text style={styles.noResultsText}>
+              Tente outro filtro ou salve uma nova inspiração.
+            </Text>
+          </View>
         ) : (
-          inspirations.map((inspiration) => (
+          filteredInspirations.map((inspiration) => (
             <InspirationCard key={inspiration.id} inspiration={inspiration} />
           ))
         )}
@@ -131,7 +158,18 @@ type InspirationCardProps = {
 
 function InspirationCard({ inspiration }: InspirationCardProps) {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.8}
+      onPress={() =>
+        router.push({
+          pathname: "/inspiracao/[id]",
+          params: {
+            id: inspiration.id,
+          },
+        })
+      }
+    >
       <View style={styles.preview}>
         <Ionicons
           name={
@@ -182,14 +220,16 @@ function InspirationCard({ inspiration }: InspirationCardProps) {
 
           <TouchableOpacity
             style={styles.createButton}
-            onPress={() =>
+            onPress={(event) => {
+              event.stopPropagation();
+
               router.push({
                 pathname: "/conteudo/criar",
                 params: {
                   inspirationId: inspiration.id,
                 },
-              })
-            }
+              });
+            }}
           >
             <Text style={styles.createButtonText}>Criar minha versão</Text>
 
@@ -197,7 +237,7 @@ function InspirationCard({ inspiration }: InspirationCardProps) {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -449,5 +489,29 @@ const styles = StyleSheet.create({
     color: colors.surface,
     fontSize: typography.body,
     fontWeight: "700",
+  },
+  noResults: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+  },
+
+  noResultsTitle: {
+    marginTop: spacing.sm,
+    fontSize: typography.subheading,
+    fontWeight: "700",
+    color: colors.text,
+  },
+
+  noResultsText: {
+    marginTop: 4,
+    maxWidth: 240,
+    textAlign: "center",
+    fontSize: typography.caption,
+    lineHeight: 18,
+    color: colors.textSecondary,
   },
 });
