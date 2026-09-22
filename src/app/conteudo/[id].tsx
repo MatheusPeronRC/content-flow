@@ -1,44 +1,45 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon from "../../components/PlatformIcon";
 
 import {
-    deleteContent,
-    getContentById,
-    updateContent,
+  deleteContent,
+  getContentById,
+  updateContent,
 } from "../../services/contentStorage";
 
 import { getInspirationById } from "../../services/inspirationStorage";
 
 import {
-    ContentItem,
-    ContentReference,
-    ContentStatus,
+  ContentItem,
+  ContentReference,
+  ContentStatus,
 } from "../../types/content";
 
 import {
-    colors,
-    fonts,
-    radius,
-    shadows,
-    spacing,
-    statusColors,
+  colors,
+  fonts,
+  radius,
+  shadows,
+  spacing,
+  statusColors,
 } from "../../constants/theme";
 
 const formats = ["Reel", "Carrossel", "Story", "Foto"];
@@ -251,7 +252,6 @@ export default function ContentDetailsScreen() {
 
     router.push({
       pathname: "/conteudo/roteiro",
-
       params: {
         contentId: content.id,
       },
@@ -324,7 +324,6 @@ export default function ContentDetailsScreen() {
 
     router.push({
       pathname: "/inspiracao/[id]",
-
       params: {
         id: inspirationId,
       },
@@ -347,7 +346,6 @@ export default function ContentDetailsScreen() {
         {
           text: "Excluir",
           style: "destructive",
-
           onPress: async () => {
             try {
               await deleteContent(content.id);
@@ -407,16 +405,12 @@ export default function ContentDetailsScreen() {
 
   const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
 
+  const scriptPoints = content.script.points.filter((point) => point.trim());
+
   const hasScript =
-    Boolean(content.script?.hook?.trim()) ||
-    Boolean(content.script?.points?.some((point) => point.trim())) ||
-    Boolean(content.script?.cta?.trim());
-
-  const ideaLength = content.idea.trim().length;
-
-  const isLongIdea = ideaLength > 85;
-
-  const isVeryLongIdea = ideaLength > 180;
+    Boolean(content.script.hook.trim()) ||
+    scriptPoints.length > 0 ||
+    Boolean(content.script.cta.trim());
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -428,6 +422,7 @@ export default function ContentDetailsScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerButton}
+            activeOpacity={0.8}
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
@@ -437,6 +432,7 @@ export default function ContentDetailsScreen() {
 
           <TouchableOpacity
             style={[styles.headerButton, editing && styles.headerButtonEditing]}
+            activeOpacity={0.8}
             onPress={() => {
               if (editing) {
                 handleCancelEdit();
@@ -453,152 +449,31 @@ export default function ContentDetailsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View
-          style={[
-            styles.heroPanel,
-            {
-              backgroundColor: status.background,
-            },
-          ]}
-        >
-          <View style={styles.heroBubbleOne} />
-
-          <View style={styles.heroBubbleTwo} />
-
-          <View style={styles.heroTop}>
-            <View
-              style={[
-                styles.statusPill,
-
-                {
-                  backgroundColor: status.background,
-                },
-              ]}
-            >
-              <Ionicons
-                name={status.icon}
-                size={14}
-                color={status.foreground}
-              />
-
-              <Text
-                style={[
-                  styles.statusText,
-
-                  {
-                    color: status.foreground,
-                  },
-                ]}
-              >
-                {status.label}
-              </Text>
-            </View>
-
-            {content.plannedDate && (
-              <View style={styles.datePill}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={13}
-                  color={colors.blue}
-                />
-
-                <Text style={styles.dateText}>
-                  {formatDate(content.plannedDate)}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {!editing && (
-            <View style={styles.heroIdentity}>
-              {content.reference ? (
-                <InspirationThumbnail
-                  thumbnailUrl={content.reference.thumbnailUrl}
-                  source={content.reference.source}
-                  variant="compact"
-                  style={styles.heroThumbnail}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.heroFallbackMark,
-                    {
-                      backgroundColor: status.foreground,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={status.icon}
-                    size={22}
-                    color={colors.surface}
-                  />
-                </View>
-              )}
-
-              <View style={styles.heroIdentityText}>
-                <Text style={styles.heroEyebrow}>
-                  {content.reference
-                    ? "CRIADO A PARTIR DE UMA REFERÊNCIA"
-                    : "CONTEÚDO ORIGINAL"}
-                </Text>
-
-                <Text style={styles.heroIdentityHint} numberOfLines={1}>
-                  {content.reference
-                    ? content.reference.mediaTitle?.trim() ||
-                      content.reference.source
-                    : content.format || "Seu conteúdo em produção"}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {editing ? (
-            <TextInput
-              value={idea}
-              onChangeText={setIdea}
-              multiline
-              textAlignVertical="top"
-              placeholder="Qual é a ideia do conteúdo?"
-              placeholderTextColor={colors.textMuted}
-              style={styles.ideaInput}
-            />
-          ) : (
-            <View style={isLongIdea ? styles.longIdeaSurface : undefined}>
-              {isLongIdea && (
-                <Text style={styles.longIdeaLabel}>IDEIA DO CONTEÚDO</Text>
-              )}
-
-              <Text
-                style={[
-                  styles.title,
-
-                  isLongIdea && styles.titleLong,
-
-                  isVeryLongIdea && styles.titleVeryLong,
-                ]}
-              >
-                {content.idea}
-              </Text>
-            </View>
-          )}
-
-          {!editing && (
-            <View style={styles.metaRow}>
-              {content.format && (
-                <MetaItem icon="phone-portrait-outline" text={content.format} />
-              )}
-
-              {content.objective && (
-                <MetaItem icon="flag-outline" text={content.objective} />
-              )}
-            </View>
-          )}
-        </View>
-
         {editing ? (
-          <View style={styles.editingArea}>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>FORMATO</Text>
+          <View style={styles.editingContent}>
+            <Text style={styles.editEyebrow}>EDITAR CONTEÚDO</Text>
+
+            <Text style={styles.editTitle}>
+              Ajuste as informações principais.
+            </Text>
+
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>IDEIA</Text>
+
+              <TextInput
+                value={idea}
+                onChangeText={setIdea}
+                multiline
+                scrollEnabled={false}
+                textAlignVertical="top"
+                placeholder="Qual é a ideia do conteúdo?"
+                placeholderTextColor={colors.textMuted}
+                style={styles.ideaInput}
+              />
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>FORMATO</Text>
 
               <View style={styles.options}>
                 {formats.map((item) => {
@@ -608,12 +483,12 @@ export default function ContentDetailsScreen() {
                     <TouchableOpacity
                       key={item}
                       style={[styles.option, selected && styles.optionSelected]}
+                      activeOpacity={0.8}
                       onPress={() => setFormat(selected ? null : item)}
                     >
                       <Text
                         style={[
                           styles.optionText,
-
                           selected && styles.optionTextSelected,
                         ]}
                       >
@@ -625,8 +500,8 @@ export default function ContentDetailsScreen() {
               </View>
             </View>
 
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>OBJETIVO</Text>
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>OBJETIVO</Text>
 
               <View style={styles.objectiveList}>
                 {objectives.map((item) => {
@@ -637,9 +512,9 @@ export default function ContentDetailsScreen() {
                       key={item}
                       style={[
                         styles.objectiveOption,
-
                         selected && styles.objectiveOptionSelected,
                       ]}
+                      activeOpacity={0.8}
                       onPress={() => setObjective(selected ? null : item)}
                     >
                       <View
@@ -658,66 +533,128 @@ export default function ContentDetailsScreen() {
             <TouchableOpacity
               style={[
                 styles.saveButton,
-
                 !idea.trim() && styles.saveButtonDisabled,
               ]}
-              disabled={!idea.trim()}
               activeOpacity={0.86}
+              disabled={!idea.trim()}
               onPress={handleSave}
             >
-              <View style={styles.saveButtonMark}>
-                <Ionicons
-                  name="checkmark"
-                  size={17}
-                  color={idea.trim() ? colors.terracotta : colors.textMuted}
-                />
-              </View>
+              <Ionicons name="checkmark" size={18} color={colors.surface} />
 
-              <Text
-                style={[
-                  styles.saveButtonText,
-
-                  !idea.trim() && styles.saveButtonTextDisabled,
-                ]}
-              >
-                Salvar alterações
-              </Text>
+              <Text style={styles.saveButtonText}>Salvar alterações</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionHeadingRow}>
-                <View style={styles.scriptSectionMark}>
+            <View style={styles.overview}>
+              <View style={styles.overviewTop}>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: status.background,
+                    },
+                  ]}
+                >
                   <Ionicons
-                    name="document-text-outline"
-                    size={19}
-                    color={colors.amber}
+                    name={status.icon}
+                    size={13}
+                    color={status.foreground}
                   />
+
+                  <Text
+                    style={[
+                      styles.statusText,
+                      {
+                        color: status.foreground,
+                      },
+                    ]}
+                  >
+                    {status.label}
+                  </Text>
                 </View>
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.sectionEyebrow}>
-                    ESTRUTURA DO CONTEÚDO
-                  </Text>
+                {content.plannedDate ? (
+                  <View style={styles.datePill}>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={13}
+                      color={colors.blue}
+                    />
 
-                  <Text style={styles.sectionTitle}>Roteiro</Text>
+                    <Text style={styles.dateText}>
+                      {formatDate(content.plannedDate)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
 
-                  <Text style={styles.sectionSubtitle}>
-                    Sua estrutura para criar este conteúdo.
-                  </Text>
+              <Text style={styles.overviewTitle}>{content.idea}</Text>
+
+              <View style={styles.metaRow}>
+                {content.format ? (
+                  <MetaPill
+                    icon="phone-portrait-outline"
+                    text={content.format}
+                  />
+                ) : null}
+
+                {content.objective ? (
+                  <MetaPill icon="flag-outline" text={content.objective} />
+                ) : null}
+              </View>
+
+              {content.reference ? (
+                <View style={styles.originStrip}>
+                  <InspirationThumbnail
+                    thumbnailUrl={content.reference.thumbnailUrl}
+                    source={content.reference.source}
+                    variant="compact"
+                    style={styles.originThumbnail}
+                  />
+
+                  <View style={styles.originContent}>
+                    <Text style={styles.originLabel}>
+                      CRIADO A PARTIR DE UMA REFERÊNCIA
+                    </Text>
+
+                    <Text style={styles.originTitle} numberOfLines={2}>
+                      {content.reference.mediaTitle?.trim() ||
+                        content.reference.note?.trim() ||
+                        `Referência do ${content.reference.source}`}
+                    </Text>
+
+                    <View style={styles.originSourceRow}>
+                      <PlatformIcon
+                        source={content.reference.source}
+                        size={12}
+                      />
+
+                      <Text style={styles.originSourceText}>
+                        {content.reference.source}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
+              ) : null}
+            </View>
+
+            <View style={styles.sectionHeading}>
+              <View>
+                <Text style={styles.sectionEyebrow}>ROTEIRO</Text>
+
+                <Text style={styles.sectionTitle}>Estrutura do conteúdo</Text>
               </View>
 
               <TouchableOpacity
-                style={styles.editScriptAction}
+                style={styles.editScriptButton}
                 activeOpacity={0.8}
                 onPress={handleEditScript}
               >
                 <Ionicons
                   name="create-outline"
-                  size={16}
-                  color={colors.amber}
+                  size={15}
+                  color={colors.terracotta}
                 />
 
                 <Text style={styles.editScriptText}>Editar</Text>
@@ -727,317 +664,153 @@ export default function ContentDetailsScreen() {
             {!hasScript ? (
               <TouchableOpacity
                 style={styles.emptyScript}
-                activeOpacity={0.85}
+                activeOpacity={0.84}
                 onPress={handleEditScript}
               >
-                <View style={styles.emptyScriptMark}>
+                <View style={styles.emptyScriptIcon}>
                   <Ionicons
                     name="document-text-outline"
-                    size={21}
+                    size={20}
                     color={colors.amber}
                   />
                 </View>
 
-                <View style={{ flex: 1 }}>
+                <View
+                  style={{
+                    flex: 1,
+                  }}
+                >
                   <Text style={styles.emptyScriptTitle}>
                     Roteiro ainda vazio
                   </Text>
 
                   <Text style={styles.emptyScriptText}>
-                    Comece com uma estrutura simples e ajuste do seu jeito.
+                    Abra o editor e construa uma estrutura simples.
                   </Text>
                 </View>
 
-                <Ionicons name="arrow-forward" size={17} color={colors.amber} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={17}
+                  color={colors.textMuted}
+                />
               </TouchableOpacity>
             ) : (
-              <View style={styles.scriptStack}>
-                {content.script.hook.trim() && (
-                  <View style={[styles.scriptSectionCard, styles.hookCard]}>
-                    <ScriptHeader
-                      icon="flash-outline"
-                      label="HOOK"
-                      hint="Como começa"
-                      color={colors.terracotta}
-                      background={colors.terracottaLight}
-                    />
-
-                    <Text style={styles.hookText}>{content.script.hook}</Text>
-                  </View>
-                )}
-
-                {content.script.points.some((point) => point.trim()) && (
-                  <View
-                    style={[styles.scriptSectionCard, styles.developmentCard]}
+              <View style={styles.scriptDocument}>
+                {content.script.hook.trim() ? (
+                  <ScriptBlock
+                    label="HOOK"
+                    hint="Como começa"
+                    accent={colors.terracotta}
+                    icon="flash-outline"
                   >
-                    <ScriptHeader
-                      icon="list-outline"
-                      label="DESENVOLVIMENTO"
-                      hint={`${
-                        content.script.points.filter((point) => point.trim())
-                          .length
-                      } ${
-                        content.script.points.filter((point) => point.trim())
-                          .length === 1
-                          ? "etapa"
-                          : "etapas"
-                      }`}
-                      color={colors.amber}
-                      background={colors.amberLight}
-                    />
+                    <Text style={styles.hookText}>{content.script.hook}</Text>
+                  </ScriptBlock>
+                ) : null}
 
+                {content.script.hook.trim() && scriptPoints.length > 0 ? (
+                  <View style={styles.scriptDivider} />
+                ) : null}
+
+                {scriptPoints.length > 0 ? (
+                  <ScriptBlock
+                    label="DESENVOLVIMENTO"
+                    hint={`${scriptPoints.length} ${
+                      scriptPoints.length === 1 ? "etapa" : "etapas"
+                    }`}
+                    accent={colors.amber}
+                    icon="list-outline"
+                  >
                     <View style={styles.points}>
-                      {content.script.points
-                        .filter((point) => point.trim())
-                        .map((point, index) => (
-                          <View
-                            key={`${point}-${index}`}
-                            style={styles.pointRow}
-                          >
-                            <View style={styles.pointNumber}>
-                              <Text style={styles.pointNumberText}>
-                                {String(index + 1).padStart(2, "0")}
-                              </Text>
-                            </View>
+                      {scriptPoints.map((point, index) => (
+                        <View key={`${point}-${index}`} style={styles.pointRow}>
+                          <Text style={styles.pointNumber}>
+                            {String(index + 1).padStart(2, "0")}
+                          </Text>
 
-                            <Text style={styles.pointText}>{point}</Text>
-                          </View>
-                        ))}
+                          <Text style={styles.pointText}>{point}</Text>
+                        </View>
+                      ))}
                     </View>
-                  </View>
-                )}
+                  </ScriptBlock>
+                ) : null}
 
-                {content.script.cta.trim() && (
-                  <View style={[styles.scriptSectionCard, styles.ctaCard]}>
-                    <ScriptHeader
-                      icon="megaphone-outline"
-                      label="CTA"
-                      hint="Como termina"
-                      color={colors.sage}
-                      background={colors.sageLight}
-                    />
+                {scriptPoints.length > 0 && content.script.cta.trim() ? (
+                  <View style={styles.scriptDivider} />
+                ) : null}
 
+                {content.script.cta.trim() ? (
+                  <ScriptBlock
+                    label="CTA"
+                    hint="Como termina"
+                    accent={colors.sage}
+                    icon="megaphone-outline"
+                  >
                     <Text style={styles.ctaText}>{content.script.cta}</Text>
-                  </View>
-                )}
+                  </ScriptBlock>
+                ) : null}
               </View>
             )}
 
-            {content.reference && (
-              <>
-                <View style={styles.referenceHeader}>
-                  <View style={styles.sectionHeadingRow}>
-                    <View style={styles.referenceSectionMark}>
-                      <Ionicons
-                        name="images-outline"
-                        size={19}
-                        color={colors.rose}
-                      />
-                    </View>
+            <View style={styles.flowSection}>
+              <View style={styles.flowHeading}>
+                <Text style={styles.sectionEyebrow}>SEU FLUXO</Text>
 
-                    <View>
-                      <Text style={styles.sectionEyebrowRose}>
-                        ORIGEM DA IDEIA
-                      </Text>
-
-                      <Text style={styles.sectionTitle}>Referência</Text>
-
-                      <Text style={styles.sectionSubtitle}>
-                        O conteúdo que deu origem a esta ideia.
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.referenceCard}>
-                  <View style={styles.referenceVisualRow}>
-                    <InspirationThumbnail
-                      thumbnailUrl={content.reference.thumbnailUrl}
-                      source={content.reference.source}
-                      variant="compact"
-                      style={styles.referenceThumbnail}
-                    />
-
-                    <View style={styles.referenceMain}>
-                      <View style={styles.referenceMetaRow}>
-                        <Text style={styles.referenceSource}>
-                          {content.reference.source}
-                        </Text>
-
-                        <View style={styles.referenceMetaDot} />
-
-                        <Text
-                          style={styles.referenceCategory}
-                          numberOfLines={1}
-                        >
-                          {content.reference.category ?? "Referência original"}
-                        </Text>
-                      </View>
-
-                      <Text
-                        style={styles.referenceMediaTitle}
-                        numberOfLines={3}
-                      >
-                        {content.reference.mediaTitle?.trim() ||
-                          content.reference.note?.trim() ||
-                          `Referência do ${content.reference.source}`}
-                      </Text>
-
-                      {content.reference.authorName?.trim() ? (
-                        <Text style={styles.referenceAuthor} numberOfLines={1}>
-                          {content.reference.authorName}
-                        </Text>
-                      ) : (
-                        <Text style={styles.referenceUrl} numberOfLines={1}>
-                          {cleanUrl(content.reference.url)}
-                        </Text>
-                      )}
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.referenceOpen}
-                      activeOpacity={0.8}
-                      onPress={handleOpenReference}
-                    >
-                      <Ionicons
-                        name="open-outline"
-                        size={17}
-                        color={colors.rose}
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  {content.reference.note?.trim() &&
-                    content.reference.note.trim() !==
-                      content.reference.mediaTitle?.trim() && (
-                      <View style={styles.referenceNoteArea}>
-                        <Text style={styles.referenceNoteLabel}>
-                          O QUE TE CHAMOU ATENÇÃO
-                        </Text>
-
-                        <Text style={styles.referenceNote}>
-                          {content.reference.note}
-                        </Text>
-                      </View>
-                    )}
-
-                  <View style={styles.referenceActions}>
-                    <TouchableOpacity
-                      style={styles.openReferenceAction}
-                      onPress={handleOpenReference}
-                    >
-                      <Text style={styles.openReferenceText}>
-                        Abrir original
-                      </Text>
-
-                      <Ionicons
-                        name="arrow-forward"
-                        size={15}
-                        color={colors.rose}
-                      />
-                    </TouchableOpacity>
-
-                    {inspirationExists && (
-                      <TouchableOpacity
-                        style={styles.savedInspirationAction}
-                        onPress={handleOpenInspiration}
-                      >
-                        <Text style={styles.savedInspirationText}>
-                          Ver inspiração salva
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </>
-            )}
-
-            <View style={styles.flowPanel}>
-              <View style={styles.flowBubble} />
-
-              <View style={styles.flowHeader}>
-                <View style={styles.flowBadge}>
-                  <Ionicons
-                    name="git-branch-outline"
-                    size={14}
-                    color={colors.terracotta}
-                  />
-
-                  <Text style={styles.flowBadgeText}>SEU FLUXO</Text>
-                </View>
-
-                <View style={styles.flowStage}>
-                  <Text style={styles.flowStageText}>{status.label}</Text>
-                </View>
+                <Text style={styles.flowCurrent}>
+                  Etapa atual: {status.label.toLowerCase()}
+                </Text>
               </View>
 
-              <Text style={styles.flowTitle}>Próxima etapa</Text>
-
-              <Text style={styles.flowDescription}>
-                Mova o conteúdo quando fizer sentido para sua produção.
-              </Text>
-
-              {nextStatus && nextMeta ? (
+              {nextMeta ? (
                 <TouchableOpacity
-                  style={[
-                    styles.advanceButton,
-
-                    {
-                      backgroundColor: nextMeta.background,
-                    },
-                  ]}
-                  activeOpacity={0.85}
+                  style={styles.nextStageCard}
+                  activeOpacity={0.84}
                   onPress={handleAdvance}
                 >
-                  <View style={styles.advanceInfo}>
-                    <View
-                      style={[
-                        styles.advanceMark,
-
-                        {
-                          backgroundColor: nextMeta.foreground,
-                        },
-                      ]}
-                    >
-                      <Ionicons
-                        name={nextMeta.icon}
-                        size={17}
-                        color={colors.surface}
-                      />
-                    </View>
-
-                    <View>
-                      <Text style={styles.advanceEyebrow}>AVANÇAR PARA</Text>
-
-                      <Text
-                        style={[
-                          styles.advanceText,
-
-                          {
-                            color: nextMeta.foreground,
-                          },
-                        ]}
-                      >
-                        {nextMeta.label}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.advanceArrow}>
+                  <View
+                    style={[
+                      styles.nextStageIcon,
+                      {
+                        backgroundColor: nextMeta.background,
+                      },
+                    ]}
+                  >
                     <Ionicons
-                      name="arrow-forward"
-                      size={17}
+                      name={nextMeta.icon}
+                      size={19}
                       color={nextMeta.foreground}
                     />
                   </View>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.completedFlow}>
-                  <View style={styles.completedMark}>
-                    <Ionicons name="checkmark" size={17} color={colors.sage} />
+
+                  <View
+                    style={{
+                      flex: 1,
+                    }}
+                  >
+                    <Text style={styles.nextStageLabel}>PRÓXIMA ETAPA</Text>
+
+                    <Text style={styles.nextStageTitle}>
+                      Avançar para {nextMeta.label.toLowerCase()}
+                    </Text>
+
+                    <Text style={styles.nextStageText}>
+                      Atualize o estágio quando estiver pronto para continuar.
+                    </Text>
                   </View>
 
-                  <View style={{ flex: 1 }}>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.completedCard}>
+                  <View style={styles.completedIcon}>
+                    <Ionicons name="checkmark" size={18} color={colors.sage} />
+                  </View>
+
+                  <View>
                     <Text style={styles.completedTitle}>Fluxo concluído</Text>
 
                     <Text style={styles.completedText}>
@@ -1047,6 +820,108 @@ export default function ContentDetailsScreen() {
                 </View>
               )}
             </View>
+
+            {content.reference ? (
+              <View style={styles.referenceSection}>
+                <View style={styles.referenceHeading}>
+                  <Text style={styles.sectionEyebrow}>REFERÊNCIA</Text>
+
+                  <Text style={styles.referenceHeadingText}>
+                    Origem da ideia
+                  </Text>
+                </View>
+
+                <View style={styles.referenceCard}>
+                  <InspirationThumbnail
+                    thumbnailUrl={content.reference.thumbnailUrl}
+                    source={content.reference.source}
+                    variant="compact"
+                    style={styles.referenceThumbnail}
+                  />
+
+                  <View style={styles.referenceContent}>
+                    <View style={styles.referenceSourceRow}>
+                      <PlatformIcon
+                        source={content.reference.source}
+                        size={12}
+                      />
+
+                      <Text style={styles.referenceSource}>
+                        {content.reference.source}
+                      </Text>
+
+                      {content.reference.category ? (
+                        <>
+                          <View style={styles.metaDot} />
+
+                          <Text
+                            style={styles.referenceCategory}
+                            numberOfLines={1}
+                          >
+                            {content.reference.category}
+                          </Text>
+                        </>
+                      ) : null}
+                    </View>
+
+                    <Text style={styles.referenceTitle} numberOfLines={2}>
+                      {content.reference.mediaTitle?.trim() ||
+                        content.reference.note?.trim() ||
+                        `Referência do ${content.reference.source}`}
+                    </Text>
+
+                    <Text style={styles.referenceSecondary} numberOfLines={1}>
+                      {content.reference.authorName?.trim() ||
+                        cleanUrl(content.reference.url)}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.referenceOpen}
+                    activeOpacity={0.8}
+                    onPress={handleOpenReference}
+                  >
+                    <Ionicons
+                      name="open-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {content.reference.note?.trim() &&
+                content.reference.note.trim() !==
+                  content.reference.mediaTitle?.trim() ? (
+                  <View style={styles.referenceNote}>
+                    <Text style={styles.referenceNoteLabel}>
+                      O QUE TE CHAMOU ATENÇÃO
+                    </Text>
+
+                    <Text style={styles.referenceNoteText}>
+                      {content.reference.note}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {inspirationExists ? (
+                  <TouchableOpacity
+                    style={styles.savedInspirationLink}
+                    activeOpacity={0.8}
+                    onPress={handleOpenInspiration}
+                  >
+                    <Text style={styles.savedInspirationText}>
+                      Ver inspiração salva
+                    </Text>
+
+                    <Ionicons
+                      name="chevron-forward"
+                      size={15}
+                      color={colors.textMuted}
+                    />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
 
             <View style={styles.bottomDivider} />
 
@@ -1066,65 +941,69 @@ export default function ContentDetailsScreen() {
   );
 }
 
-type MetaItemProps = {
+type MetaPillProps = {
   icon: keyof typeof Ionicons.glyphMap;
   text: string;
 };
 
-function MetaItem({ icon, text }: MetaItemProps) {
+function MetaPill({ icon, text }: MetaPillProps) {
   return (
-    <View style={styles.metaItem}>
-      <Ionicons name={icon} size={13} color={colors.textMuted} />
+    <View style={styles.metaPill}>
+      <Ionicons name={icon} size={12} color={colors.textMuted} />
 
-      <Text style={styles.metaItemText}>{text}</Text>
+      <Text style={styles.metaPillText}>{text}</Text>
     </View>
   );
 }
 
-type ScriptHeaderProps = {
-  icon: keyof typeof Ionicons.glyphMap;
+type ScriptBlockProps = {
   label: string;
   hint: string;
-  color: string;
-  background: string;
+  accent: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  children: ReactNode;
 };
 
-function ScriptHeader({
-  icon,
+function ScriptBlock({
   label,
   hint,
-  color,
-  background,
-}: ScriptHeaderProps) {
+  accent,
+  icon,
+  children,
+}: ScriptBlockProps) {
   return (
-    <View style={styles.scriptHeaderRow}>
-      <View
-        style={[
-          styles.scriptMark,
+    <View style={styles.scriptBlock}>
+      <View style={styles.scriptBlockHeader}>
+        <View style={styles.scriptBlockTitleRow}>
+          <View
+            style={[
+              styles.scriptAccent,
+              {
+                backgroundColor: accent,
+              },
+            ]}
+          />
 
-          {
-            backgroundColor: background,
-          },
-        ]}
-      >
-        <Ionicons name={icon} size={17} color={color} />
+          <Text
+            style={[
+              styles.scriptLabel,
+              {
+                color: accent,
+              },
+            ]}
+          >
+            {label}
+          </Text>
+        </View>
+
+        <View style={styles.scriptHintRow}>
+          <Ionicons name={icon} size={13} color={colors.textMuted} />
+
+          <Text style={styles.scriptHint}>{hint}</Text>
+        </View>
       </View>
 
-      <View>
-        <Text
-          style={[
-            styles.scriptLabel,
-
-            {
-              color,
-            },
-          ]}
-        >
-          {label}
-        </Text>
-
-        <Text style={styles.scriptHint}>{hint}</Text>
-      </View>
+      <View style={styles.scriptBlockContent}>{children}</View>
     </View>
   );
 }
@@ -1185,25 +1064,6 @@ function getStatusMeta(status: ContentStatus) {
   }
 }
 
-function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
-  switch (source) {
-    case "Instagram":
-      return "logo-instagram";
-
-    case "TikTok":
-      return "musical-note-outline";
-
-    case "YouTube":
-      return "logo-youtube";
-
-    case "Kwai":
-      return "play-outline";
-
-    default:
-      return "link-outline";
-  }
-}
-
 function formatDate(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
 
@@ -1225,40 +1085,29 @@ function cleanUrl(url: string) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
     paddingBottom: 50,
   },
 
   header: {
-    height: 68,
-
+    height: 70,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
   headerButton: {
     width: 42,
     height: 42,
-
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
@@ -1268,366 +1117,86 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     fontSize: 18,
-
     fontFamily: fonts.semibold,
-
     color: colors.text,
   },
 
-  heroPanel: {
-    position: "relative",
-
-    overflow: "hidden",
-
-    marginTop: 14,
-
-    marginBottom: 26,
-
-    padding: 18,
-
-    borderRadius: 28,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.72)",
-
-    ...shadows.card,
+  editingContent: {
+    paddingTop: 16,
   },
 
-  heroBubbleOne: {
-    position: "absolute",
-
-    width: 128,
-    height: 128,
-
-    top: -50,
-    right: -36,
-
-    borderRadius: 64,
-
-    backgroundColor: "rgba(142, 127, 194, 0.13)",
-  },
-
-  heroBubbleTwo: {
-    position: "absolute",
-
-    width: 82,
-    height: 82,
-
-    left: -28,
-    bottom: -26,
-
-    borderRadius: 41,
-
-    backgroundColor: "rgba(121, 165, 184, 0.12)",
-  },
-
-  heroTop: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  statusPill: {
-    minHeight: 32,
-
-    paddingHorizontal: 10,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.82)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 6,
-  },
-
-  statusText: {
+  editEyebrow: {
     fontSize: 10,
-
-    letterSpacing: 0.7,
-
+    letterSpacing: 0.8,
     fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
 
-  datePill: {
-    minHeight: 32,
-
-    paddingHorizontal: 10,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.82)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  dateText: {
-    fontSize: 10,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.blue,
-  },
-
-  heroIdentity: {
-    minHeight: 76,
-
-    marginTop: 16,
-
-    padding: 10,
-
-    borderRadius: 17,
-
-    backgroundColor: "rgba(255, 253, 252, 0.68)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  heroThumbnail: {
-    width: 54,
-    height: 64,
-
-    borderRadius: 12,
-  },
-
-  heroFallbackMark: {
-    width: 54,
-    height: 54,
-
-    borderRadius: 15,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  heroIdentityText: {
-    flex: 1,
-
-    minWidth: 0,
-
-    marginLeft: 11,
-  },
-
-  heroEyebrow: {
-    fontSize: 9,
-
-    letterSpacing: 0.75,
-
+  editTitle: {
+    maxWidth: 320,
+    marginTop: 6,
+    fontSize: 28,
+    lineHeight: 35,
+    letterSpacing: -0.75,
     fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  heroIdentityHint: {
-    marginTop: 5,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.semibold,
-
     color: colors.text,
   },
 
-  title: {
-    maxWidth: 345,
-
-    marginTop: 17,
-
-    fontSize: 31,
-
-    lineHeight: 38,
-
-    letterSpacing: -0.9,
-
-    fontFamily: fonts.bold,
-
-    color: colors.text,
+  formSection: {
+    marginTop: 24,
   },
 
-  longIdeaSurface: {
-    marginTop: 16,
-
-    padding: 15,
-
-    borderRadius: 18,
-
-    backgroundColor: "rgba(255, 253, 252, 0.78)",
-
-    borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.72)",
-  },
-
-  longIdeaLabel: {
+  formLabel: {
     marginBottom: 9,
-
     fontSize: 10,
-
-    letterSpacing: 0.9,
-
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  titleLong: {
-    marginTop: 0,
-
-    maxWidth: "100%",
-
-    fontSize: 21,
-
-    lineHeight: 31,
-
-    letterSpacing: -0.25,
-
-    fontFamily: fonts.semibold,
-  },
-
-  titleVeryLong: {
-    fontSize: 18,
-
-    lineHeight: 29,
-
-    letterSpacing: 0,
-
-    fontFamily: fonts.regular,
+    color: colors.textMuted,
   },
 
   ideaInput: {
-    minHeight: 115,
-
-    marginTop: 16,
-
-    padding: 15,
-
-    borderRadius: 19,
-
+    minHeight: 135,
+    padding: 14,
+    borderRadius: 16,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
-    fontSize: 20,
-
-    lineHeight: 29,
-
-    fontFamily: fonts.semibold,
-
+    fontSize: 16,
+    lineHeight: 25,
+    fontFamily: fonts.regular,
     color: colors.text,
-  },
-
-  metaRow: {
-    marginTop: 15,
-
-    flexDirection: "row",
-
-    flexWrap: "wrap",
-
-    gap: 8,
-  },
-
-  metaItem: {
-    minHeight: 30,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.78)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  metaItemText: {
-    fontSize: 11,
-
-    fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  editingArea: {
-    paddingTop: 2,
-  },
-
-  field: {
-    marginBottom: 27,
-  },
-
-  fieldLabel: {
-    marginBottom: 10,
-
-    fontSize: 10,
-
-    letterSpacing: 1,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textMuted,
   },
 
   options: {
     flexDirection: "row",
-
     flexWrap: "wrap",
-
     gap: 8,
   },
 
   option: {
-    minHeight: 38,
-
-    paddingHorizontal: 15,
-
+    minHeight: 40,
+    paddingHorizontal: 13,
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   optionSelected: {
-    backgroundColor: colors.text,
-
-    borderColor: colors.text,
+    backgroundColor: colors.terracottaLight,
+    borderColor: "rgba(225,116,85,0.35)",
   },
 
   optionText: {
-    fontSize: 12,
-
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
     color: colors.textSecondary,
   },
 
   optionTextSelected: {
-    color: colors.surface,
+    color: colors.terracotta,
   },
 
   objectiveList: {
@@ -1635,43 +1204,28 @@ const styles = StyleSheet.create({
   },
 
   objectiveOption: {
-    minHeight: 54,
-
-    paddingHorizontal: 14,
-
-    borderRadius: 17,
-
+    minHeight: 52,
+    paddingHorizontal: 12,
+    borderRadius: 15,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     flexDirection: "row",
-
     alignItems: "center",
   },
 
   objectiveOptionSelected: {
-    borderColor: colors.terracotta,
-
-    backgroundColor: colors.terracottaLight,
+    borderColor: "rgba(225,116,85,0.38)",
   },
 
   radio: {
     width: 20,
     height: 20,
-
-    marginRight: 11,
-
+    marginRight: 10,
     borderRadius: radius.round,
-
     borderWidth: 1.5,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
@@ -1680,357 +1234,312 @@ const styles = StyleSheet.create({
   },
 
   radioDot: {
-    width: 10,
-    height: 10,
-
+    width: 9,
+    height: 9,
     borderRadius: radius.round,
-
     backgroundColor: colors.terracotta,
   },
 
   objectiveText: {
-    fontSize: 14,
-
+    fontSize: 13,
     fontFamily: fonts.medium,
-
     color: colors.text,
   },
 
   saveButton: {
-    minHeight: 58,
-
-    paddingHorizontal: 14,
-
-    borderRadius: 18,
-
+    minHeight: 56,
+    marginTop: 28,
+    borderRadius: 16,
     backgroundColor: colors.terracotta,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "center",
+    gap: 8,
+    ...shadows.soft,
   },
 
   saveButtonDisabled: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  saveButtonMark: {
-    width: 34,
-    height: 34,
-
-    marginRight: 10,
-
-    borderRadius: 11,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
+    opacity: 0.45,
   },
 
   saveButtonText: {
-    fontSize: 13,
-
+    fontSize: 14,
     fontFamily: fonts.bold,
-
     color: colors.surface,
   },
 
-  saveButtonTextDisabled: {
-    color: colors.textMuted,
+  overview: {
+    marginTop: 16,
+    marginBottom: 27,
   },
 
-  sectionHeader: {
-    marginBottom: 14,
-
+  overviewTop: {
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
-
-    gap: 12,
+    gap: 8,
   },
 
-  sectionHeadingRow: {
-    flex: 1,
-
+  statusPill: {
+    minHeight: 30,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
     flexDirection: "row",
-
     alignItems: "center",
-
-    gap: 10,
+    gap: 5,
   },
 
-  scriptSectionMark: {
-    width: 44,
-    height: 44,
+  statusText: {
+    fontSize: 10,
+    letterSpacing: 0.7,
+    fontFamily: fonts.bold,
+  },
 
-    borderRadius: 14,
-
-    backgroundColor: colors.amberLight,
-
+  datePill: {
+    minHeight: 30,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
     alignItems: "center",
-
-    justifyContent: "center",
+    gap: 5,
   },
 
-  referenceSectionMark: {
-    width: 44,
-    height: 44,
-
-    borderRadius: 14,
-
-    backgroundColor: colors.roseLight,
-
-    alignItems: "center",
-
-    justifyContent: "center",
+  dateText: {
+    fontSize: 10,
+    fontFamily: fonts.semibold,
+    color: colors.blue,
   },
 
-  sectionEyebrow: {
-    marginBottom: 1,
-
-    fontSize: 9,
-
-    letterSpacing: 0.8,
-
+  overviewTitle: {
+    maxWidth: 350,
+    marginTop: 15,
+    fontSize: 31,
+    lineHeight: 39,
+    letterSpacing: -0.95,
     fontFamily: fonts.bold,
-
-    color: colors.amber,
-  },
-
-  sectionEyebrowRose: {
-    marginBottom: 1,
-
-    fontSize: 9,
-
-    letterSpacing: 0.8,
-
-    fontFamily: fonts.bold,
-
-    color: colors.rose,
-  },
-
-  sectionTitle: {
-    fontSize: 23,
-
-    lineHeight: 29,
-
-    letterSpacing: -0.5,
-
-    fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
-  sectionSubtitle: {
-    maxWidth: 285,
+  metaRow: {
+    marginTop: 13,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
 
-    marginTop: 2,
+  metaPill: {
+    minHeight: 29,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
 
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
+  metaPillText: {
+    fontSize: 10,
+    fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
 
-  editScriptAction: {
-    minHeight: 40,
-
-    paddingHorizontal: 11,
-
-    borderRadius: 12,
-
-    backgroundColor: colors.amberLight,
-
+  originStrip: {
+    minHeight: 84,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
     flexDirection: "row",
-
     alignItems: "center",
+  },
 
+  originThumbnail: {
+    width: 54,
+    height: 66,
+    borderRadius: 11,
+  },
+
+  originContent: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 10,
+  },
+
+  originLabel: {
+    fontSize: 9,
+    letterSpacing: 0.75,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  originTitle: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  originSourceRow: {
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  originSourceText: {
+    fontSize: 10,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+
+  sectionHeading: {
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+
+  sectionEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  sectionTitle: {
+    marginTop: 3,
+    fontSize: 22,
+    lineHeight: 29,
+    letterSpacing: -0.4,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  editScriptButton: {
+    minHeight: 36,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: colors.terracottaLight,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
   },
 
   editScriptText: {
-    fontSize: 12,
-
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
-    color: colors.amber,
+    color: colors.terracotta,
   },
 
   emptyScript: {
-    minHeight: 88,
-
-    marginBottom: 30,
-
-    padding: 14,
-
-    borderRadius: 20,
-
-    backgroundColor: colors.amberLight,
-
+    minHeight: 82,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
-    borderColor: "rgba(201, 154, 69, 0.15)",
-
+    borderColor: colors.border,
     flexDirection: "row",
-
     alignItems: "center",
-
     ...shadows.soft,
   },
 
-  emptyScriptMark: {
-    width: 42,
-    height: 42,
-
-    marginRight: 11,
-
-    borderRadius: 13,
-
-    backgroundColor: colors.surface,
-
+  emptyScriptIcon: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+    borderRadius: 12,
+    backgroundColor: colors.amberLight,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   emptyScriptTitle: {
-    fontSize: 15,
-
+    fontSize: 14,
     fontFamily: fonts.semibold,
-
     color: colors.text,
   },
 
   emptyScriptText: {
-    marginTop: 4,
-
-    paddingRight: 8,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
+    marginTop: 3,
+    paddingRight: 5,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  scriptStack: {
-    marginBottom: 34,
-
-    gap: 11,
-  },
-
-  scriptSurface: {
-    display: "none",
-  },
-
-  scriptSectionCard: {
-    padding: 18,
-
+  scriptDocument: {
+    paddingHorizontal: 17,
     borderRadius: 21,
-
-    borderWidth: 1,
-
-    ...shadows.soft,
-  },
-
-  hookCard: {
-    backgroundColor: colors.terracottaLight,
-
-    borderColor: "rgba(225, 116, 85, 0.15)",
-  },
-
-  developmentCard: {
-    backgroundColor: colors.amberLight,
-
-    borderColor: "rgba(201, 154, 69, 0.15)",
-  },
-
-  ctaCard: {
-    backgroundColor: colors.sageLight,
-
-    borderColor: "rgba(123, 158, 136, 0.15)",
-  },
-
-  scriptSection: {
-    display: "none",
-  },
-
-  scriptHeaderRow: {
-    marginBottom: 15,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  scriptMark: {
-    width: 38,
-    height: 38,
-
-    marginRight: 10,
-
-    borderRadius: 11,
-
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
+  },
 
+  scriptBlock: {
+    paddingVertical: 18,
+  },
+
+  scriptBlockHeader: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
 
-    justifyContent: "center",
+  scriptBlockTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+
+  scriptAccent: {
+    width: 7,
+    height: 7,
+    borderRadius: radius.round,
   },
 
   scriptLabel: {
     fontSize: 10,
-
-    letterSpacing: 0.9,
-
+    letterSpacing: 0.85,
     fontFamily: fonts.bold,
   },
 
+  scriptHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
   scriptHint: {
-    marginTop: 2,
-
-    fontSize: 11,
-
+    fontSize: 9,
     fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
 
-    color: colors.textSecondary,
+  scriptBlockContent: {
+    marginTop: 13,
+  },
+
+  scriptDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
   },
 
   hookText: {
     fontSize: 18,
-
     lineHeight: 28,
-
-    letterSpacing: -0.15,
-
+    letterSpacing: -0.2,
     fontFamily: fonts.semibold,
-
     color: colors.text,
-  },
-
-  ctaText: {
-    fontSize: 16,
-
-    lineHeight: 25,
-
-    fontFamily: fonts.medium,
-
-    color: colors.text,
-  },
-
-  scriptDivider: {
-    display: "none",
   },
 
   points: {
@@ -2039,587 +1548,319 @@ const styles = StyleSheet.create({
 
   pointRow: {
     flexDirection: "row",
-
     alignItems: "flex-start",
   },
 
   pointNumber: {
-    width: 29,
-    height: 29,
-
-    marginRight: 11,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  pointNumberText: {
-    fontSize: 10,
-
+    width: 30,
+    paddingTop: 2,
+    fontSize: 9,
+    letterSpacing: 0.4,
     fontFamily: fonts.bold,
-
     color: colors.amber,
   },
 
   pointText: {
     flex: 1,
-
-    paddingTop: 2,
-
     fontSize: 15,
-
     lineHeight: 24,
-
     fontFamily: fonts.regular,
-
     color: colors.text,
   },
 
-  referenceHeader: {
-    marginBottom: 14,
+  ctaText: {
+    fontSize: 16,
+    lineHeight: 25,
+    fontFamily: fonts.semibold,
+    color: colors.text,
   },
 
-  referenceCard: {
-    position: "relative",
+  flowSection: {
+    marginTop: 26,
+  },
 
-    overflow: "hidden",
+  flowHeading: {
+    marginBottom: 10,
+  },
 
-    marginBottom: 32,
+  flowCurrent: {
+    marginTop: 3,
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
 
-    padding: 15,
-
-    borderRadius: 22,
-
-    backgroundColor: colors.roseLight,
-
+  nextStageCard: {
+    minHeight: 86,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
-    borderColor: "rgba(207, 130, 149, 0.15)",
-
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
     ...shadows.soft,
   },
 
-  referenceVisualRow: {
-    flexDirection: "row",
+  nextStageIcon: {
+    width: 44,
+    height: 44,
+    marginRight: 11,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
+  nextStageLabel: {
+    fontSize: 9,
+    letterSpacing: 0.75,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  nextStageTitle: {
+    marginTop: 3,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  nextStageText: {
+    marginTop: 2,
+    paddingRight: 5,
+    fontSize: 10,
+    lineHeight: 16,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  completedCard: {
+    minHeight: 72,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  completedIcon: {
+    width: 42,
+    height: 42,
+    marginRight: 10,
+    borderRadius: 13,
+    backgroundColor: colors.sageLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  completedTitle: {
+    fontSize: 14,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  completedText: {
+    marginTop: 3,
+    fontSize: 10,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  referenceSection: {
+    marginTop: 28,
+  },
+
+  referenceHeading: {
+    marginBottom: 10,
+  },
+
+  referenceHeadingText: {
+    marginTop: 3,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  referenceCard: {
+    minHeight: 96,
+    padding: 11,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
     alignItems: "center",
   },
 
   referenceThumbnail: {
-    width: 86,
-    height: 108,
-
-    borderRadius: 16,
+    width: 62,
+    height: 76,
+    borderRadius: 12,
   },
 
-  referenceMain: {
+  referenceContent: {
     flex: 1,
-
     minWidth: 0,
-
-    marginLeft: 12,
+    marginLeft: 10,
   },
 
-  referenceMetaRow: {
+  referenceSourceRow: {
     flexDirection: "row",
-
     alignItems: "center",
-
-    minWidth: 0,
+    gap: 5,
   },
 
   referenceSource: {
-    fontSize: 11,
-
+    fontSize: 10,
     fontFamily: fonts.semibold,
-
-    color: colors.text,
+    color: colors.textSecondary,
   },
 
-  referenceMetaDot: {
+  metaDot: {
     width: 3,
     height: 3,
-
-    marginHorizontal: 6,
-
+    marginHorizontal: 2,
     borderRadius: radius.round,
-
-    backgroundColor: colors.textSecondary,
+    backgroundColor: colors.textMuted,
   },
 
   referenceCategory: {
     flexShrink: 1,
-
-    fontSize: 10,
-
+    fontSize: 9,
     fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 
-  referenceMediaTitle: {
-    marginTop: 7,
-
-    fontSize: 15,
-
-    lineHeight: 21,
-
-    fontFamily: fonts.bold,
-
+  referenceTitle: {
+    marginTop: 5,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
 
-  referenceAuthor: {
-    marginTop: 6,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
-    fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  referenceUrl: {
-    marginTop: 6,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
+  referenceSecondary: {
+    marginTop: 4,
+    fontSize: 9,
+    lineHeight: 15,
     fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 
   referenceOpen: {
     width: 34,
     height: 34,
-
-    marginLeft: 8,
-
-    borderRadius: 11,
-
-    backgroundColor: colors.surface,
-
+    marginLeft: 7,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceSoft,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  referenceNoteArea: {
-    marginTop: 14,
-
-    padding: 13,
-
-    borderRadius: 15,
-
-    backgroundColor: "rgba(255, 253, 252, 0.72)",
+  referenceNote: {
+    marginTop: 10,
+    paddingLeft: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.lavender,
   },
 
   referenceNoteLabel: {
     fontSize: 9,
-
-    letterSpacing: 0.7,
-
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
-
-    color: colors.rose,
+    color: colors.textMuted,
   },
 
-  referenceNote: {
-    marginTop: 6,
-
-    fontSize: 13,
-
-    lineHeight: 21,
-
-    fontFamily: fonts.medium,
-
-    color: colors.text,
-  },
-
-  referenceActions: {
-    minHeight: 44,
-
-    marginTop: 10,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-
-    gap: 10,
-  },
-
-  openReferenceAction: {
-    minHeight: 36,
-
-    paddingHorizontal: 10,
-
-    borderRadius: 12,
-
-    backgroundColor: colors.surface,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  openReferenceText: {
+  referenceNoteText: {
+    marginTop: 5,
     fontSize: 12,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.rose,
+    lineHeight: 19,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
 
-  savedInspirationAction: {
-    paddingVertical: 5,
-
-    paddingHorizontal: 4,
+  savedInspirationLink: {
+    minHeight: 42,
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   savedInspirationText: {
     fontSize: 11,
-
     fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  flowSection: {
-    display: "none",
-  },
-
-  flowPanel: {
-    position: "relative",
-
-    overflow: "hidden",
-
-    marginTop: 2,
-
-    padding: 18,
-
-    borderRadius: 24,
-
-    backgroundColor: colors.primary,
-
-    ...shadows.hero,
-  },
-
-  flowBubble: {
-    position: "absolute",
-
-    width: 116,
-    height: 116,
-
-    top: -48,
-    right: -30,
-
-    borderRadius: 58,
-
-    backgroundColor: "rgba(225, 116, 85, 0.18)",
-  },
-
-  flowHeader: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  flowBadge: {
-    minHeight: 29,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.1)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  flowBadgeText: {
-    fontSize: 9,
-
-    letterSpacing: 0.75,
-
-    fontFamily: fonts.bold,
-
-    color: colors.terracotta,
-  },
-
-  flowStage: {
-    minHeight: 28,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.11)",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  flowStageText: {
-    fontSize: 9,
-
-    letterSpacing: 0.6,
-
-    fontFamily: fonts.bold,
-
-    color: colors.surface,
-  },
-
-  flowTitle: {
-    marginTop: 16,
-
-    fontSize: 23,
-
-    lineHeight: 29,
-
-    letterSpacing: -0.5,
-
-    fontFamily: fonts.bold,
-
-    color: colors.surface,
-  },
-
-  flowDescription: {
-    maxWidth: 290,
-
-    marginTop: 4,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
-    color: "rgba(255, 253, 252, 0.7)",
-  },
-
-  advanceButton: {
-    minHeight: 68,
-
-    marginTop: 15,
-
-    paddingHorizontal: 12,
-
-    borderRadius: 18,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  advanceInfo: {
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  advanceMark: {
-    width: 40,
-    height: 40,
-
-    marginRight: 11,
-
-    borderRadius: 13,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  advanceEyebrow: {
-    fontSize: 9,
-
-    letterSpacing: 0.8,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  advanceText: {
-    marginTop: 3,
-
-    fontSize: 15,
-
-    fontFamily: fonts.bold,
-  },
-
-  advanceArrow: {
-    width: 34,
-    height: 34,
-
-    borderRadius: 11,
-
-    backgroundColor: "rgba(255, 253, 252, 0.58)",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  completedFlow: {
-    minHeight: 68,
-
-    marginTop: 15,
-
-    paddingHorizontal: 13,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.sageLight,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  completedMark: {
-    width: 40,
-    height: 40,
-
-    marginRight: 11,
-
-    borderRadius: 13,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  completedTitle: {
-    fontSize: 15,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.sage,
-  },
-
-  completedText: {
-    marginTop: 3,
-
-    fontSize: 12,
-
-    fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   bottomDivider: {
     height: 1,
-
-    marginTop: 32,
-
+    marginTop: 28,
     backgroundColor: colors.divider,
   },
 
   deleteButton: {
-    minHeight: 52,
-
+    minHeight: 50,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "center",
-
-    gap: 6,
+    gap: 7,
   },
 
   deleteButtonText: {
-    fontSize: 13,
-
-    fontFamily: fonts.semibold,
-
+    fontSize: 11,
+    fontFamily: fonts.medium,
     color: colors.danger,
   },
 
   center: {
     flex: 1,
-
     paddingHorizontal: 30,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   loadingText: {
     marginTop: 12,
-
     fontSize: 13,
-
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   errorMark: {
     width: 54,
     height: 54,
-
     marginBottom: 16,
-
     borderRadius: 17,
-
-    backgroundColor: colors.surfaceMuted,
-
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   errorTitle: {
-    fontSize: 20,
-
+    fontSize: 21,
+    lineHeight: 28,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   errorButton: {
     marginTop: 18,
-
     paddingHorizontal: 18,
-
     paddingVertical: 11,
-
     borderRadius: 14,
-
     backgroundColor: colors.text,
   },
 
   errorButtonText: {
-    fontSize: 11,
-
+    fontSize: 12,
     fontFamily: fonts.semibold,
-
     color: colors.surface,
   },
 });

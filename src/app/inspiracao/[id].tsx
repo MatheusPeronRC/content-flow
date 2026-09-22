@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon, { getPlatformMeta } from "../../components/PlatformIcon";
 
 import {
   deleteInspiration,
@@ -102,7 +103,7 @@ export default function InspirationDetailsScreen() {
   );
 
   const sourceAccent = useMemo(
-    () => getSourceColor(inspiration?.source ?? "Outro"),
+    () => getPlatformMeta(inspiration?.source ?? "Outro"),
     [inspiration?.source],
   );
 
@@ -331,17 +332,13 @@ export default function InspirationDetailsScreen() {
                       },
                     ]}
                   >
-                    <Ionicons
-                      name={getSourceIcon(inspiration.source)}
-                      size={11}
-                      color={sourceAccent.foreground}
-                    />
+                    <PlatformIcon source={inspiration.source} size={12} />
 
                     <Text
                       style={[
                         styles.sourcePillText,
                         {
-                          color: sourceAccent.foreground,
+                          color: sourceAccent.brandColor,
                         },
                       ]}
                     >
@@ -626,51 +623,6 @@ export default function InspirationDetailsScreen() {
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
-  switch (source) {
-    case "Instagram":
-      return "logo-instagram";
-    case "TikTok":
-      return "musical-note-outline";
-    case "YouTube":
-      return "logo-youtube";
-    case "Kwai":
-      return "play-outline";
-    default:
-      return "link-outline";
-  }
-}
-
-function getSourceColor(source: string) {
-  switch (source) {
-    case "Instagram":
-      return {
-        background: colors.terracottaLight,
-        foreground: colors.terracotta,
-      };
-    case "TikTok":
-      return {
-        background: colors.primaryLight,
-        foreground: colors.text,
-      };
-    case "YouTube":
-      return {
-        background: colors.roseLight,
-        foreground: colors.rose,
-      };
-    case "Kwai":
-      return {
-        background: colors.amberLight,
-        foreground: colors.amber,
-      };
-    default:
-      return {
-        background: colors.blueLight,
-        foreground: colors.blue,
-      };
-  }
 }
 
 function getCategoryColor(category: string | null) {

@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-
 import { useEffect, useMemo, useState } from "react";
 
 import {
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -16,6 +17,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon, { getPlatformMeta } from "../../components/PlatformIcon";
 
 import { getInspirationById } from "../../services/inspirationStorage";
 
@@ -23,7 +25,20 @@ import { Inspiration } from "../../types/inspiration";
 
 import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
-const formats = ["Reel", "Carrossel", "Story"];
+const formats = [
+  {
+    value: "Reel",
+    icon: "videocam-outline" as const,
+  },
+  {
+    value: "Carrossel",
+    icon: "albums-outline" as const,
+  },
+  {
+    value: "Story",
+    icon: "phone-portrait-outline" as const,
+  },
+];
 
 export default function AdaptarConteudoScreen() {
   const { inspirationId } = useLocalSearchParams<{
@@ -80,46 +95,10 @@ export default function AdaptarConteudoScreen() {
 
   const canContinue = referenceIdea.trim().length > 0;
 
-  const sourceMeta = useMemo(() => {
-    const source = inspiration?.source ?? "Referência";
-
-    switch (source) {
-      case "Instagram":
-        return {
-          icon: "logo-instagram" as const,
-          color: colors.terracotta,
-          background: colors.terracottaLight,
-        };
-
-      case "TikTok":
-        return {
-          icon: "musical-note-outline" as const,
-          color: colors.text,
-          background: colors.primaryLight,
-        };
-
-      case "YouTube":
-        return {
-          icon: "logo-youtube" as const,
-          color: colors.rose,
-          background: colors.roseLight,
-        };
-
-      case "Kwai":
-        return {
-          icon: "play-outline" as const,
-          color: colors.amber,
-          background: colors.amberLight,
-        };
-
-      default:
-        return {
-          icon: "link-outline" as const,
-          color: colors.blue,
-          background: colors.blueLight,
-        };
-    }
-  }, [inspiration?.source]);
+  const platformMeta = useMemo(
+    () => getPlatformMeta(inspiration?.source ?? "Outro"),
+    [inspiration?.source],
+  );
 
   function handleContinue() {
     if (!canContinue) {
@@ -180,50 +159,50 @@ export default function AdaptarConteudoScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={20} color={colors.text} />
-          </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={
+            Platform.OS === "ios" ? "interactive" : "on-drag"
+          }
+        >
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              activeOpacity={0.8}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={20} color={colors.text} />
+            </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Adaptar referência</Text>
+            <Text style={styles.headerTitle}>Adaptar referência</Text>
 
-          <View style={styles.headerSpace} />
-        </View>
-
-        <View style={styles.magicPanel}>
-          <View style={styles.magicBubbleOne} />
-          <View style={styles.magicBubbleTwo} />
-
-          <View style={styles.magicTop}>
-            <View style={styles.magicBadge}>
-              <Ionicons name="sparkles" size={13} color={colors.terracotta} />
-
-              <Text style={styles.magicBadgeText}>TRANSFORMAR REFERÊNCIA</Text>
-            </View>
-
-            <View style={styles.magicMark}>
-              <Ionicons name="color-wand" size={20} color={colors.surface} />
-            </View>
+            <View style={styles.headerSpace} />
           </View>
 
-          <Text style={styles.title}>
-            Só preciso entender{"\n"}o que te chamou atenção.
-          </Text>
+          <View style={styles.intro}>
+            <View style={styles.stepRow}>
+              <View style={styles.stepIndicator}>
+                <Text style={styles.stepIndicatorText}>1</Text>
+              </View>
 
-          <Text style={styles.description}>
-            Conte do seu jeito o que vale aproveitar. O ContentFlow organiza a
-            estrutura depois.
-          </Text>
+              <Text style={styles.stepText}>Entender a referência</Text>
+            </View>
 
-          <View style={styles.referenceSpotlight}>
+            <Text style={styles.title}>O que vale levar daqui?</Text>
+
+            <Text style={styles.description}>
+              Não escreva um roteiro. Só me diga o que te chamou atenção e o que
+              você gostaria de aproveitar.
+            </Text>
+          </View>
+
+          <View style={styles.referenceStrip}>
             <InspirationThumbnail
               thumbnailUrl={inspiration.thumbnailUrl}
               source={inspiration.source}
@@ -235,23 +214,19 @@ export default function AdaptarConteudoScreen() {
               <View style={styles.referenceMeta}>
                 <View
                   style={[
-                    styles.sourceBadge,
+                    styles.platformPill,
                     {
-                      backgroundColor: sourceMeta.background,
+                      backgroundColor: platformMeta.background,
                     },
                   ]}
                 >
-                  <Ionicons
-                    name={sourceMeta.icon}
-                    size={12}
-                    color={sourceMeta.color}
-                  />
+                  <PlatformIcon source={inspiration.source} size={12} />
 
                   <Text
                     style={[
-                      styles.sourceText,
+                      styles.platformText,
                       {
-                        color: sourceMeta.color,
+                        color: platformMeta.brandColor,
                       },
                     ]}
                   >
@@ -259,191 +234,158 @@ export default function AdaptarConteudoScreen() {
                   </Text>
                 </View>
 
-                {inspiration.category && (
-                  <View style={styles.categoryMiniPill}>
-                    <Text style={styles.referenceCategory}>
-                      {inspiration.category}
-                    </Text>
-                  </View>
-                )}
+                {inspiration.category ? (
+                  <Text style={styles.categoryText}>
+                    {inspiration.category}
+                  </Text>
+                ) : null}
               </View>
 
-              <Text style={styles.referenceTitle} numberOfLines={3}>
+              <Text style={styles.referenceTitle} numberOfLines={2}>
                 {referenceTitle}
               </Text>
 
-              {inspiration.authorName ? (
-                <Text style={styles.referenceAuthor} numberOfLines={1}>
-                  {inspiration.authorName}
-                </Text>
-              ) : (
-                <Text style={styles.referenceUrl} numberOfLines={1}>
-                  {cleanUrl(inspiration.url)}
-                </Text>
-              )}
+              <Text style={styles.referenceSecondary} numberOfLines={1}>
+                {inspiration.authorName?.trim() || cleanUrl(inspiration.url)}
+              </Text>
             </View>
           </View>
-        </View>
 
-        <View style={styles.inputPanel}>
-          <View style={styles.inputPanelHeader}>
-            <View style={styles.inputPanelMark}>
-              <Ionicons
-                name="chatbubble-ellipses-outline"
-                size={18}
-                color={colors.lavender}
-              />
-            </View>
+          <View style={styles.workspace}>
+            <View style={styles.workspaceHeader}>
+              <View
+                style={{
+                  flex: 1,
+                }}
+              >
+                <Text style={styles.workspaceLabel}>SUA LEITURA</Text>
 
-            <View style={{ flex: 1 }}>
-              <Text style={styles.inputPanelEyebrow}>SUA LEITURA</Text>
+                <Text style={styles.workspaceTitle}>Explique do seu jeito</Text>
+              </View>
 
-              <Text style={styles.fieldTitle}>
-                O que você quer levar dessa referência?
+              <Text style={styles.characterCount}>
+                {referenceIdea.length}
+                /500
               </Text>
             </View>
 
-            <View style={styles.optionalPill}>
-              <Text style={styles.optional}>DO SEU JEITO</Text>
-            </View>
-          </View>
-
-          <View style={styles.ideaField}>
             <TextInput
               value={referenceIdea}
               onChangeText={setReferenceIdea}
               multiline
+              maxLength={500}
               scrollEnabled={false}
               textAlignVertical="top"
-              placeholder="Ex.: gostei da abertura, do jeito de explicar, da estrutura do vídeo..."
+              placeholder="Ex.: gostei da abertura e do jeito simples que ele explica o assunto..."
               placeholderTextColor={colors.textMuted}
               style={styles.ideaInput}
-              maxLength={500}
             />
 
-            <Text style={styles.characterCount}>
-              {referenceIdea.length}
-              /500
-            </Text>
-          </View>
+            <View style={styles.helperRow}>
+              <Ionicons
+                name="sparkles-outline"
+                size={15}
+                color={colors.terracotta}
+              />
 
-          <View style={styles.helperRow}>
-            <Ionicons
-              name="sparkles-outline"
-              size={16}
-              color={colors.terracotta}
-            />
-
-            <Text style={styles.helperText}>
-              Uma frase já basta. O ContentFlow cuida da estrutura depois.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.formatPanel}>
-          <View style={styles.formatPanelHeader}>
-            <View style={styles.formatPanelMark}>
-              <Ionicons name="apps-outline" size={18} color={colors.blue} />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.formatEyebrow}>FORMATO FINAL</Text>
-
-              <Text style={styles.fieldTitle}>
-                Em que formato você quer transformar?
+              <Text style={styles.helperText}>
+                Uma frase já basta. O ContentFlow transforma isso em estrutura
+                na próxima etapa.
               </Text>
             </View>
           </View>
 
-          <View style={styles.formats}>
-            {formats.map((item) => {
-              const selected = format === item;
+          <View style={styles.formatSection}>
+            <Text style={styles.formatLabel}>FORMATO</Text>
 
-              return (
-                <TouchableOpacity
-                  key={item}
-                  style={[
-                    styles.formatOption,
-                    selected && styles.formatOptionSelected,
-                  ]}
-                  activeOpacity={0.8}
-                  onPress={() => setFormat(item)}
-                >
-                  <View
+            <Text style={styles.formatTitle}>
+              Como você quer transformar isso?
+            </Text>
+
+            <View style={styles.formats}>
+              {formats.map((item) => {
+                const selected = format === item.value;
+
+                return (
+                  <TouchableOpacity
+                    key={item.value}
                     style={[
-                      styles.formatIcon,
-                      selected && styles.formatIconSelected,
+                      styles.formatOption,
+                      selected && styles.formatOptionSelected,
                     ]}
+                    activeOpacity={0.82}
+                    onPress={() => setFormat(item.value)}
                   >
                     <Ionicons
-                      name={getFormatIcon(item)}
+                      name={item.icon}
                       size={17}
-                      color={selected ? colors.surface : colors.textSecondary}
+                      color={
+                        selected ? colors.terracotta : colors.textSecondary
+                      }
                     />
-                  </View>
 
-                  <Text
-                    style={[
-                      styles.formatText,
-                      selected && styles.formatTextSelected,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+                    <Text
+                      style={[
+                        styles.formatOptionText,
+                        selected && styles.formatOptionTextSelected,
+                      ]}
+                    >
+                      {item.value}
+                    </Text>
 
-        <TouchableOpacity
-          style={[
-            styles.createButton,
-            !canContinue && styles.createButtonDisabled,
-          ]}
-          disabled={!canContinue}
-          activeOpacity={0.86}
-          onPress={handleContinue}
-        >
-          <View style={styles.createButtonMark}>
-            <Ionicons
-              name="sparkles"
-              size={18}
-              color={canContinue ? colors.terracotta : colors.textMuted}
-            />
+                    {selected && <View style={styles.selectedDot} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          <Text
-            style={[
-              styles.createButtonText,
-              !canContinue && styles.createButtonTextDisabled,
-            ]}
-          >
-            Criar minha versão
-          </Text>
+          <View style={styles.divider} />
 
-          <Ionicons
-            name="arrow-forward"
-            size={18}
-            color={canContinue ? colors.surface : colors.textMuted}
-          />
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.continueSection}>
+            <Text style={styles.continueLabel}>PRÓXIMA ETAPA</Text>
+
+            <Text style={styles.continueTitle}>
+              Transformar sua leitura em uma primeira versão.
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.createButton,
+                !canContinue && styles.createButtonDisabled,
+              ]}
+              disabled={!canContinue}
+              activeOpacity={0.86}
+              onPress={handleContinue}
+            >
+              <View style={styles.createButtonMark}>
+                <Ionicons
+                  name="sparkles"
+                  size={17}
+                  color={canContinue ? colors.terracotta : colors.textMuted}
+                />
+              </View>
+
+              <Text
+                style={[
+                  styles.createButtonText,
+                  !canContinue && styles.createButtonTextDisabled,
+                ]}
+              >
+                Criar minha versão
+              </Text>
+
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color={canContinue ? colors.surface : colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function getFormatIcon(format: string): keyof typeof Ionicons.glyphMap {
-  switch (format) {
-    case "Reel":
-      return "videocam-outline";
-    case "Carrossel":
-      return "albums-outline";
-    case "Story":
-      return "phone-portrait-outline";
-    default:
-      return "document-outline";
-  }
 }
 
 function cleanUrl(url: string) {
@@ -451,6 +393,10 @@ function cleanUrl(url: string) {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -489,544 +435,288 @@ const styles = StyleSheet.create({
     width: 42,
   },
 
-  magicPanel: {
-    position: "relative",
-
-    overflow: "hidden",
-
-    marginTop: 16,
-
-    marginBottom: 22,
-
-    padding: 20,
-
-    borderRadius: 28,
-
-    backgroundColor: colors.terracottaLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(225, 116, 85, 0.16)",
-
-    ...shadows.card,
+  intro: {
+    marginTop: 18,
+    marginBottom: 18,
   },
 
-  magicBubbleOne: {
-    position: "absolute",
-
-    width: 128,
-    height: 128,
-
-    top: -48,
-    right: -38,
-
-    borderRadius: 64,
-
-    backgroundColor: "rgba(142, 127, 194, 0.15)",
-  },
-
-  magicBubbleTwo: {
-    position: "absolute",
-
-    width: 82,
-    height: 82,
-
-    left: -28,
-    bottom: 42,
-
-    borderRadius: 41,
-
-    backgroundColor: "rgba(121, 165, 184, 0.12)",
-  },
-
-  magicTop: {
+  stepRow: {
     flexDirection: "row",
-
     alignItems: "center",
-
-    justifyContent: "space-between",
+    gap: 8,
   },
 
-  magicBadge: {
-    minHeight: 30,
-
-    paddingHorizontal: 10,
-
+  stepIndicator: {
+    width: 35,
+    height: 35,
     borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.8)",
-
-    flexDirection: "row",
-
+    backgroundColor: colors.terracottaLight,
     alignItems: "center",
-
-    gap: 6,
+    justifyContent: "center",
   },
 
-  magicBadgeText: {
-    fontSize: 10,
-
-    letterSpacing: 0.75,
-
+  stepIndicatorText: {
+    fontSize: 16,
     fontFamily: fonts.bold,
-
     color: colors.terracotta,
   },
 
-  magicMark: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
-    backgroundColor: colors.terracotta,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    ...shadows.soft,
+  stepText: {
+    fontSize: 16,
+    letterSpacing: 0.25,
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
   },
 
   title: {
-    maxWidth: 340,
-
-    marginTop: 17,
-
+    maxWidth: 330,
+    marginTop: 13,
     fontSize: 31,
-
-    lineHeight: 39,
-
+    lineHeight: 38,
     letterSpacing: -0.9,
-
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   description: {
     maxWidth: 330,
-
-    marginTop: 10,
-
-    fontSize: 14,
-
-    lineHeight: 22,
-
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  referenceSpotlight: {
-    minHeight: 132,
-
-    marginTop: 19,
-
-    padding: 12,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    borderRadius: 20,
-
-    backgroundColor: "rgba(255, 253, 252, 0.9)",
-
+  referenceStrip: {
+    minHeight: 104,
+    marginBottom: 23,
+    padding: 11,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.75)",
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    ...shadows.soft,
   },
 
   referenceThumbnail: {
-    width: 84,
-    height: 108,
-
-    borderRadius: 15,
+    width: 68,
+    height: 82,
+    borderRadius: 13,
   },
 
   referenceContent: {
     flex: 1,
-
     minWidth: 0,
-
-    marginLeft: 13,
+    marginLeft: 11,
   },
 
   referenceMeta: {
     flexDirection: "row",
-
-    flexWrap: "wrap",
-
     alignItems: "center",
-
-    gap: 6,
+    gap: 8,
   },
 
-  sourceBadge: {
+  platformPill: {
     minHeight: 25,
-
-    paddingHorizontal: 8,
-
+    paddingHorizontal: 7,
     borderRadius: radius.round,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     gap: 5,
   },
 
-  sourceText: {
-    fontSize: 10,
-
+  platformText: {
+    fontSize: 9,
     fontFamily: fonts.semibold,
   },
 
-  categoryMiniPill: {
-    minHeight: 25,
-
-    paddingHorizontal: 8,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surfaceMuted,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  referenceCategory: {
+  categoryText: {
     fontSize: 10,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.textSecondary,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
   },
 
   referenceTitle: {
-    marginTop: 9,
-
-    fontSize: 16,
-
-    lineHeight: 22,
-
-    fontFamily: fonts.bold,
-
-    color: colors.text,
-  },
-
-  referenceAuthor: {
-    marginTop: 6,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
-    fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  referenceUrl: {
-    marginTop: 6,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  inputSection: {
-    display: "none",
-  },
-
-  inputPanel: {
-    marginBottom: 20,
-
-    padding: 16,
-
-    borderRadius: 22,
-
-    backgroundColor: colors.lavenderLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(142, 127, 194, 0.14)",
-  },
-
-  inputPanelHeader: {
-    marginBottom: 13,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 10,
-  },
-
-  inputPanelMark: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 13,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  inputPanelEyebrow: {
-    marginBottom: 2,
-
-    fontSize: 9,
-
-    letterSpacing: 0.8,
-
-    fontFamily: fonts.bold,
-
-    color: colors.lavender,
-  },
-
-  fieldHeader: {
-    marginBottom: 10,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-
-    gap: 10,
-  },
-
-  fieldTitle: {
-    flex: 1,
-
-    fontSize: 16,
-
-    lineHeight: 23,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
-  },
-
-  optionalPill: {
-    minHeight: 26,
-
-    paddingHorizontal: 8,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-  },
-
-  optional: {
     marginTop: 7,
-
-    fontSize: 9,
-
-    letterSpacing: 0.6,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  ideaField: {
-    minHeight: 160,
-
-    padding: 16,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.surface,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(142, 127, 194, 0.16)",
-  },
-
-  ideaInput: {
-    minHeight: 114,
-
-    padding: 0,
-
     fontSize: 15,
+    lineHeight: 21,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
 
-    lineHeight: 24,
-
+  referenceSecondary: {
+    marginTop: 4,
+    fontSize: 10,
+    lineHeight: 16,
     fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
 
+  workspace: {
+    padding: 16,
+    borderRadius: 21,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
+  },
+
+  workspaceHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+
+  workspaceLabel: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  workspaceTitle: {
+    marginTop: 3,
+    fontSize: 19,
+    lineHeight: 25,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
   characterCount: {
-    marginTop: 8,
-
-    textAlign: "right",
-
-    fontSize: 11,
-
+    marginTop: 2,
+    fontSize: 10,
     fontFamily: fonts.medium,
+    color: colors.textMuted,
+  },
 
-    color: colors.textSecondary,
+  ideaInput: {
+    minHeight: 190,
+    padding: 0,
+    paddingTop: 4,
+    fontSize: 17,
+    lineHeight: 27,
+    fontFamily: fonts.regular,
+    color: colors.text,
   },
 
   helperRow: {
-    marginTop: 11,
-
+    marginTop: 10,
+    paddingTop: 11,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
     flexDirection: "row",
-
     alignItems: "flex-start",
-
     gap: 7,
   },
 
   helperText: {
     flex: 1,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   formatSection: {
-    display: "none",
+    marginTop: 25,
   },
 
-  formatPanel: {
-    marginBottom: 24,
-
-    padding: 16,
-
-    borderRadius: 22,
-
-    backgroundColor: colors.blueLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(121, 165, 184, 0.15)",
-  },
-
-  formatPanelHeader: {
-    marginBottom: 13,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 10,
-  },
-
-  formatPanelMark: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 13,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  formatEyebrow: {
-    marginBottom: 2,
-
-    fontSize: 9,
-
+  formatLabel: {
+    fontSize: 10,
     letterSpacing: 0.8,
-
     fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
 
-    color: colors.blue,
+  formatTitle: {
+    marginTop: 4,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
 
   formats: {
+    marginTop: 11,
     flexDirection: "row",
-
     gap: 8,
   },
 
   formatOption: {
     flex: 1,
-
-    minHeight: 66,
-
-    paddingHorizontal: 8,
-
-    borderRadius: 17,
-
+    minHeight: 48,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
-    borderColor: "rgba(121, 165, 184, 0.14)",
-
-    backgroundColor: "rgba(255, 253, 252, 0.82)",
-
+    borderColor: colors.border,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "center",
-
-    gap: 7,
+    gap: 6,
   },
 
   formatOptionSelected: {
-    backgroundColor: colors.text,
-
-    borderColor: colors.text,
+    backgroundColor: colors.terracottaLight,
+    borderColor: "rgba(225,116,85,0.35)",
   },
 
-  formatIcon: {
-    width: 30,
-    height: 30,
-
-    borderRadius: 9,
-
-    backgroundColor: colors.surfaceMuted,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  formatIconSelected: {
-    backgroundColor: colors.terracotta,
-  },
-
-  formatText: {
-    fontSize: 12,
-
+  formatOptionText: {
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
     color: colors.textSecondary,
   },
 
-  formatTextSelected: {
-    color: colors.surface,
+  formatOptionTextSelected: {
+    color: colors.terracotta,
+  },
+
+  selectedDot: {
+    width: 5,
+    height: 5,
+    borderRadius: radius.round,
+    backgroundColor: colors.terracotta,
+  },
+
+  divider: {
+    height: 1,
+    marginTop: 27,
+    backgroundColor: colors.divider,
+  },
+
+  continueSection: {
+    paddingTop: 22,
+  },
+
+  continueLabel: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  continueTitle: {
+    maxWidth: 310,
+    marginTop: 5,
+    fontSize: 18,
+    lineHeight: 25,
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
 
   createButton: {
-    minHeight: 60,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    minHeight: 58,
+    marginTop: 14,
+    paddingHorizontal: 13,
+    borderRadius: 17,
     backgroundColor: colors.terracotta,
     flexDirection: "row",
     alignItems: "center",
+    ...shadows.soft,
   },
 
   createButtonDisabled: {
@@ -1036,7 +726,7 @@ const styles = StyleSheet.create({
   createButtonMark: {
     width: 34,
     height: 34,
-    marginRight: 11,
+    marginRight: 10,
     borderRadius: 11,
     backgroundColor: colors.surface,
     alignItems: "center",
@@ -1045,7 +735,7 @@ const styles = StyleSheet.create({
 
   createButtonText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: fonts.bold,
     color: colors.surface,
   },
@@ -1073,7 +763,9 @@ const styles = StyleSheet.create({
     height: 54,
     marginBottom: 16,
     borderRadius: 17,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1083,21 +775,20 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontFamily: fonts.bold,
     color: colors.text,
-    textAlign: "center",
   },
 
   errorText: {
     maxWidth: 280,
-    marginTop: 6,
-    textAlign: "center",
-    fontSize: 13,
+    marginTop: 7,
+    fontSize: 12,
     lineHeight: 19,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
+    textAlign: "center",
   },
 
   backAction: {
-    marginTop: 20,
+    marginTop: 18,
     paddingHorizontal: 18,
     paddingVertical: 11,
     borderRadius: 14,

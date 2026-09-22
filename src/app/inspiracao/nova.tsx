@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon, { getPlatformMeta } from "../../components/PlatformIcon";
 
 import { saveInspiration } from "../../services/inspirationStorage";
 
@@ -52,7 +53,7 @@ export default function NewInspirationScreen() {
     [metadata?.source, url],
   );
 
-  const sourceMeta = useMemo(() => getSourceMeta(source), [source]);
+  const sourceMeta = useMemo(() => getPlatformMeta(source), [source]);
 
   const canSave = url.trim().length > 0 && !saving;
 
@@ -228,11 +229,7 @@ export default function NewInspirationScreen() {
                   },
                 ]}
               >
-                <Ionicons
-                  name={sourceMeta.icon}
-                  size={20}
-                  color={sourceMeta.color}
-                />
+                <PlatformIcon source={source} size={20} />
               </View>
 
               <TextInput
@@ -301,7 +298,7 @@ export default function NewInspirationScreen() {
                         style={[
                           styles.previewSourceText,
                           {
-                            color: sourceMeta.color,
+                            color: sourceMeta.brandColor,
                           },
                         ]}
                       >
@@ -525,49 +522,6 @@ export default function NewInspirationScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function getSourceMeta(source: string): {
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  background: string;
-} {
-  switch (source) {
-    case "Instagram":
-      return {
-        icon: "logo-instagram",
-        color: colors.terracotta,
-        background: colors.terracottaLight,
-      };
-
-    case "TikTok":
-      return {
-        icon: "musical-note-outline",
-        color: colors.text,
-        background: colors.primaryLight,
-      };
-
-    case "YouTube":
-      return {
-        icon: "logo-youtube",
-        color: colors.rose,
-        background: colors.roseLight,
-      };
-
-    case "Kwai":
-      return {
-        icon: "play-outline",
-        color: colors.amber,
-        background: colors.amberLight,
-      };
-
-    default:
-      return {
-        icon: "link-outline",
-        color: colors.blue,
-        background: colors.blueLight,
-      };
-  }
 }
 
 function getCategoryColor(category: string) {

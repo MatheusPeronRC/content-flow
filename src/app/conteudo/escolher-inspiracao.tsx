@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon from "../../components/PlatformIcon";
 
 import { getInspirations } from "../../services/inspirationStorage";
 
@@ -303,11 +304,7 @@ function InspirationChoiceCard({
           </View>
 
           <View style={styles.sourcePill}>
-            <Ionicons
-              name={getSourceIcon(inspiration.source)}
-              size={11}
-              color={colors.textSecondary}
-            />
+            <PlatformIcon source={inspiration.source} size={12} />
 
             <Text style={styles.sourceText} numberOfLines={1}>
               {inspiration.source}
@@ -336,25 +333,6 @@ function InspirationChoiceCard({
       </View>
     </TouchableOpacity>
   );
-}
-
-function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
-  switch (source) {
-    case "Instagram":
-      return "logo-instagram";
-
-    case "TikTok":
-      return "musical-note-outline";
-
-    case "YouTube":
-      return "logo-youtube";
-
-    case "Kwai":
-      return "play-outline";
-
-    default:
-      return "link-outline";
-  }
 }
 
 function getCategoryColor(category: string | null) {

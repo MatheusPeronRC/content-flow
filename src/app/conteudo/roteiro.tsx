@@ -1,22 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon from "../../components/PlatformIcon";
 
 import { getContentById, updateContent } from "../../services/contentStorage";
 
@@ -208,12 +209,6 @@ export default function RoteiroScreen() {
     );
   }
 
-  const ideaLength = content.idea.trim().length;
-
-  const isLongIdea = ideaLength > 80;
-
-  const isVeryLongIdea = ideaLength > 180;
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -231,6 +226,7 @@ export default function RoteiroScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.headerButton}
+              activeOpacity={0.8}
               onPress={() => router.back()}
             >
               <Ionicons name="arrow-back" size={20} color={colors.text} />
@@ -241,358 +237,314 @@ export default function RoteiroScreen() {
             <View style={styles.headerSpace} />
           </View>
 
-          <View style={styles.heroPanel}>
-            <View style={styles.heroBubbleOne} />
+          <View style={styles.editorIntro}>
+            <View style={styles.editorTop}>
+              <View style={styles.editorStep}>
+                <View style={styles.editorStepNumber}>
+                  <Text style={styles.editorStepNumberText}>2</Text>
+                </View>
 
-            <View style={styles.heroBubbleTwo} />
-
-            <View style={styles.heroTop}>
-              <View style={styles.heroBadge}>
-                <Ionicons
-                  name="document-text-outline"
-                  size={13}
-                  color={colors.amber}
-                />
-
-                <Text style={styles.heroBadgeText}>EDITOR DE ROTEIRO</Text>
+                <Text style={styles.editorStepText}>Ajustar o roteiro</Text>
               </View>
 
-              <View style={styles.heroMark}>
-                <Ionicons name="create" size={20} color={colors.surface} />
+              <View style={styles.blockCount}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={14}
+                  color={colors.textMuted}
+                />
+
+                <Text style={styles.blockCountText}>
+                  {points.length + 2} blocos
+                </Text>
               </View>
             </View>
 
-            <View style={styles.heroContext}>
-              {content.reference ? (
-                <InspirationThumbnail
-                  thumbnailUrl={content.reference.thumbnailUrl}
-                  source={content.reference.source}
-                  variant="compact"
-                  style={styles.heroThumbnail}
+            <Text style={styles.editorTitle}>Trabalhe bloco por bloco.</Text>
+
+            <Text style={styles.editorDescription}>
+              Ajuste o texto até ele soar como algo que você realmente diria.
+            </Text>
+          </View>
+
+          <View style={styles.contextCard}>
+            {content.reference ? (
+              <InspirationThumbnail
+                thumbnailUrl={content.reference.thumbnailUrl}
+                source={content.reference.source}
+                variant="compact"
+                style={styles.contextThumbnail}
+              />
+            ) : (
+              <View style={styles.contextFallback}>
+                <Ionicons
+                  name="bulb-outline"
+                  size={21}
+                  color={colors.terracotta}
                 />
-              ) : (
-                <View style={styles.heroFallback}>
-                  <Ionicons
-                    name="bulb-outline"
-                    size={22}
-                    color={colors.amber}
-                  />
+              </View>
+            )}
+
+            <View style={styles.contextContent}>
+              <View style={styles.contextMeta}>
+                <Text style={styles.contextLabel}>CONTEÚDO</Text>
+
+                {content.format ? (
+                  <View style={styles.formatPill}>
+                    <Text style={styles.formatText}>{content.format}</Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <Text style={styles.contextTitle} numberOfLines={3}>
+                {content.idea}
+              </Text>
+
+              {content.reference ? (
+                <View style={styles.originRow}>
+                  <PlatformIcon source={content.reference.source} size={12} />
+
+                  <Text style={styles.originText}>
+                    Referência: {content.reference.source}
+                  </Text>
                 </View>
+              ) : (
+                <Text style={styles.originText}>Conteúdo original</Text>
               )}
+            </View>
+          </View>
 
-              <View style={styles.heroContextText}>
-                <Text style={styles.heroContextLabel}>CONTEÚDO</Text>
+          <View style={styles.editorDocument}>
+            <EditorSection
+              icon="flash-outline"
+              label="HOOK"
+              hint="A abertura do conteúdo"
+              accent={colors.terracotta}
+            >
+              <TextInput
+                value={hook}
+                onChangeText={setHook}
+                multiline
+                scrollEnabled={false}
+                textAlignVertical="top"
+                placeholder="Como você quer começar? Escreva uma frase, pergunta ou ideia que prenda a atenção..."
+                placeholderTextColor={colors.textMuted}
+                style={styles.hookInput}
+              />
+            </EditorSection>
 
-                <Text
-                  style={[
-                    styles.title,
+            <View style={styles.sectionDivider} />
 
-                    isLongIdea && styles.titleLong,
+            <View style={styles.developmentSection}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionHeaderLeft}>
+                  <View
+                    style={[
+                      styles.sectionAccent,
+                      {
+                        backgroundColor: colors.amber,
+                      },
+                    ]}
+                  />
 
-                    isVeryLongIdea && styles.titleVeryLong,
-                  ]}
-                  numberOfLines={isVeryLongIdea ? 5 : 4}
-                >
-                  {content.idea}
-                </Text>
+                  <View>
+                    <Text
+                      style={[
+                        styles.sectionLabel,
+                        {
+                          color: colors.amber,
+                        },
+                      ]}
+                    >
+                      DESENVOLVIMENTO
+                    </Text>
 
-                <View style={styles.heroMeta}>
-                  {content.format && (
-                    <View style={styles.formatBadge}>
-                      <Text style={styles.formatText}>{content.format}</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.flexibilityBadge}>
-                    <Ionicons
-                      name="options-outline"
-                      size={13}
-                      color={colors.textSecondary}
-                    />
-
-                    <Text style={styles.flexibilityText}>
-                      Monte do seu jeito
+                    <Text style={styles.sectionHint}>
+                      Construa sua linha de raciocínio
                     </Text>
                   </View>
                 </View>
-              </View>
-            </View>
 
-            <View style={styles.heroTip}>
-              <Ionicons
-                name="sparkles-outline"
-                size={16}
-                color={colors.amber}
-              />
-
-              <Text style={styles.description}>
-                Use esta estrutura como apoio, não como regra. Escreva do jeito
-                que você realmente falaria.
-              </Text>
-            </View>
-          </View>
-
-          <ScriptEditorCard
-            icon="flash-outline"
-            label="HOOK"
-            hint="A abertura do conteúdo"
-            color={colors.terracotta}
-            background={colors.terracottaLight}
-          >
-            <TextInput
-              value={hook}
-              onChangeText={setHook}
-              multiline
-              scrollEnabled={false}
-              textAlignVertical="top"
-              placeholder="Como você quer começar? Escreva uma frase, pergunta ou ideia que prenda a atenção..."
-              placeholderTextColor={colors.textMuted}
-              style={styles.largeInput}
-            />
-          </ScriptEditorCard>
-
-          <View
-            style={[
-              styles.developmentSection,
-              {
-                backgroundColor: colors.amberLight,
-              },
-            ]}
-          >
-            <View style={styles.developmentTop}>
-              <View style={styles.sectionIdentity}>
-                <View
-                  style={[
-                    styles.sectionMark,
-
-                    {
-                      backgroundColor: colors.amberLight,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="list-outline"
-                    size={19}
-                    color={colors.amber}
-                  />
-                </View>
-
-                <View>
-                  <Text
-                    style={[
-                      styles.sectionLabel,
-
-                      {
-                        color: colors.amber,
-                      },
-                    ]}
-                  >
-                    DESENVOLVIMENTO
-                  </Text>
-
-                  <Text style={styles.sectionHint}>
-                    Construa sua linha de raciocínio
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.stepsCount}>
-                <Text style={styles.stepsCountText}>
+                <Text style={styles.stepsCount}>
                   {points.length} {points.length === 1 ? "etapa" : "etapas"}
                 </Text>
               </View>
-            </View>
 
-            <Text style={styles.developmentDescription}>
-              Cada etapa pode ser um argumento, exemplo, explicação ou lembrete
-              do que você quer falar.
-            </Text>
+              <Text style={styles.developmentHelp}>
+                Cada etapa pode ser um argumento, exemplo, explicação ou
+                lembrete.
+              </Text>
 
-            <View style={styles.points}>
-              {points.map((point, index) => (
-                <View key={index} style={styles.pointCard}>
-                  <View style={styles.pointHeader}>
-                    <View style={styles.pointHeaderLeft}>
-                      <View style={styles.pointNumber}>
-                        <Text style={styles.pointNumberText}>
+              <View style={styles.points}>
+                {points.map((point, index) => (
+                  <View key={index} style={styles.pointCard}>
+                    <View style={styles.pointHeader}>
+                      <View style={styles.pointIdentity}>
+                        <Text style={styles.pointNumber}>
                           {String(index + 1).padStart(2, "0")}
                         </Text>
+
+                        <Text style={styles.pointLabel}>Etapa {index + 1}</Text>
                       </View>
 
-                      <Text style={styles.pointLabel}>Etapa {index + 1}</Text>
+                      {points.length > 1 && (
+                        <TouchableOpacity
+                          style={styles.removePoint}
+                          activeOpacity={0.75}
+                          onPress={() => removePoint(index)}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={15}
+                            color={colors.textMuted}
+                          />
+                        </TouchableOpacity>
+                      )}
                     </View>
 
-                    {points.length > 1 && (
-                      <TouchableOpacity
-                        style={styles.removePoint}
-                        activeOpacity={0.75}
-                        onPress={() => removePoint(index)}
-                      >
-                        <Ionicons
-                          name="trash-outline"
-                          size={16}
-                          color={colors.textMuted}
-                        />
-                      </TouchableOpacity>
+                    <TextInput
+                      value={point}
+                      onChangeText={(value) => updatePoint(index, value)}
+                      multiline
+                      scrollEnabled={false}
+                      textAlignVertical="top"
+                      placeholder="Desenvolva esta parte do conteúdo..."
+                      placeholderTextColor={colors.textMuted}
+                      style={styles.pointInput}
+                    />
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={styles.addPointButton}
+                activeOpacity={0.8}
+                onPress={addPoint}
+              >
+                <View style={styles.addPointIcon}>
+                  <Ionicons name="add" size={17} color={colors.amber} />
+                </View>
+
+                <Text style={styles.addPointText}>Adicionar etapa</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            <EditorSection
+              icon="megaphone-outline"
+              label="CTA"
+              hint="Como você quer terminar"
+              accent={colors.sage}
+            >
+              <TextInput
+                value={cta}
+                onChangeText={setCta}
+                multiline
+                scrollEnabled={false}
+                textAlignVertical="top"
+                placeholder="Quer pedir para salvar, comentar, compartilhar ou fazer alguma outra ação?"
+                placeholderTextColor={colors.textMuted}
+                style={styles.ctaInput}
+              />
+            </EditorSection>
+          </View>
+
+          <View style={styles.flexibilityNote}>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={colors.textMuted}
+            />
+
+            <Text style={styles.flexibilityText}>
+              Hook e CTA são opcionais. Use apenas o que fizer sentido para este
+              conteúdo.
+            </Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Text style={styles.actionsLabel}>
+              {canAdvance ? "FINALIZAR E CONTINUAR" : "SALVAR ALTERAÇÕES"}
+            </Text>
+
+            {canAdvance ? (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    !hasAnyScript && styles.primaryButtonDisabled,
+                  ]}
+                  activeOpacity={0.86}
+                  disabled={saving || !hasAnyScript}
+                  onPress={() => saveScript(true)}
+                >
+                  <View style={styles.primaryButtonMark}>
+                    {saving ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={colors.terracotta}
+                      />
+                    ) : (
+                      <Ionicons
+                        name="checkmark"
+                        size={17}
+                        color={
+                          hasAnyScript ? colors.terracotta : colors.textMuted
+                        }
+                      />
                     )}
                   </View>
 
-                  <TextInput
-                    value={point}
-                    onChangeText={(value) => updatePoint(index, value)}
-                    multiline
-                    scrollEnabled={false}
-                    textAlignVertical="top"
-                    placeholder="Desenvolva esta parte do conteúdo..."
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.pointInput}
-                  />
-                </View>
-              ))}
-            </View>
+                  <View
+                    style={{
+                      flex: 1,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.primaryButtonText,
+                        !hasAnyScript && styles.primaryButtonTextDisabled,
+                      ]}
+                    >
+                      Roteiro pronto
+                    </Text>
 
-            <TouchableOpacity
-              style={styles.addPointButton}
-              activeOpacity={0.8}
-              onPress={addPoint}
-            >
-              <View style={styles.addPointMark}>
-                <Ionicons name="add" size={18} color={colors.amber} />
-              </View>
+                    <Text
+                      style={[
+                        styles.primaryButtonHint,
+                        !hasAnyScript && styles.primaryButtonHintDisabled,
+                      ]}
+                    >
+                      Salvar e seguir para produção
+                    </Text>
+                  </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.addPointTitle}>Adicionar etapa</Text>
-
-                <Text style={styles.addPointHint}>
-                  Continue desenvolvendo sua ideia.
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <ScriptEditorCard
-            icon="megaphone-outline"
-            label="CTA"
-            hint="Como você quer terminar"
-            color={colors.sage}
-            background={colors.sageLight}
-          >
-            <TextInput
-              value={cta}
-              onChangeText={setCta}
-              multiline
-              scrollEnabled={false}
-              textAlignVertical="top"
-              placeholder="Quer pedir para salvar, comentar, compartilhar ou fazer alguma outra ação?"
-              placeholderTextColor={colors.textMuted}
-              style={styles.mediumInput}
-            />
-          </ScriptEditorCard>
-
-          <View style={styles.optionalNote}>
-            <View style={styles.optionalNoteMark}>
-              <Ionicons
-                name="sparkles-outline"
-                size={16}
-                color={colors.lavender}
-              />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={styles.optionalNoteTitle}>
-                Seu roteiro não precisa seguir uma fórmula.
-              </Text>
-
-              <Text style={styles.optionalNoteText}>
-                Hook e CTA são opcionais. Use apenas o que fizer sentido para
-                este conteúdo.
-              </Text>
-            </View>
-          </View>
-
-          {canAdvance ? (
-            <View style={styles.actionsPanel}>
-              <View style={styles.actionsHeader}>
-                <View style={styles.actionsBadge}>
                   <Ionicons
-                    name="checkmark-done-outline"
-                    size={14}
-                    color={colors.terracotta}
+                    name="arrow-forward"
+                    size={18}
+                    color={hasAnyScript ? colors.surface : colors.textMuted}
                   />
+                </TouchableOpacity>
 
-                  <Text style={styles.actionsBadgeText}>FINALIZAR</Text>
-                </View>
-
-                <Text style={styles.actionsTitle}>Como deseja continuar?</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                activeOpacity={0.8}
-                disabled={saving}
-                onPress={() => saveScript(false)}
-              >
-                <Ionicons
-                  name="bookmark-outline"
-                  size={17}
-                  color={colors.surface}
-                />
-
-                <Text style={styles.secondaryButtonText}>
-                  Salvar sem avançar
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-
-                  !hasAnyScript && styles.primaryButtonDisabled,
-                ]}
-                activeOpacity={0.86}
-                disabled={saving || !hasAnyScript}
-                onPress={() => saveScript(true)}
-              >
-                <View style={styles.primaryButtonMark}>
-                  <Ionicons
-                    name="checkmark"
-                    size={17}
-                    color={hasAnyScript ? colors.terracotta : colors.textMuted}
-                  />
-                </View>
-
-                <Text
-                  style={[
-                    styles.primaryButtonText,
-
-                    !hasAnyScript && styles.primaryButtonTextDisabled,
-                  ]}
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  activeOpacity={0.8}
+                  disabled={saving}
+                  onPress={() => saveScript(false)}
                 >
-                  Roteiro pronto
-                </Text>
-
-                <Ionicons
-                  name="arrow-forward"
-                  size={18}
-                  color={hasAnyScript ? colors.surface : colors.textMuted}
-                  style={styles.primaryButtonArrow}
-                />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.actionsPanel}>
-              <View style={styles.actionsHeader}>
-                <View style={styles.actionsBadge}>
                   <Ionicons
-                    name="save-outline"
-                    size={14}
-                    color={colors.terracotta}
+                    name="bookmark-outline"
+                    size={17}
+                    color={colors.textSecondary}
                   />
 
-                  <Text style={styles.actionsBadgeText}>ALTERAÇÕES</Text>
-                </View>
-
-                <Text style={styles.actionsTitle}>Salve sua nova versão.</Text>
-              </View>
+                  <Text style={styles.secondaryButtonText}>
+                    Salvar sem avançar
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
               <TouchableOpacity
                 style={styles.primaryButton}
                 activeOpacity={0.86}
@@ -600,82 +552,90 @@ export default function RoteiroScreen() {
                 onPress={() => saveScript(false)}
               >
                 <View style={styles.primaryButtonMark}>
-                  <Ionicons
-                    name="checkmark"
-                    size={17}
-                    color={colors.terracotta}
-                  />
+                  {saving ? (
+                    <ActivityIndicator size="small" color={colors.terracotta} />
+                  ) : (
+                    <Ionicons
+                      name="checkmark"
+                      size={17}
+                      color={colors.terracotta}
+                    />
+                  )}
                 </View>
 
-                <Text style={styles.primaryButtonText}>Salvar alterações</Text>
+                <View
+                  style={{
+                    flex: 1,
+                  }}
+                >
+                  <Text style={styles.primaryButtonText}>
+                    Salvar alterações
+                  </Text>
+
+                  <Text style={styles.primaryButtonHint}>
+                    Atualizar este roteiro
+                  </Text>
+                </View>
 
                 <Ionicons
                   name="arrow-forward"
                   size={18}
                   color={colors.surface}
-                  style={styles.primaryButtonArrow}
                 />
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-type ScriptEditorCardProps = {
+type EditorSectionProps = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   hint: string;
-  color: string;
-  background: string;
-  children: React.ReactNode;
+  accent: string;
+  children: ReactNode;
 };
 
-function ScriptEditorCard({
+function EditorSection({
   icon,
   label,
   hint,
-  color,
-  background,
+  accent,
   children,
-}: ScriptEditorCardProps) {
+}: EditorSectionProps) {
   return (
-    <View
-      style={[
-        styles.scriptCard,
-        {
-          backgroundColor: background,
-        },
-      ]}
-    >
-      <View style={styles.sectionIdentity}>
-        <View
-          style={[
-            styles.sectionMark,
-            {
-              backgroundColor: colors.surface,
-            },
-          ]}
-        >
-          <Ionicons name={icon} size={19} color={color} />
-        </View>
-
-        <View>
-          <Text
+    <View style={styles.editorSection}>
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderLeft}>
+          <View
             style={[
-              styles.sectionLabel,
+              styles.sectionAccent,
               {
-                color,
+                backgroundColor: accent,
               },
             ]}
-          >
-            {label}
-          </Text>
+          />
 
-          <Text style={styles.sectionHint}>{hint}</Text>
+          <View>
+            <Text
+              style={[
+                styles.sectionLabel,
+                {
+                  color: accent,
+                },
+              ]}
+            >
+              {label}
+            </Text>
+
+            <Text style={styles.sectionHint}>{hint}</Text>
+          </View>
         </View>
+
+        <Ionicons name={icon} size={17} color={colors.textMuted} />
       </View>
 
       {children}
@@ -690,799 +650,418 @@ const styles = StyleSheet.create({
 
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
-    paddingBottom: 54,
+    paddingBottom: 48,
   },
 
   header: {
-    height: 68,
-
+    height: 70,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
   headerButton: {
     width: 42,
     height: 42,
-
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   headerTitle: {
     fontSize: 18,
-
     fontFamily: fonts.semibold,
-
     color: colors.text,
   },
 
   headerSpace: {
-    width: 40,
+    width: 42,
   },
 
-  heroPanel: {
-    position: "relative",
-
-    overflow: "hidden",
-
-    marginTop: 14,
-
-    marginBottom: 18,
-
-    padding: 18,
-
-    borderRadius: 28,
-
-    backgroundColor: colors.amberLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(201, 154, 69, 0.16)",
-
-    ...shadows.card,
+  editorIntro: {
+    marginTop: 18,
+    marginBottom: 17,
   },
 
-  heroBubbleOne: {
-    position: "absolute",
-
-    width: 126,
-    height: 126,
-
-    top: -46,
-    right: -36,
-
-    borderRadius: 63,
-
-    backgroundColor: "rgba(225, 116, 85, 0.12)",
-  },
-
-  heroBubbleTwo: {
-    position: "absolute",
-
-    width: 84,
-    height: 84,
-
-    left: -28,
-    bottom: 24,
-
-    borderRadius: 42,
-
-    backgroundColor: "rgba(142, 127, 194, 0.12)",
-  },
-
-  heroTop: {
+  editorTop: {
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
-  heroBadge: {
-    minHeight: 30,
+  editorStep: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
 
-    paddingHorizontal: 10,
-
+  editorStepNumber: {
+    width: 30,
+    height: 30,
     borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.78)",
-
-    flexDirection: "row",
-
+    backgroundColor: colors.amberLight,
     alignItems: "center",
-
-    gap: 6,
+    justifyContent: "center",
   },
 
-  heroBadgeText: {
-    fontSize: 10,
-
-    letterSpacing: 0.8,
-
+  editorStepNumberText: {
+    fontSize: 14,
     fontFamily: fonts.bold,
-
     color: colors.amber,
   },
 
-  heroMark: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
-    backgroundColor: colors.amber,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    ...shadows.soft,
+  editorStepText: {
+    fontSize: 14,
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
   },
 
-  heroContext: {
-    marginTop: 17,
-
-    padding: 12,
-
-    borderRadius: 20,
-
-    backgroundColor: "rgba(255, 253, 252, 0.86)",
-
-    borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.72)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  heroThumbnail: {
-    width: 66,
-    height: 82,
-
-    borderRadius: 14,
-  },
-
-  heroFallback: {
-    width: 66,
-    height: 66,
-
-    borderRadius: 17,
-
+  blockCount: {
+    minHeight: 30,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
     backgroundColor: colors.surface,
-
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
     alignItems: "center",
-
-    justifyContent: "center",
+    gap: 5,
   },
 
-  heroContextText: {
-    flex: 1,
-
-    minWidth: 0,
-
-    marginLeft: 12,
+  blockCountText: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
   },
 
-  heroContextLabel: {
-    fontSize: 9,
-
-    letterSpacing: 0.8,
-
+  editorTitle: {
+    maxWidth: 330,
+    marginTop: 13,
+    fontSize: 30,
+    lineHeight: 37,
+    letterSpacing: -0.85,
     fontFamily: fonts.bold,
-
-    color: colors.amber,
-  },
-
-  eyebrow: {
-    display: "none",
-  },
-
-  title: {
-    maxWidth: "100%",
-
-    marginTop: 5,
-
-    fontSize: 22,
-
-    lineHeight: 30,
-
-    letterSpacing: -0.4,
-
-    fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
-  titleLong: {
-    fontSize: 18,
-
-    lineHeight: 27,
-
-    letterSpacing: -0.2,
-
-    fontFamily: fonts.semibold,
-  },
-
-  titleVeryLong: {
-    fontSize: 16,
-
-    lineHeight: 24,
-
-    letterSpacing: 0,
-
+  editorDescription: {
+    maxWidth: 325,
+    marginTop: 7,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
 
-  heroMeta: {
-    marginTop: 9,
-
+  contextCard: {
+    minHeight: 98,
+    marginBottom: 18,
+    padding: 11,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: "row",
-
-    flexWrap: "wrap",
-
     alignItems: "center",
-
-    gap: 7,
+    ...shadows.soft,
   },
 
-  formatBadge: {
-    minHeight: 28,
+  contextThumbnail: {
+    width: 62,
+    height: 76,
+    borderRadius: 12,
+  },
 
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.amberLight,
-
+  contextFallback: {
+    width: 62,
+    height: 62,
+    borderRadius: 14,
+    backgroundColor: colors.terracottaLight,
     alignItems: "center",
+    justifyContent: "center",
+  },
 
+  contextContent: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 11,
+  },
+
+  contextMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+
+  contextLabel: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  formatPill: {
+    minHeight: 25,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
     justifyContent: "center",
   },
 
   formatText: {
-    fontSize: 10,
-
+    fontSize: 9,
     fontFamily: fonts.semibold,
-
-    color: colors.amber,
+    color: colors.textSecondary,
   },
 
-  flexibilityBadge: {
-    minHeight: 28,
+  contextTitle: {
+    marginTop: 6,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
 
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surfaceMuted,
-
+  originRow: {
+    marginTop: 5,
     flexDirection: "row",
-
     alignItems: "center",
-
     gap: 5,
   },
 
-  flexibilityText: {
+  originText: {
+    marginTop: 5,
     fontSize: 10,
-
-    fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  heroTip: {
-    marginTop: 12,
-
-    paddingHorizontal: 3,
-
-    flexDirection: "row",
-
-    alignItems: "flex-start",
-
-    gap: 7,
-  },
-
-  description: {
-    flex: 1,
-
-    fontSize: 12,
-
-    lineHeight: 19,
-
     fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 
-  scriptCard: {
-    marginBottom: 14,
-
-    padding: 18,
-
+  editorDocument: {
+    paddingHorizontal: 16,
     borderRadius: 22,
-
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.72)",
-
-    ...shadows.soft,
+    borderColor: colors.border,
+    ...shadows.card,
   },
 
-  sectionIdentity: {
+  editorSection: {
+    paddingVertical: 18,
+  },
+
+  developmentSection: {
+    paddingVertical: 18,
+  },
+
+  sectionHeader: {
     flexDirection: "row",
-
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
   },
 
-  sectionMark: {
-    width: 42,
-    height: 42,
-
-    marginRight: 11,
-
-    borderRadius: 13,
-
+  sectionHeaderLeft: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 9,
+  },
 
-    justifyContent: "center",
-
-    ...shadows.soft,
+  sectionAccent: {
+    width: 4,
+    height: 33,
+    borderRadius: radius.round,
   },
 
   sectionLabel: {
     fontSize: 10,
-
-    letterSpacing: 0.9,
-
+    letterSpacing: 0.85,
     fontFamily: fonts.bold,
   },
 
   sectionHint: {
     marginTop: 2,
-
-    fontSize: 12,
-
+    fontSize: 11,
+    lineHeight: 16,
     fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 
-  largeInput: {
-    minHeight: 145,
+  sectionDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+  },
 
-    marginTop: 16,
-
-    padding: 17,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.surface,
-
+  hookInput: {
+    minHeight: 135,
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-
-    borderColor: "rgba(225, 116, 85, 0.12)",
-
+    borderColor: colors.divider,
     fontSize: 17,
-
     lineHeight: 27,
-
     fontFamily: fonts.medium,
-
     color: colors.text,
   },
 
-  mediumInput: {
-    minHeight: 125,
-
-    marginTop: 16,
-
-    padding: 17,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.surface,
-
+  ctaInput: {
+    minHeight: 115,
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 15,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-
-    borderColor: "rgba(123, 158, 136, 0.12)",
-
+    borderColor: colors.divider,
     fontSize: 16,
-
     lineHeight: 25,
-
     fontFamily: fonts.regular,
-
     color: colors.text,
-  },
-
-  developmentSection: {
-    marginBottom: 14,
-
-    padding: 18,
-
-    borderRadius: 22,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(201, 154, 69, 0.15)",
-
-    ...shadows.soft,
-  },
-
-  developmentTop: {
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-
-    gap: 10,
   },
 
   stepsCount: {
-    minHeight: 29,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  stepsCountText: {
     fontSize: 10,
-
     fontFamily: fonts.semibold,
-
-    color: colors.amber,
+    color: colors.textMuted,
   },
 
-  developmentDescription: {
-    marginTop: 14,
-
-    marginBottom: 15,
-
-    fontSize: 12,
-
-    lineHeight: 19,
-
+  developmentHelp: {
+    marginTop: 11,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   points: {
-    gap: 10,
+    marginTop: 13,
+    gap: 9,
   },
 
   pointCard: {
-    padding: 14,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.surface,
-
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceSoft,
     borderWidth: 1,
-
-    borderColor: "rgba(201, 154, 69, 0.12)",
-
-    ...shadows.soft,
+    borderColor: colors.divider,
   },
 
   pointHeader: {
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
-  pointHeaderLeft: {
+  pointIdentity: {
     flexDirection: "row",
-
     alignItems: "center",
-
-    gap: 8,
+    gap: 7,
   },
 
   pointNumber: {
-    width: 31,
-    height: 31,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.amberLight,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  pointNumberText: {
-    fontSize: 10,
-
+    fontSize: 9,
+    letterSpacing: 0.4,
     fontFamily: fonts.bold,
-
     color: colors.amber,
   },
 
   pointLabel: {
-    fontSize: 12,
-
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
     color: colors.textSecondary,
   },
 
   removePoint: {
-    width: 32,
-    height: 32,
-
-    borderRadius: 10,
-
-    backgroundColor: colors.surfaceMuted,
-
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   pointInput: {
-    minHeight: 100,
-
-    marginTop: 11,
-
+    minHeight: 88,
+    marginTop: 8,
     padding: 0,
-
-    fontSize: 16,
-
-    lineHeight: 25,
-
+    fontSize: 15,
+    lineHeight: 24,
     fontFamily: fonts.regular,
-
     color: colors.text,
   },
 
   addPointButton: {
-    minHeight: 68,
-
-    marginTop: 11,
-
-    paddingHorizontal: 12,
-
-    borderRadius: 17,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(201, 154, 69, 0.26)",
-
-    backgroundColor: "rgba(255, 253, 252, 0.55)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-  },
-
-  addPointMark: {
-    width: 36,
-    height: 36,
-
-    marginRight: 10,
-
-    borderRadius: 11,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  addPointTitle: {
-    fontSize: 13,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
-  },
-
-  addPointHint: {
-    marginTop: 3,
-
-    fontSize: 11,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  optionalNote: {
-    marginTop: 3,
-
-    marginBottom: 20,
-
-    padding: 14,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.lavenderLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(142, 127, 194, 0.13)",
-
-    flexDirection: "row",
-
-    alignItems: "flex-start",
-
-    gap: 10,
-  },
-
-  optionalNoteMark: {
-    width: 34,
-    height: 34,
-
-    borderRadius: 11,
-
-    backgroundColor: colors.surface,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  optionalNoteTitle: {
-    fontSize: 13,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
-  },
-
-  optionalNoteText: {
-    marginTop: 3,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  actions: {
-    display: "none",
-  },
-
-  actionsPanel: {
-    marginTop: 4,
-
-    padding: 16,
-
-    borderRadius: 22,
-
-    backgroundColor: colors.primary,
-
-    ...shadows.hero,
-  },
-
-  actionsHeader: {
-    marginBottom: 13,
-  },
-
-  actionsBadge: {
-    alignSelf: "flex-start",
-
-    minHeight: 28,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.1)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  actionsBadgeText: {
-    fontSize: 9,
-
-    letterSpacing: 0.75,
-
-    fontFamily: fonts.bold,
-
-    color: colors.terracotta,
-  },
-
-  actionsTitle: {
+    minHeight: 48,
     marginTop: 10,
-
-    fontSize: 18,
-
-    lineHeight: 24,
-
-    fontFamily: fonts.bold,
-
-    color: colors.surface,
-  },
-
-  secondaryButton: {
-    minHeight: 50,
-
-    marginBottom: 9,
-
-    borderRadius: 15,
-
-    backgroundColor: "rgba(255, 253, 252, 0.1)",
-
+    borderRadius: 14,
     borderWidth: 1,
-
-    borderColor: "rgba(255, 253, 252, 0.12)",
-
+    borderColor: colors.border,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "center",
-
     gap: 7,
   },
 
-  secondaryButtonText: {
-    fontSize: 13,
+  addPointIcon: {
+    width: 27,
+    height: 27,
+    borderRadius: 9,
+    backgroundColor: colors.amberLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
+  addPointText: {
+    fontSize: 12,
     fontFamily: fonts.semibold,
+    color: colors.text,
+  },
 
-    color: colors.surface,
+  flexibilityNote: {
+    marginTop: 14,
+    paddingHorizontal: 3,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7,
+  },
+
+  flexibilityText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 16,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+
+  actions: {
+    marginTop: 26,
+  },
+
+  actionsLabel: {
+    marginBottom: 10,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
   },
 
   primaryButton: {
-    minHeight: 60,
-
-    paddingHorizontal: 14,
-
-    borderRadius: 18,
-
+    minHeight: 62,
+    paddingHorizontal: 13,
+    borderRadius: 17,
     backgroundColor: colors.terracotta,
-
+    flexDirection: "row",
     alignItems: "center",
-
-    justifyContent: "center",
-
-    position: "relative",
+    ...shadows.soft,
   },
 
   primaryButtonDisabled: {
@@ -1490,102 +1069,99 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonMark: {
-    position: "absolute",
-
-    left: 14,
-
-    width: 34,
-    height: 34,
-
+    width: 35,
+    height: 35,
+    marginRight: 10,
     borderRadius: 11,
-
     backgroundColor: colors.surface,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   primaryButtonText: {
     fontSize: 14,
-
     fontFamily: fonts.bold,
-
     color: colors.surface,
-
-    textAlign: "center",
-  },
-
-  primaryButtonArrow: {
-    position: "absolute",
-
-    right: 16,
   },
 
   primaryButtonTextDisabled: {
     color: colors.textMuted,
   },
 
+  primaryButtonHint: {
+    marginTop: 2,
+    fontSize: 10,
+    fontFamily: fonts.regular,
+    color: "rgba(255,253,252,0.72)",
+  },
+
+  primaryButtonHintDisabled: {
+    color: colors.textMuted,
+  },
+
+  secondaryButton: {
+    minHeight: 50,
+    marginTop: 9,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  secondaryButtonText: {
+    fontSize: 12,
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
+  },
+
   center: {
     flex: 1,
-
     paddingHorizontal: 30,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   loadingText: {
     marginTop: 12,
-
     fontSize: 13,
-
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   errorMark: {
     width: 54,
     height: 54,
-
     marginBottom: 16,
-
     borderRadius: 17,
-
-    backgroundColor: colors.surfaceMuted,
-
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   errorTitle: {
-    fontSize: 22,
-
+    fontSize: 21,
+    lineHeight: 28,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   errorButton: {
     marginTop: 18,
-
     paddingHorizontal: 18,
-
     paddingVertical: 11,
-
     borderRadius: 14,
-
     backgroundColor: colors.text,
   },
 
   errorButtonText: {
-    fontSize: 13,
-
+    fontSize: 12,
     fontFamily: fonts.semibold,
-
     color: colors.surface,
   },
 });
