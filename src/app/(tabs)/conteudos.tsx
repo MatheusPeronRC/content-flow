@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -22,6 +23,7 @@ import {
   radius,
   shadows,
   spacing,
+  statusColors,
   typography,
 } from "../../constants/theme";
 
@@ -164,20 +166,28 @@ export default function ConteudosScreen() {
           </View>
 
           <View style={styles.headerIcon}>
-            <Ionicons name="layers-outline" size={22} color={colors.primary} />
+            <Ionicons name="layers-outline" size={22} color={colors.lavender} />
           </View>
         </View>
 
         <View style={styles.summary}>
-          <SummaryItem value={activeCount} label="Em andamento" />
+          <SummaryItem
+            value={activeCount}
+            label="Em andamento"
+            color={colors.terracotta}
+          />
 
           <View style={styles.summaryDivider} />
 
-          <SummaryItem value={readyCount} label="Prontos" />
+          <SummaryItem value={readyCount} label="Prontos" color={colors.sage} />
 
           <View style={styles.summaryDivider} />
 
-          <SummaryItem value={publishedCount} label="Publicados" />
+          <SummaryItem
+            value={publishedCount}
+            label="Publicados"
+            color={colors.blue}
+          />
         </View>
 
         <ScrollView
@@ -197,6 +207,7 @@ export default function ConteudosScreen() {
                 <Text
                   style={[
                     styles.filterText,
+
                     selected && styles.filterTextSelected,
                   ]}
                 >
@@ -214,7 +225,9 @@ export default function ConteudosScreen() {
               : filters.find((item) => item.key === filter)?.label}
           </Text>
 
-          <Text style={styles.listCount}>{filteredContents.length}</Text>
+          <View style={styles.listCount}>
+            <Text style={styles.listCountText}>{filteredContents.length}</Text>
+          </View>
         </View>
 
         {filteredContents.length === 0 ? (
@@ -224,7 +237,15 @@ export default function ConteudosScreen() {
             <ContentCard
               key={content.id}
               content={content}
-              onPress={() => setSelectedContent(content)}
+              onPress={() =>
+                router.push({
+                  pathname: "/conteudo/[id]",
+                  params: {
+                    id: content.id,
+                  },
+                })
+              }
+              onOptions={() => setSelectedContent(content)}
               onAdvance={() => advanceStatus(content)}
             />
           ))
@@ -268,7 +289,10 @@ export default function ConteudosScreen() {
                     key={status}
                     style={[
                       styles.statusOption,
-                      selected && styles.statusOptionSelected,
+
+                      selected && {
+                        borderColor: meta.foreground,
+                      },
                     ]}
                     onPress={() => {
                       if (selectedContent) {
@@ -279,6 +303,7 @@ export default function ConteudosScreen() {
                     <View
                       style={[
                         styles.statusOptionIcon,
+
                         {
                           backgroundColor: meta.background,
                         },
@@ -287,14 +312,17 @@ export default function ConteudosScreen() {
                       <Ionicons
                         name={meta.icon}
                         size={19}
-                        color={colors.primary}
+                        color={meta.foreground}
                       />
                     </View>
 
                     <Text
                       style={[
                         styles.statusOptionText,
-                        selected && styles.statusOptionTextSelected,
+
+                        selected && {
+                          color: meta.foreground,
+                        },
                       ]}
                     >
                       {meta.label}
@@ -302,9 +330,9 @@ export default function ConteudosScreen() {
 
                     {selected && (
                       <Ionicons
-                        name="checkmark"
+                        name="checkmark-circle"
                         size={20}
-                        color={colors.primary}
+                        color={meta.foreground}
                       />
                     )}
                   </TouchableOpacity>
@@ -321,12 +349,22 @@ export default function ConteudosScreen() {
 type SummaryItemProps = {
   value: number;
   label: string;
+  color: string;
 };
 
-function SummaryItem({ value, label }: SummaryItemProps) {
+function SummaryItem({ value, label, color }: SummaryItemProps) {
   return (
     <View style={styles.summaryItem}>
-      <Text style={styles.summaryValue}>{value}</Text>
+      <Text
+        style={[
+          styles.summaryValue,
+          {
+            color,
+          },
+        ]}
+      >
+        {value}
+      </Text>
 
       <Text style={styles.summaryLabel}>{label}</Text>
     </View>
@@ -336,25 +374,34 @@ function SummaryItem({ value, label }: SummaryItemProps) {
 type ContentCardProps = {
   content: ContentItem;
   onPress: () => void;
+  onOptions: () => void;
   onAdvance: () => void;
 };
 
-function ContentCard({ content, onPress, onAdvance }: ContentCardProps) {
+function ContentCard({
+  content,
+  onPress,
+  onOptions,
+  onAdvance,
+}: ContentCardProps) {
   const meta = getStatusMeta(content.status);
 
   const nextStatus = getNextStatus(content.status);
+
+  const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
 
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View
         style={[
           styles.cardAccent,
+
           {
             backgroundColor: meta.background,
           },
         ]}
       >
-        <Ionicons name={meta.icon} size={21} color={colors.primary} />
+        <Ionicons name={meta.icon} size={21} color={meta.foreground} />
       </View>
 
       <View style={styles.cardContent}>
@@ -362,12 +409,23 @@ function ContentCard({ content, onPress, onAdvance }: ContentCardProps) {
           <View
             style={[
               styles.statusBadge,
+
               {
                 backgroundColor: meta.background,
               },
             ]}
           >
-            <Text style={styles.statusBadgeText}>{meta.label}</Text>
+            <Text
+              style={[
+                styles.statusBadgeText,
+
+                {
+                  color: meta.foreground,
+                },
+              ]}
+            >
+              {meta.label}
+            </Text>
           </View>
 
           {content.format && (
@@ -381,11 +439,7 @@ function ContentCard({ content, onPress, onAdvance }: ContentCardProps) {
 
         {content.plannedDate && (
           <View style={styles.dateRow}>
-            <Ionicons
-              name="calendar-outline"
-              size={13}
-              color={colors.textMuted}
-            />
+            <Ionicons name="calendar-outline" size={13} color={colors.blue} />
 
             <Text style={styles.dateText}>
               {formatDate(content.plannedDate)}
@@ -393,24 +447,46 @@ function ContentCard({ content, onPress, onAdvance }: ContentCardProps) {
           </View>
         )}
 
-        {nextStatus && (
+        {nextStatus && nextMeta && (
           <TouchableOpacity
             style={styles.advanceButton}
             onPress={(event) => {
               event.stopPropagation();
+
               onAdvance();
             }}
           >
-            <Text style={styles.advanceText}>
-              Avançar para {getStatusMeta(nextStatus).label}
+            <Text
+              style={[
+                styles.advanceText,
+
+                {
+                  color: nextMeta.foreground,
+                },
+              ]}
+            >
+              Avançar para {nextMeta.label}
             </Text>
 
-            <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color={nextMeta.foreground}
+            />
           </TouchableOpacity>
         )}
       </View>
 
-      <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+      <TouchableOpacity
+        style={styles.optionsButton}
+        onPress={(event) => {
+          event.stopPropagation();
+
+          onOptions();
+        }}
+      >
+        <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -419,7 +495,7 @@ function EmptyState() {
   return (
     <View style={styles.emptyState}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="documents-outline" size={28} color={colors.primary} />
+        <Ionicons name="documents-outline" size={28} color={colors.lavender} />
       </View>
 
       <Text style={styles.emptyTitle}>Nada por aqui</Text>
@@ -446,43 +522,55 @@ function getStatusMeta(status: ContentStatus) {
     case "ideia":
       return {
         label: "IDEIA",
+
         icon: "bulb-outline" as const,
-        background: "#E7EFE9",
+
+        ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
         label: "ROTEIRO",
+
         icon: "create-outline" as const,
-        background: "#F4ECDD",
+
+        ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
         label: "PRODUZIR",
+
         icon: "videocam-outline" as const,
-        background: "#F3E3DF",
+
+        ...statusColors.gravar,
       };
 
     case "editar":
       return {
         label: "EDITAR",
+
         icon: "cut-outline" as const,
-        background: "#E8EAF6",
+
+        ...statusColors.editar,
       };
 
     case "pronto":
       return {
         label: "PRONTO",
+
         icon: "checkmark-circle-outline" as const,
-        background: "#E3F0E7",
+
+        ...statusColors.pronto,
       };
 
     case "publicado":
       return {
         label: "PUBLICADO",
+
         icon: "paper-plane-outline" as const,
-        background: "#E4ECE8",
+
+        ...statusColors.publicado,
       };
   }
 }
@@ -501,99 +589,133 @@ function formatDate(dateKey: string) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
+
     paddingBottom: 110,
   },
 
   header: {
     paddingTop: spacing.md,
+
     paddingBottom: spacing.xl,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   title: {
     fontSize: typography.title,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   subtitle: {
     marginTop: 4,
+
     fontSize: typography.body,
+
     color: colors.textSecondary,
   },
 
   headerIcon: {
     width: 44,
     height: 44,
+
     borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.lavenderLight,
+
     alignItems: "center",
     justifyContent: "center",
   },
 
   summary: {
     height: 92,
+
     flexDirection: "row",
+
     alignItems: "center",
-    backgroundColor: colors.primary,
+
+    backgroundColor: colors.primaryDark,
+
     borderRadius: radius.xl,
+
     marginBottom: spacing.lg,
+
     paddingHorizontal: spacing.sm,
   },
 
   summaryItem: {
     flex: 1,
+
     alignItems: "center",
   },
 
   summaryValue: {
-    fontSize: 23,
+    fontSize: 25,
+
     fontWeight: "800",
-    color: colors.surface,
   },
 
   summaryLabel: {
     marginTop: 3,
+
     fontSize: typography.tiny,
+
     color: "#D7E3DE",
   },
 
   summaryDivider: {
     width: 1,
+
     height: 38,
+
     backgroundColor: "#456C61",
   },
 
   filters: {
     gap: spacing.sm,
+
     paddingRight: spacing.lg,
+
     paddingBottom: spacing.xl,
   },
 
   filter: {
     paddingHorizontal: spacing.md,
+
     paddingVertical: 9,
+
     borderRadius: radius.round,
-    backgroundColor: colors.surface,
+
+    backgroundColor: colors.surfaceSoft,
+
     borderWidth: 1,
+
     borderColor: colors.border,
   },
 
   filterSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.primaryDark,
+
+    borderColor: colors.primaryDark,
   },
 
   filterText: {
     fontSize: typography.caption,
+
     fontWeight: "600",
+
     color: colors.textSecondary,
   },
 
@@ -603,41 +725,73 @@ const styles = StyleSheet.create({
 
   listHeader: {
     flexDirection: "row",
+
     justifyContent: "space-between",
+
     alignItems: "center",
+
     marginBottom: spacing.md,
   },
 
   listTitle: {
     fontSize: typography.heading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   listCount: {
+    minWidth: 28,
+
+    height: 28,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.lavenderLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  listCountText: {
     fontSize: typography.caption,
-    fontWeight: "700",
-    color: colors.textMuted,
+
+    fontWeight: "800",
+
+    color: colors.lavender,
   },
 
   card: {
     flexDirection: "row",
+
     alignItems: "flex-start",
+
     backgroundColor: colors.surface,
+
     borderRadius: radius.lg,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     padding: spacing.md,
+
     marginBottom: spacing.sm,
+
     ...shadows.card,
   },
 
   cardAccent: {
     width: 46,
     height: 46,
+
     borderRadius: radius.md,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginRight: spacing.md,
   },
 
@@ -647,138 +801,192 @@ const styles = StyleSheet.create({
 
   cardMeta: {
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: spacing.sm,
   },
 
   statusBadge: {
     paddingHorizontal: 8,
+
     paddingVertical: 4,
+
     borderRadius: radius.round,
   },
 
   statusBadgeText: {
     fontSize: 8,
+
     fontWeight: "800",
+
     letterSpacing: 0.5,
-    color: colors.primary,
   },
 
   format: {
     fontSize: typography.tiny,
+
     color: colors.textMuted,
   },
 
   cardTitle: {
     marginTop: spacing.sm,
+
     paddingRight: spacing.sm,
+
     fontSize: typography.body,
+
     lineHeight: 20,
+
     fontWeight: "600",
+
     color: colors.text,
   },
 
   dateRow: {
     marginTop: spacing.sm,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: 4,
   },
 
   dateText: {
     fontSize: typography.tiny,
+
     color: colors.textMuted,
   },
 
   advanceButton: {
     marginTop: spacing.md,
+
     alignSelf: "flex-start",
+
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: 5,
   },
 
   advanceText: {
     fontSize: 11,
+
     fontWeight: "700",
-    color: colors.primary,
   },
 
   emptyState: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.lavenderLight,
+
     borderRadius: radius.xl,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     padding: spacing.xl,
+
     alignItems: "center",
   },
 
   emptyIcon: {
     width: 58,
     height: 58,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.surface,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginBottom: spacing.md,
   },
 
   emptyTitle: {
     fontSize: typography.subheading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   emptyDescription: {
     marginTop: spacing.sm,
+
     textAlign: "center",
+
     fontSize: typography.body,
+
     lineHeight: 20,
+
     color: colors.textSecondary,
   },
 
   modalBackdrop: {
     flex: 1,
+
     justifyContent: "flex-end",
+
     backgroundColor: "rgba(0,0,0,0.28)",
   },
 
   sheet: {
     backgroundColor: colors.background,
+
     borderTopLeftRadius: radius.xxl,
+
     borderTopRightRadius: radius.xxl,
+
     paddingHorizontal: spacing.lg,
+
     paddingTop: 12,
+
     paddingBottom: spacing.xl,
   },
 
   sheetHandle: {
     width: 42,
     height: 4,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.border,
+
     alignSelf: "center",
+
     marginBottom: spacing.lg,
   },
 
   sheetTitle: {
     fontSize: typography.heading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   sheetContentTitle: {
     marginTop: spacing.sm,
+
     fontSize: typography.subheading,
+
     lineHeight: 22,
+
     fontWeight: "600",
+
     color: colors.text,
   },
 
   sheetDescription: {
     marginTop: 4,
+
     marginBottom: spacing.lg,
+
     fontSize: typography.caption,
+
     color: colors.textSecondary,
   },
 
@@ -788,36 +996,52 @@ const styles = StyleSheet.create({
 
   statusOption: {
     minHeight: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-  },
 
-  statusOptionSelected: {
-    borderColor: colors.primary,
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    backgroundColor: colors.surface,
+
+    borderRadius: radius.md,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    paddingHorizontal: spacing.md,
   },
 
   statusOptionIcon: {
     width: 36,
     height: 36,
+
     borderRadius: radius.md,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginRight: spacing.md,
   },
 
   statusOptionText: {
     flex: 1,
+
     fontSize: typography.body,
+
     fontWeight: "600",
+
     color: colors.text,
   },
+  optionsButton: {
+    width: 36,
+    height: 36,
 
-  statusOptionTextSelected: {
-    color: colors.primary,
+    borderRadius: radius.round,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginLeft: spacing.sm,
   },
 });

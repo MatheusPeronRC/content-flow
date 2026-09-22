@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -22,6 +23,7 @@ import {
     radius,
     shadows,
     spacing,
+    statusColors,
     typography,
 } from "../../constants/theme";
 
@@ -29,6 +31,7 @@ const DAY_NAMES = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 
 export default function PlanejarScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
+
   const [weekOffset, setWeekOffset] = useState(0);
 
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
@@ -44,26 +47,29 @@ export default function PlanejarScreen() {
 
     monday.setDate(monday.getDate() + weekOffset * 7);
 
-    return Array.from({ length: 7 }).map((_, index) => {
+    return Array.from({
+      length: 7,
+    }).map((_, index) => {
       const date = new Date(monday);
 
       date.setDate(monday.getDate() + index);
 
       return {
         date,
+
         key: toDateKey(date),
+
         dayName: DAY_NAMES[index],
+
         dayNumber: date.getDate(),
       };
     });
   }, [weekOffset]);
 
   useEffect(() => {
-    const currentSelectedExists = weekDays.some(
-      (day) => day.key === selectedDate,
-    );
+    const exists = weekDays.some((day) => day.key === selectedDate);
 
-    if (!currentSelectedExists) {
+    if (!exists) {
       const todayKey = toDateKey(new Date());
 
       const todayExists = weekDays.some((day) => day.key === todayKey);
@@ -154,11 +160,7 @@ export default function PlanejarScreen() {
           </View>
 
           <View style={styles.calendarIcon}>
-            <Ionicons
-              name="calendar-outline"
-              size={22}
-              color={colors.primary}
-            />
+            <Ionicons name="calendar-outline" size={22} color={colors.blue} />
           </View>
         </View>
 
@@ -167,7 +169,7 @@ export default function PlanejarScreen() {
             style={styles.weekArrow}
             onPress={() => setWeekOffset((current) => current - 1)}
           >
-            <Ionicons name="chevron-back" size={20} color={colors.text} />
+            <Ionicons name="chevron-back" size={20} color={colors.blue} />
           </TouchableOpacity>
 
           <View style={styles.weekTitleArea}>
@@ -190,7 +192,7 @@ export default function PlanejarScreen() {
             style={styles.weekArrow}
             onPress={() => setWeekOffset((current) => current + 1)}
           >
-            <Ionicons name="chevron-forward" size={20} color={colors.text} />
+            <Ionicons name="chevron-forward" size={20} color={colors.blue} />
           </TouchableOpacity>
         </View>
 
@@ -221,6 +223,7 @@ export default function PlanejarScreen() {
                 <Text
                   style={[
                     styles.dayNumber,
+
                     selected && styles.dayNumberSelected,
                   ]}
                 >
@@ -231,6 +234,7 @@ export default function PlanejarScreen() {
                   <Text
                     style={[
                       styles.todayLabel,
+
                       selected && styles.todayLabelSelected,
                     ]}
                   >
@@ -242,12 +246,14 @@ export default function PlanejarScreen() {
                   <View
                     style={[
                       styles.countBadge,
+
                       selected && styles.countBadgeSelected,
                     ]}
                   >
                     <Text
                       style={[
                         styles.countText,
+
                         selected && styles.countTextSelected,
                       ]}
                     >
@@ -261,19 +267,17 @@ export default function PlanejarScreen() {
         </ScrollView>
 
         <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>
-              {formatSelectedDay(selectedDay.date)}
-            </Text>
+          <Text style={styles.sectionTitle}>
+            {formatSelectedDay(selectedDay.date)}
+          </Text>
 
-            <Text style={styles.sectionSubtitle}>
-              {selectedDayContents.length === 0
-                ? "Nenhum conteúdo planejado"
-                : selectedDayContents.length === 1
-                  ? "1 conteúdo planejado"
-                  : `${selectedDayContents.length} conteúdos planejados`}
-            </Text>
-          </View>
+          <Text style={styles.sectionSubtitle}>
+            {selectedDayContents.length === 0
+              ? "Nenhum conteúdo planejado"
+              : selectedDayContents.length === 1
+                ? "1 conteúdo planejado"
+                : `${selectedDayContents.length} conteúdos planejados`}
+          </Text>
         </View>
 
         {selectedDayContents.length === 0 ? (
@@ -282,7 +286,7 @@ export default function PlanejarScreen() {
               <Ionicons
                 name="calendar-clear-outline"
                 size={26}
-                color={colors.primary}
+                color={colors.blue}
               />
             </View>
 
@@ -327,7 +331,7 @@ export default function PlanejarScreen() {
             <Ionicons
               name="checkmark-circle-outline"
               size={23}
-              color={colors.success}
+              color={colors.sage}
             />
 
             <Text style={styles.allPlannedText}>Tudo planejado por aqui.</Text>
@@ -379,6 +383,7 @@ export default function PlanejarScreen() {
                     key={day.key}
                     style={[
                       styles.sheetDay,
+
                       selected && styles.sheetDaySelected,
                     ]}
                     onPress={() => handlePlan(day.key)}
@@ -386,6 +391,7 @@ export default function PlanejarScreen() {
                     <Text
                       style={[
                         styles.sheetDayName,
+
                         selected && styles.sheetDayTextSelected,
                       ]}
                     >
@@ -395,6 +401,7 @@ export default function PlanejarScreen() {
                     <Text
                       style={[
                         styles.sheetDayNumber,
+
                         selected && styles.sheetDayTextSelected,
                       ]}
                     >
@@ -450,17 +457,28 @@ function PlanningCard({
       <View
         style={[
           styles.contentIcon,
+
           {
             backgroundColor: status.background,
           },
         ]}
       >
-        <Ionicons name={status.icon} size={21} color={colors.primary} />
+        <Ionicons name={status.icon} size={21} color={status.foreground} />
       </View>
 
       <View style={styles.contentInfo}>
         <View style={styles.contentMeta}>
-          <Text style={styles.statusText}>{status.label}</Text>
+          <Text
+            style={[
+              styles.statusText,
+
+              {
+                color: status.foreground,
+              },
+            ]}
+          >
+            {status.label}
+          </Text>
 
           {content.format && (
             <>
@@ -482,7 +500,7 @@ function PlanningCard({
         <Ionicons
           name={unplanned ? "calendar-outline" : "calendar"}
           size={17}
-          color={colors.primary}
+          color={colors.blue}
         />
       </View>
     </TouchableOpacity>
@@ -494,43 +512,57 @@ function getStatusMeta(status: ContentStatus) {
     case "ideia":
       return {
         label: "IDEIA",
+
         icon: "bulb-outline" as const,
-        background: colors.primaryLight,
+
+        ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
         label: "ROTEIRO",
+
         icon: "create-outline" as const,
-        background: colors.carousel,
+
+        ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
-        label: "GRAVAR",
+        label: "PRODUZIR",
+
         icon: "videocam-outline" as const,
-        background: colors.reel,
+
+        ...statusColors.gravar,
       };
 
     case "editar":
       return {
         label: "EDITAR",
+
         icon: "cut-outline" as const,
-        background: colors.story,
+
+        ...statusColors.editar,
       };
 
     case "pronto":
       return {
         label: "PRONTO",
+
         icon: "checkmark-circle-outline" as const,
-        background: colors.inspiration,
+
+        ...statusColors.pronto,
       };
 
     default:
       return {
         label: "CONTEÚDO",
+
         icon: "document-outline" as const,
-        background: colors.primaryLight,
+
+        background: colors.blueLight,
+
+        foreground: colors.blue,
       };
   }
 }
@@ -582,59 +614,78 @@ function formatSelectedDay(date: Date) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
+
     paddingBottom: 110,
   },
 
   header: {
     paddingTop: spacing.md,
+
     paddingBottom: spacing.xl,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   title: {
     fontSize: typography.title,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   subtitle: {
     marginTop: 4,
+
     fontSize: typography.body,
+
     lineHeight: 20,
+
     color: colors.textSecondary,
+
     maxWidth: 290,
   },
 
   calendarIcon: {
     width: 44,
     height: 44,
+
     borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.blueLight,
+
     alignItems: "center",
     justifyContent: "center",
   },
 
   weekHeader: {
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
+
     marginBottom: spacing.md,
   },
 
   weekArrow: {
     width: 38,
     height: 38,
+
     borderRadius: radius.round,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+
+    backgroundColor: colors.blueLight,
+
     alignItems: "center",
     justifyContent: "center",
   },
@@ -645,53 +696,73 @@ const styles = StyleSheet.create({
 
   weekLabel: {
     fontSize: typography.tiny,
+
     fontWeight: "800",
+
     letterSpacing: 1,
-    color: colors.primary,
+
+    color: colors.blue,
   },
 
   weekRange: {
     marginTop: 3,
+
     fontSize: typography.body,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   days: {
     gap: spacing.sm,
+
     paddingBottom: spacing.xl,
   },
 
   dayCard: {
     width: 58,
+
     minHeight: 82,
+
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+
+    backgroundColor: colors.surfaceSoft,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     paddingVertical: 10,
   },
 
   dayCardSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.blue,
+
+    borderColor: colors.blue,
   },
 
   dayName: {
     fontSize: typography.tiny,
+
     fontWeight: "700",
+
     color: colors.textMuted,
   },
 
   dayNameSelected: {
-    color: "#D7E3DE",
+    color: colors.surface,
   },
 
   dayNumber: {
     marginTop: 5,
+
     fontSize: 19,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
@@ -701,22 +772,31 @@ const styles = StyleSheet.create({
 
   todayLabel: {
     marginTop: 4,
+
     fontSize: 7,
+
     fontWeight: "800",
-    color: colors.primary,
+
+    color: colors.blue,
   },
 
   todayLabelSelected: {
-    color: "#D7E3DE",
+    color: colors.surface,
   },
 
   countBadge: {
     marginTop: 5,
+
     minWidth: 18,
+
     height: 18,
+
     paddingHorizontal: 4,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.blueLight,
+
     alignItems: "center",
     justifyContent: "center",
   },
@@ -727,12 +807,14 @@ const styles = StyleSheet.create({
 
   countText: {
     fontSize: 9,
+
     fontWeight: "800",
-    color: colors.primary,
+
+    color: colors.blue,
   },
 
   countTextSelected: {
-    color: colors.primary,
+    color: colors.blue,
   },
 
   sectionHeader: {
@@ -741,72 +823,105 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: typography.heading,
+
     fontWeight: "700",
+
     color: colors.text,
+
     textTransform: "capitalize",
   },
 
   sectionSubtitle: {
     marginTop: 3,
+
     fontSize: typography.caption,
+
     color: colors.textSecondary,
   },
 
   emptyDay: {
     minHeight: 92,
+
     flexDirection: "row",
+
     alignItems: "center",
-    backgroundColor: colors.surface,
+
+    backgroundColor: colors.blueLight,
+
     borderRadius: radius.lg,
+
     borderWidth: 1,
-    borderStyle: "dashed",
+
     borderColor: colors.border,
+
     padding: spacing.md,
+
     marginBottom: spacing.xl,
   },
 
   emptyDayIcon: {
     width: 44,
     height: 44,
+
     borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.surface,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginRight: spacing.md,
   },
 
   emptyDayTitle: {
     fontSize: typography.body,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   emptyDayText: {
     marginTop: 3,
+
     fontSize: typography.caption,
+
     lineHeight: 17,
+
     color: colors.textSecondary,
   },
 
   contentCard: {
     minHeight: 88,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     backgroundColor: colors.surface,
+
     borderRadius: radius.lg,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     padding: spacing.md,
+
     marginBottom: spacing.sm,
+
     ...shadows.card,
   },
 
   contentIcon: {
     width: 46,
     height: 46,
+
     borderRadius: radius.md,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginRight: spacing.md,
   },
 
@@ -816,169 +931,234 @@ const styles = StyleSheet.create({
 
   contentMeta: {
     flexDirection: "row",
+
     alignItems: "center",
   },
 
   statusText: {
     fontSize: typography.tiny,
+
     fontWeight: "800",
+
     letterSpacing: 0.5,
-    color: colors.primary,
   },
 
   metaDot: {
     width: 3,
     height: 3,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.textMuted,
+
     marginHorizontal: 6,
   },
 
   formatText: {
     fontSize: typography.tiny,
+
     color: colors.textMuted,
   },
 
   contentTitle: {
     marginTop: 5,
+
     fontSize: typography.body,
+
     lineHeight: 19,
+
     fontWeight: "600",
+
     color: colors.text,
   },
 
   planAction: {
     width: 36,
     height: 36,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.blueLight,
+
     alignItems: "center",
     justifyContent: "center",
+
     marginLeft: spacing.sm,
   },
 
   planActionScheduled: {
-    backgroundColor: colors.inspiration,
+    backgroundColor: colors.sageLight,
   },
 
   unplannedHeader: {
     marginTop: spacing.xl,
+
     marginBottom: spacing.md,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   unplannedCount: {
     minWidth: 30,
+
     height: 30,
+
     paddingHorizontal: 8,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.amberLight,
+
     alignItems: "center",
     justifyContent: "center",
   },
 
   unplannedCountText: {
     fontSize: typography.caption,
+
     fontWeight: "800",
-    color: colors.primary,
+
+    color: colors.amber,
   },
 
   allPlanned: {
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: spacing.sm,
-    backgroundColor: colors.surface,
+
+    backgroundColor: colors.sageLight,
+
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+
     padding: spacing.md,
   },
 
   allPlannedText: {
     fontSize: typography.body,
+
     fontWeight: "600",
+
     color: colors.textSecondary,
   },
 
   modalBackdrop: {
     flex: 1,
+
     justifyContent: "flex-end",
+
     backgroundColor: "rgba(0, 0, 0, 0.28)",
   },
 
   sheet: {
     backgroundColor: colors.background,
+
     borderTopLeftRadius: radius.xxl,
+
     borderTopRightRadius: radius.xxl,
+
     paddingHorizontal: spacing.lg,
+
     paddingTop: 12,
+
     paddingBottom: spacing.xl,
   },
 
   sheetHandle: {
     width: 42,
     height: 4,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.border,
+
     alignSelf: "center",
+
     marginBottom: spacing.lg,
   },
 
   sheetTitle: {
     fontSize: typography.heading,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
   sheetContentTitle: {
     marginTop: spacing.sm,
+
     fontSize: typography.subheading,
+
     lineHeight: 22,
+
     fontWeight: "600",
+
     color: colors.text,
   },
 
   sheetDescription: {
     marginTop: 4,
+
     marginBottom: spacing.lg,
+
     fontSize: typography.caption,
+
     color: colors.textSecondary,
   },
 
   sheetDays: {
     flexDirection: "row",
+
     justifyContent: "space-between",
+
     gap: 5,
   },
 
   sheetDay: {
     flex: 1,
+
     minHeight: 66,
+
     borderRadius: radius.md,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   sheetDaySelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.blue,
+
+    borderColor: colors.blue,
   },
 
   sheetDayName: {
     fontSize: 8,
+
     fontWeight: "700",
+
     color: colors.textMuted,
   },
 
   sheetDayNumber: {
     marginTop: 4,
+
     fontSize: 16,
+
     fontWeight: "700",
+
     color: colors.text,
   },
 
@@ -988,16 +1168,23 @@ const styles = StyleSheet.create({
 
   removePlanning: {
     height: 46,
+
     marginTop: spacing.lg,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     gap: spacing.sm,
   },
 
   removePlanningText: {
     fontSize: typography.body,
+
     fontWeight: "600",
+
     color: colors.danger,
   },
 });

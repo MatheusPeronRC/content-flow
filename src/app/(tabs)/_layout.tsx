@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs, router } from "expo-router";
+
 import { View } from "react-native";
-import { colors } from "../../constants/theme";
+
+import { colors, shadows } from "../../constants/theme";
 
 export default function TabsLayout() {
   return (
@@ -10,14 +12,16 @@ export default function TabsLayout() {
         headerShown: false,
 
         tabBarActiveTintColor: colors.primary,
+
         tabBarInactiveTintColor: colors.textMuted,
 
         tabBarStyle: {
           height: 74,
+
           paddingTop: 8,
           paddingBottom: 8,
 
-          backgroundColor: colors.surface,
+          backgroundColor: "#FAF7F1",
 
           borderTopWidth: 1,
           borderTopColor: colors.border,
@@ -33,6 +37,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Hoje",
+
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
@@ -43,15 +48,18 @@ export default function TabsLayout() {
         name="inspiracoes"
         options={{
           title: "Inspirações",
+
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="bulb-outline" size={size} color={color} />
           ),
         }}
       />
+
       <Tabs.Screen
         name="criar"
         options={{
           title: "",
+
           tabBarIcon: () => (
             <View
               style={{
@@ -60,7 +68,7 @@ export default function TabsLayout() {
 
                 borderRadius: 29,
 
-                backgroundColor: colors.primary,
+                backgroundColor: colors.terracotta,
 
                 alignItems: "center",
                 justifyContent: "center",
@@ -68,7 +76,9 @@ export default function TabsLayout() {
                 marginTop: -22,
 
                 borderWidth: 5,
-                borderColor: colors.surface,
+                borderColor: "#FAF7F1",
+
+                ...shadows.floating,
               }}
             >
               <Ionicons name="add" size={30} color={colors.surface} />
@@ -78,14 +88,17 @@ export default function TabsLayout() {
         listeners={{
           tabPress: (event) => {
             event.preventDefault();
+
             router.push("/conteudo/novo");
           },
         }}
       />
+
       <Tabs.Screen
         name="planejar"
         options={{
           title: "Planejar",
+
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" size={size} color={color} />
           ),
@@ -96,6 +109,7 @@ export default function TabsLayout() {
         name="conteudos"
         options={{
           title: "Conteúdos",
+
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="layers-outline" size={size} color={color} />
           ),

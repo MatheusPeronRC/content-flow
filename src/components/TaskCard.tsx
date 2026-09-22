@@ -14,9 +14,14 @@ type TaskCardProps = {
   action: string;
   title: string;
   type: string;
+
   icon: keyof typeof Ionicons.glyphMap;
+
   iconBackground: string;
+  iconColor?: string;
+
   completed?: boolean;
+
   onPress?: () => void;
 };
 
@@ -26,13 +31,21 @@ export function TaskCard({
   type,
   icon,
   iconBackground,
+  iconColor = colors.primary,
   completed = false,
   onPress,
 }: TaskCardProps) {
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
-      <View style={[styles.iconContainer, { backgroundColor: iconBackground }]}>
-        <Ionicons name={icon} size={22} color={colors.primary} />
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: iconBackground,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={22} color={iconColor} />
       </View>
 
       <View style={styles.content}>
@@ -93,7 +106,7 @@ const styles = StyleSheet.create({
     fontSize: typography.caption,
     fontWeight: "700",
 
-    color: colors.primary,
+    color: colors.textSecondary,
 
     marginBottom: 3,
   },
@@ -143,7 +156,8 @@ const styles = StyleSheet.create({
   },
 
   checkCompleted: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.sage,
+
+    borderColor: colors.sage,
   },
 });

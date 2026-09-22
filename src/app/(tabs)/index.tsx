@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
+
 import { useCallback, useState } from "react";
+
 import {
   ScrollView,
   StyleSheet,
@@ -8,69 +10,29 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getContents } from "../../services/contentStorage";
-import { getInspirations } from "../../services/inspirationStorage";
-import { ContentItem } from "../../types/content";
 
 import { SectionHeader } from "../../components/SectionHeader";
 import { TaskCard } from "../../components/TaskCard";
+
+import { getContents } from "../../services/contentStorage";
+import { getInspirations } from "../../services/inspirationStorage";
+
+import { ContentItem } from "../../types/content";
 
 import {
   colors,
   radius,
   shadows,
   spacing,
+  statusColors,
   typography,
 } from "../../constants/theme";
 
-function getTaskInfo(content: ContentItem) {
-  switch (content.status) {
-    case "ideia":
-      return {
-        action: "Desenvolver ideia",
-        icon: "bulb-outline" as const,
-        color: colors.primaryLight,
-      };
-
-    case "roteiro":
-      return {
-        action: "Finalizar roteiro",
-        icon: "create-outline" as const,
-        color: colors.carousel,
-      };
-
-    case "gravar":
-      return {
-        action: "Produzir conteúdo",
-        icon: "videocam-outline" as const,
-        color: colors.reel,
-      };
-
-    case "editar":
-      return {
-        action: "Editar",
-        icon: "cut-outline" as const,
-        color: colors.story,
-      };
-
-    case "pronto":
-      return {
-        action: "Publicar",
-        icon: "paper-plane-outline" as const,
-        color: colors.inspiration,
-      };
-
-    default:
-      return {
-        action: "Continuar",
-        icon: "document-text-outline" as const,
-        color: colors.primaryLight,
-      };
-  }
-}
 export default function HomeScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
+
   const [inspirationCount, setInspirationCount] = useState(0);
 
   useFocusEffect(
@@ -89,6 +51,7 @@ export default function HomeScreen() {
           }
 
           setContents(savedContents);
+
           setInspirationCount(savedInspirations.length);
         } catch (error) {
           console.error("Erro ao carregar a Home:", error);
@@ -104,14 +67,17 @@ export default function HomeScreen() {
   );
 
   const today = new Date();
+
   const todayKey = toDateKey(today);
 
   const monday = getMonday(today);
 
   const sunday = new Date(monday);
+
   sunday.setDate(monday.getDate() + 6);
 
   const weekStart = toDateKey(monday);
+
   const weekEnd = toDateKey(sunday);
 
   const weeklyContents = contents.filter(
@@ -157,6 +123,7 @@ export default function HomeScreen() {
 
     return {
       key,
+
       day: ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][index],
 
       date: date.getDate(),
@@ -167,17 +134,12 @@ export default function HomeScreen() {
     };
   });
 
-  const pendingContents = contents
-    .filter((content) => content.status !== "publicado")
-    .slice(0, 3);
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
-
         <View style={styles.header}>
           <View style={styles.brand}>
             <View style={styles.brandIcon}>
@@ -191,16 +153,13 @@ export default function HomeScreen() {
             <Text style={styles.brandName}>ContentFlow</Text>
           </View>
 
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons
-              name="notifications-outline"
-              size={21}
-              color={colors.text}
-            />
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => router.push("/onboarding")}
+          >
+            <Ionicons name="person-outline" size={21} color={colors.blue} />
           </TouchableOpacity>
         </View>
-
-        {/* INTRO */}
 
         <View style={styles.hero}>
           <Text style={styles.heroLabel}>SEU FOCO DE HOJE</Text>
@@ -210,12 +169,9 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.heroDescription}>
-            Você já sabe o que precisa produzir hoje. Agora é só colocar em
-            movimento.
+            Organize o que precisa ser produzido e avance um passo de cada vez.
           </Text>
         </View>
-
-        {/* PROGRESSO */}
 
         <View style={styles.progressCard}>
           <View style={styles.progressTop}>
@@ -233,7 +189,7 @@ export default function HomeScreen() {
               <Ionicons
                 name="trending-up-outline"
                 size={21}
-                color={colors.primary}
+                color={colors.blue}
               />
             </View>
           </View>
@@ -262,8 +218,6 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* HOJE */}
-
         <View style={styles.section}>
           <SectionHeader
             title="Hoje"
@@ -281,11 +235,7 @@ export default function HomeScreen() {
           {todayContents.length === 0 ? (
             <View style={styles.emptyTasks}>
               <View style={styles.emptyTasksIcon}>
-                <Ionicons
-                  name="sunny-outline"
-                  size={24}
-                  color={colors.primary}
-                />
+                <Ionicons name="sunny-outline" size={24} color={colors.amber} />
               </View>
 
               <View style={styles.emptyTasksContent}>
@@ -294,8 +244,7 @@ export default function HomeScreen() {
                 </Text>
 
                 <Text style={styles.emptyTasksText}>
-                  Você pode aproveitar o dia ou adicionar um conteúdo ao
-                  planejamento.
+                  Aproveite o dia ou adicione um conteúdo ao planejamento.
                 </Text>
               </View>
             </View>
@@ -310,7 +259,8 @@ export default function HomeScreen() {
                   title={content.idea}
                   type={content.format ?? "Conteúdo"}
                   icon={task.icon}
-                  iconBackground={task.color}
+                  iconBackground={task.background}
+                  iconColor={task.foreground}
                   onPress={() =>
                     router.push({
                       pathname: "/conteudo/roteiro",
@@ -324,8 +274,6 @@ export default function HomeScreen() {
             })
           )}
         </View>
-
-        {/* SEMANA */}
 
         <View style={styles.section}>
           <SectionHeader
@@ -391,15 +339,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* INSPIRAÇÕES */}
-
         <TouchableOpacity
           style={styles.inspirationCard}
           activeOpacity={0.8}
           onPress={() => router.push("/inspiracoes")}
         >
           <View style={styles.inspirationIcon}>
-            <Ionicons name="bulb-outline" size={23} color={colors.primary} />
+            <Ionicons name="bulb-outline" size={23} color={colors.rose} />
           </View>
 
           <View style={styles.inspirationContent}>
@@ -414,11 +360,103 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <Ionicons name="chevron-forward" size={20} color={colors.rose} />
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function getTaskInfo(content: ContentItem) {
+  switch (content.status) {
+    case "ideia":
+      return {
+        action: "Desenvolver ideia",
+
+        icon: "bulb-outline" as const,
+
+        background: statusColors.ideia.background,
+
+        foreground: statusColors.ideia.foreground,
+      };
+
+    case "roteiro":
+      return {
+        action: "Finalizar roteiro",
+
+        icon: "create-outline" as const,
+
+        background: statusColors.roteiro.background,
+
+        foreground: statusColors.roteiro.foreground,
+      };
+
+    case "gravar":
+      return {
+        action: "Produzir conteúdo",
+
+        icon: "videocam-outline" as const,
+
+        background: statusColors.gravar.background,
+
+        foreground: statusColors.gravar.foreground,
+      };
+
+    case "editar":
+      return {
+        action: "Editar",
+
+        icon: "cut-outline" as const,
+
+        background: statusColors.editar.background,
+
+        foreground: statusColors.editar.foreground,
+      };
+
+    case "pronto":
+      return {
+        action: "Publicar",
+
+        icon: "paper-plane-outline" as const,
+
+        background: statusColors.pronto.background,
+
+        foreground: statusColors.pronto.foreground,
+      };
+
+    default:
+      return {
+        action: "Continuar",
+
+        icon: "document-text-outline" as const,
+
+        background: colors.blueLight,
+
+        foreground: colors.blue,
+      };
+  }
+}
+
+function getMonday(date: Date) {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const day = result.getDay();
+
+  const difference = day === 0 ? -6 : 1 - day;
+
+  result.setDate(result.getDate() + difference);
+
+  return result;
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 const styles = StyleSheet.create({
@@ -470,13 +508,10 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surface,
+    backgroundColor: colors.blueLight,
 
     alignItems: "center",
     justifyContent: "center",
-
-    borderWidth: 1,
-    borderColor: colors.border,
   },
 
   hero: {
@@ -486,10 +521,11 @@ const styles = StyleSheet.create({
 
   heroLabel: {
     fontSize: typography.tiny,
+
     fontWeight: "800",
     letterSpacing: 1.3,
 
-    color: colors.primary,
+    color: colors.terracotta,
 
     marginBottom: spacing.sm,
   },
@@ -502,22 +538,23 @@ const styles = StyleSheet.create({
 
     color: colors.text,
 
-    maxWidth: 320,
+    maxWidth: 330,
   },
 
   heroDescription: {
     marginTop: 10,
 
     fontSize: typography.body,
+
     lineHeight: 21,
 
     color: colors.textSecondary,
 
-    maxWidth: 330,
+    maxWidth: 340,
   },
 
   progressCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
 
     borderRadius: radius.xl,
 
@@ -528,17 +565,21 @@ const styles = StyleSheet.create({
 
   progressTop: {
     flexDirection: "row",
+
     justifyContent: "space-between",
+
     alignItems: "center",
   },
 
   progressLabel: {
     fontSize: typography.caption,
+
     color: "#D7E3DE",
   },
 
   progressValue: {
     fontSize: typography.heading,
+
     fontWeight: "700",
 
     color: colors.surface,
@@ -552,7 +593,7 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.blueLight,
 
     alignItems: "center",
     justifyContent: "center",
@@ -573,7 +614,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
 
-    backgroundColor: colors.surface,
+    backgroundColor: colors.terracotta,
 
     borderRadius: radius.round,
   },
@@ -590,8 +631,57 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
 
-  weekCard: {
+  emptyTasks: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: colors.amberLight,
+
+    borderRadius: radius.lg,
+
+    padding: spacing.md,
+
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  emptyTasksIcon: {
+    width: 44,
+    height: 44,
+
+    borderRadius: radius.round,
+
     backgroundColor: colors.surface,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginRight: spacing.md,
+  },
+
+  emptyTasksContent: {
+    flex: 1,
+  },
+
+  emptyTasksTitle: {
+    fontSize: typography.body,
+
+    fontWeight: "700",
+    color: colors.text,
+  },
+
+  emptyTasksText: {
+    fontSize: typography.caption,
+
+    color: colors.textSecondary,
+
+    marginTop: 3,
+
+    lineHeight: 17,
+  },
+
+  weekCard: {
+    backgroundColor: colors.surfaceSoft,
 
     borderRadius: radius.lg,
 
@@ -616,6 +706,7 @@ const styles = StyleSheet.create({
 
   dayName: {
     fontSize: typography.tiny,
+
     fontWeight: "700",
 
     color: colors.textMuted,
@@ -629,21 +720,30 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
 
     alignItems: "center",
     justifyContent: "center",
   },
 
+  dayCirclePlanned: {
+    backgroundColor: colors.blueLight,
+  },
+
   dayCircleCompleted: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.sage,
   },
 
   dayNumber: {
     fontSize: typography.body,
+
     fontWeight: "700",
 
     color: colors.textSecondary,
+  },
+
+  dayNumberPlanned: {
+    color: colors.blue,
   },
 
   dayNumberCompleted: {
@@ -661,8 +761,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
 
+  statusDotPlanned: {
+    backgroundColor: colors.blue,
+  },
+
   statusDotCompleted: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.sage,
   },
 
   planButton: {
@@ -674,13 +778,14 @@ const styles = StyleSheet.create({
 
     gap: spacing.sm,
 
-    backgroundColor: colors.primary,
+    backgroundColor: colors.blue,
 
     borderRadius: radius.md,
   },
 
   planButtonText: {
     fontSize: typography.body,
+
     fontWeight: "700",
 
     color: colors.surface,
@@ -690,13 +795,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
 
-    backgroundColor: colors.inspiration,
+    backgroundColor: colors.roseLight,
 
     borderRadius: radius.lg,
 
     padding: spacing.md,
 
     marginBottom: spacing.xl,
+
+    borderWidth: 1,
+    borderColor: "#E3CDD2",
   },
 
   inspirationIcon: {
@@ -719,6 +827,7 @@ const styles = StyleSheet.create({
 
   inspirationTitle: {
     fontSize: typography.subheading,
+
     fontWeight: "700",
 
     color: colors.text,
@@ -726,85 +835,11 @@ const styles = StyleSheet.create({
 
   inspirationSubtitle: {
     fontSize: typography.caption,
+
     lineHeight: 17,
 
     color: colors.textSecondary,
 
     marginTop: 3,
   },
-  emptyTasks: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    backgroundColor: colors.surface,
-
-    borderRadius: radius.lg,
-
-    borderWidth: 1,
-    borderColor: colors.border,
-
-    padding: spacing.md,
-  },
-
-  emptyTasksIcon: {
-    width: 44,
-    height: 44,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.primaryLight,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    marginRight: spacing.md,
-  },
-
-  emptyTasksContent: {
-    flex: 1,
-  },
-
-  emptyTasksTitle: {
-    fontSize: typography.body,
-    fontWeight: "700",
-    color: colors.text,
-  },
-
-  emptyTasksText: {
-    fontSize: typography.caption,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  dayCirclePlanned: {
-    backgroundColor: colors.primaryLight,
-  },
-
-  dayNumberPlanned: {
-    color: colors.primary,
-  },
-
-  statusDotPlanned: {
-    backgroundColor: colors.primary,
-  },
 });
-function getMonday(date: Date) {
-  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  const day = result.getDay();
-
-  const difference = day === 0 ? -6 : 1 - day;
-
-  result.setDate(result.getDate() + difference);
-
-  return result;
-}
-
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}

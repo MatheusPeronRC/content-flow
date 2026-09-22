@@ -1,27 +1,87 @@
 export const colors = {
-  background: "#F6F4EF",
+  // BASE
+  background: "#F3F0E9",
+  backgroundSoft: "#EEEAE2",
 
-  surface: "#FFFFFF",
-  surfaceSoft: "#FBFAF7",
+  surface: "#FFFDFC",
+  surfaceSoft: "#F8F5EF",
+  surfaceMuted: "#EAE5DC",
 
-  primary: "#1E4A3E",
-  primaryDark: "#16382F",
-  primaryLight: "#E8F0EC",
+  // MARCA
+  primary: "#25463E",
+  primaryDark: "#19332D",
+  primaryLight: "#DFE9E4",
 
-  text: "#18211E",
-  textSecondary: "#66706C",
-  textMuted: "#9AA39F",
+  // ACENTOS
+  terracotta: "#C9785C",
+  terracottaLight: "#F3E2DB",
 
-  border: "#E7E4DE",
+  amber: "#D6A34B",
+  amberLight: "#F4E9D3",
 
-  success: "#3F8F6B",
-  warning: "#D99A48",
-  danger: "#C95F57",
+  lavender: "#8E82B8",
+  lavenderLight: "#E9E5F3",
 
-  reel: "#F3E7E3",
-  carousel: "#F4ECDD",
-  story: "#E8EAF6",
-  inspiration: "#EEF3E8",
+  blue: "#6E94A6",
+  blueLight: "#DFEAF0",
+
+  rose: "#B97B87",
+  roseLight: "#F0DFE3",
+
+  sage: "#6F957E",
+  sageLight: "#E1ECE4",
+
+  // TEXTO
+  text: "#202824",
+  textSecondary: "#646C68",
+  textMuted: "#969D99",
+
+  // ESTRUTURA
+  border: "#DED9CF",
+  divider: "#E7E2D9",
+
+  // ESTADOS
+  success: "#5F8B70",
+  warning: "#D09A45",
+  danger: "#B95D58",
+
+  // COMPATIBILIDADE
+  reel: "#F3E2DB",
+  carousel: "#F4E9D3",
+  story: "#E9E5F3",
+  inspiration: "#F0DFE3",
+};
+
+export const statusColors = {
+  ideia: {
+    background: colors.roseLight,
+    foreground: colors.rose,
+  },
+
+  roteiro: {
+    background: colors.amberLight,
+    foreground: "#A87829",
+  },
+
+  gravar: {
+    background: colors.terracottaLight,
+    foreground: colors.terracotta,
+  },
+
+  editar: {
+    background: colors.lavenderLight,
+    foreground: colors.lavender,
+  },
+
+  pronto: {
+    background: colors.sageLight,
+    foreground: colors.sage,
+  },
+
+  publicado: {
+    background: colors.blueLight,
+    foreground: colors.blue,
+  },
 };
 
 export const spacing = {
@@ -54,13 +114,24 @@ export const typography = {
 
 export const shadows = {
   card: {
-    shadowColor: "#000000",
+    shadowColor: "#352F28",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
     elevation: 2,
+  },
+
+  floating: {
+    shadowColor: "#352F28",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 15,
+    elevation: 6,
   },
 };

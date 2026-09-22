@@ -63,3 +63,21 @@ export async function updateContent(
     JSON.stringify(updatedContents)
   );
 }
+export async function deleteContent(
+  id: string
+): Promise<void> {
+  const contents = await getContents();
+
+  const updatedContents =
+    contents.filter(
+      (content) =>
+        content.id !== id
+    );
+
+  await AsyncStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(
+      updatedContents
+    )
+  );
+}
