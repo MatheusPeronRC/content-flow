@@ -1,7 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-
 import { useCallback, useState } from "react";
 
 import {
@@ -34,31 +32,40 @@ import {
 
 import {
     colors,
+    fonts,
     radius,
+    shadows,
     spacing,
     statusColors,
-    typography,
 } from "../../constants/theme";
 
 const formats = ["Reel", "Carrossel", "Story", "Foto"];
 
 const objectives = ["Atrair clientes", "Gerar autoridade", "Educar", "Engajar"];
 
+const statusOrder: ContentStatus[] = [
+  "ideia",
+  "roteiro",
+  "gravar",
+  "editar",
+  "pronto",
+  "publicado",
+];
+
 export default function ContentDetailsScreen() {
-  const { id } = useLocalSearchParams<{
-    id: string;
-  }>();
+  const params = useLocalSearchParams();
+
+  const rawId = params.id;
+
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const [content, setContent] = useState<ContentItem | null>(null);
-
-  const [reference, setReference] = useState<ContentReference | null>(null);
-
-  const [originalInspirationAvailable, setOriginalInspirationAvailable] =
-    useState(false);
 
   const [loading, setLoading] = useState(true);
 
   const [editing, setEditing] = useState(false);
+
+  const [inspirationExists, setInspirationExists] = useState(false);
 
   const [idea, setIdea] = useState("");
 
@@ -72,67 +79,70 @@ export default function ContentDetailsScreen() {
 
       async function load() {
         if (!id) {
-          setLoading(false);
+          if (active) {
+            setLoading(false);
+          }
+
           return;
         }
 
         try {
           const data = await getContentById(id);
 
-          if (!active || !data) {
+          if (!active) {
             return;
           }
 
-          let resolvedReference = data.reference ?? null;
-
-          const relatedInspirationId =
-            data.reference?.inspirationId ?? data.inspirationId;
-
-          let relatedInspiration = null;
-
-          if (relatedInspirationId) {
-            relatedInspiration = await getInspirationById(relatedInspirationId);
+          if (!data) {
+            setContent(null);
+            return;
           }
 
-          // Compatibilidade com conteúdos antigos:
-          // se ainda não existe snapshot, criamos um automaticamente ao abrir
-          // o conteúdo, desde que a inspiração original ainda exista.
-          if (!resolvedReference && relatedInspiration) {
-            resolvedReference = {
-              inspirationId: relatedInspiration.id,
-              url: relatedInspiration.url,
-              source: relatedInspiration.source,
-              category: relatedInspiration.category,
-              note: relatedInspiration.note,
-            };
+          let nextContent = data;
 
-            await updateContent(data.id, {
-              reference: resolvedReference,
-            });
+          if (!data.reference && data.inspirationId) {
+            const inspiration = await getInspirationById(data.inspirationId);
+
+            if (inspiration) {
+              const reference: ContentReference = {
+                inspirationId: inspiration.id,
+                url: inspiration.url,
+                source: inspiration.source,
+                category: inspiration.category,
+                note: inspiration.note,
+              };
+
+              await updateContent(data.id, {
+                reference,
+              });
+
+              nextContent = {
+                ...data,
+                reference,
+              };
+
+              if (active) {
+                setInspirationExists(true);
+              }
+            }
+          } else if (data.reference?.inspirationId) {
+            const inspiration = await getInspirationById(
+              data.reference.inspirationId,
+            );
+
+            if (active) {
+              setInspirationExists(Boolean(inspiration));
+            }
           }
 
           if (!active) {
             return;
           }
 
-          const hydratedContent = resolvedReference
-            ? {
-                ...data,
-                reference: resolvedReference,
-              }
-            : data;
-
-          setContent(hydratedContent);
-
-          setReference(resolvedReference);
-
-          setOriginalInspirationAvailable(Boolean(relatedInspiration));
-
-          setIdea(data.idea);
-
-          setFormat(data.format);
-
-          setObjective(data.objective);
+          setContent(nextContent);
+          setIdea(nextContent.idea);
+          setFormat(nextContent.format);
+          setObjective(nextContent.objective);
         } catch (error) {
           console.error("Erro ao carregar conteúdo:", error);
         } finally {
@@ -155,21 +165,27 @@ export default function ContentDetailsScreen() {
       return;
     }
 
-    const updates = {
-      idea: idea.trim(),
-      format,
-      objective,
-    };
+    try {
+      const updates = {
+        idea: idea.trim(),
+        format,
+        objective,
+      };
 
-    await updateContent(content.id, updates);
+      await updateContent(content.id, updates);
 
-    setContent({
-      ...content,
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    });
+      setContent({
+        ...content,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      });
 
-    setEditing(false);
+      setEditing(false);
+    } catch (error) {
+      console.error("Erro ao salvar conteúdo:", error);
+
+      Alert.alert("Não foi possível salvar", "Tente novamente.");
+    }
   }
 
   function handleCancelEdit() {
@@ -178,11 +194,8 @@ export default function ContentDetailsScreen() {
     }
 
     setIdea(content.idea);
-
     setFormat(content.format);
-
     setObjective(content.objective);
-
     setEditing(false);
   }
 
@@ -199,40 +212,78 @@ export default function ContentDetailsScreen() {
       },
     });
   }
-  async function handleOpenReference() {
-    if (!reference?.url) {
+
+  async function handleAdvance() {
+    if (!content) {
+      return;
+    }
+
+    const nextStatus = getNextStatus(content.status);
+
+    if (!nextStatus) {
       return;
     }
 
     try {
-      const supported = await Linking.canOpenURL(reference.url);
+      await updateContent(content.id, {
+        status: nextStatus,
+      });
+
+      setContent({
+        ...content,
+        status: nextStatus,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Erro ao avançar conteúdo:", error);
+
+      Alert.alert("Não foi possível avançar", "Tente novamente.");
+    }
+  }
+
+  async function handleOpenReference() {
+    const url = content?.reference?.url;
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(url);
 
       if (!supported) {
         Alert.alert(
           "Não foi possível abrir",
-          "Confira se o link da referência está correto.",
+          "Confira se o link original ainda está disponível.",
         );
 
         return;
       }
 
-      await Linking.openURL(reference.url);
-    } catch (error) {
-      console.error("Erro ao abrir referência:", error);
-
+      await Linking.openURL(url);
+    } catch {
       Alert.alert(
-        "Não foi possível abrir",
-        "Tente novamente em alguns instantes.",
+        "Erro ao abrir referência",
+        "Não foi possível abrir esse link.",
       );
     }
   }
 
-  function handleViewInspiration() {
-    if (!reference?.inspirationId || !originalInspirationAvailable) {
+  function handleOpenInspiration() {
+    const inspirationId =
+      content?.reference?.inspirationId ?? content?.inspirationId;
+
+    if (!inspirationId || !inspirationExists) {
       return;
     }
 
-    router.push(`/inspiracao/${reference.inspirationId}`);
+    router.push({
+      pathname: "/inspiracao/[id]",
+
+      params: {
+        id: inspirationId,
+      },
+    });
   }
 
   function handleDelete() {
@@ -248,7 +299,6 @@ export default function ContentDetailsScreen() {
           text: "Cancelar",
           style: "cancel",
         },
-
         {
           text: "Excluir",
           style: "destructive",
@@ -268,13 +318,14 @@ export default function ContentDetailsScreen() {
       ],
     );
   }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
+          <ActivityIndicator color={colors.terracotta} />
 
-          <Text style={styles.loadingText}>Carregando conteúdo...</Text>
+          <Text style={styles.loadingText}>Abrindo conteúdo...</Text>
         </View>
       </SafeAreaView>
     );
@@ -284,10 +335,21 @@ export default function ContentDetailsScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
+          <View style={styles.errorMark}>
+            <Ionicons
+              name="document-text-outline"
+              size={24}
+              color={colors.textMuted}
+            />
+          </View>
+
           <Text style={styles.errorTitle}>Conteúdo não encontrado</Text>
 
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>Voltar</Text>
+          <TouchableOpacity
+            style={styles.errorButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.errorButtonText}>Voltar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -296,10 +358,20 @@ export default function ContentDetailsScreen() {
 
   const status = getStatusMeta(content.status);
 
+  const nextStatus = getNextStatus(content.status);
+
+  const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
+
   const hasScript =
-    Boolean(content.script.hook.trim()) ||
-    content.script.points.some((point) => point.trim()) ||
-    Boolean(content.script.cta.trim());
+    Boolean(content.script?.hook?.trim()) ||
+    Boolean(content.script?.points?.some((point) => point.trim())) ||
+    Boolean(content.script?.cta?.trim());
+
+  const ideaLength = content.idea.trim().length;
+
+  const isLongIdea = ideaLength > 85;
+
+  const isVeryLongIdea = ideaLength > 180;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -313,7 +385,7 @@ export default function ContentDetailsScreen() {
             style={styles.headerButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={21} color={colors.text} />
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Conteúdo</Text>
@@ -329,57 +401,57 @@ export default function ContentDetailsScreen() {
             }}
           >
             <Ionicons
-              name={editing ? "close-outline" : "create-outline"}
-              size={21}
-              color={editing ? colors.danger : colors.primary}
+              name={editing ? "close" : "create-outline"}
+              size={19}
+              color={editing ? colors.danger : colors.terracotta}
             />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.statusArea}>
-          <View
-            style={[
-              styles.statusIcon,
-
-              {
-                backgroundColor: status.background,
-              },
-            ]}
-          >
-            <Ionicons name={status.icon} size={25} color={status.foreground} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text
+        <View style={styles.hero}>
+          <View style={styles.heroTop}>
+            <View
               style={[
-                styles.statusLabel,
+                styles.statusPill,
 
                 {
-                  color: status.foreground,
+                  backgroundColor: status.background,
                 },
               ]}
             >
-              {status.label}
-            </Text>
+              <Ionicons
+                name={status.icon}
+                size={14}
+                color={status.foreground}
+              />
 
-            <Text style={styles.statusDescription}>
-              Etapa atual do conteúdo
-            </Text>
-          </View>
+              <Text
+                style={[
+                  styles.statusText,
 
-          {content.plannedDate && (
-            <View style={styles.dateBadge}>
-              <Ionicons name="calendar-outline" size={14} color={colors.blue} />
-
-              <Text style={styles.dateBadgeText}>
-                {formatDate(content.plannedDate)}
+                  {
+                    color: status.foreground,
+                  },
+                ]}
+              >
+                {status.label}
               </Text>
             </View>
-          )}
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>CONTEÚDO</Text>
+            {content.plannedDate && (
+              <View style={styles.datePill}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={13}
+                  color={colors.blue}
+                />
+
+                <Text style={styles.dateText}>
+                  {formatDate(content.plannedDate)}
+                </Text>
+              </View>
+            )}
+          </View>
 
           {editing ? (
             <TextInput
@@ -392,213 +464,141 @@ export default function ContentDetailsScreen() {
               style={styles.ideaInput}
             />
           ) : (
-            <Text style={styles.idea}>{content.idea}</Text>
-          )}
-        </View>
+            <View style={isLongIdea ? styles.longIdeaSurface : undefined}>
+              {isLongIdea && (
+                <Text style={styles.longIdeaLabel}>IDEIA DO CONTEÚDO</Text>
+              )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>FORMATO</Text>
+              <Text
+                style={[
+                  styles.title,
 
-          {editing ? (
-            <View style={styles.options}>
-              {formats.map((item) => {
-                const selected = format === item;
+                  isLongIdea && styles.titleLong,
 
-                return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[styles.option, selected && styles.optionSelected]}
-                    onPress={() => setFormat(selected ? null : item)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-
-                        selected && styles.optionTextSelected,
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={styles.valueBadge}>
-              <Text style={styles.valueBadgeText}>
-                {content.format ?? "Não definido"}
+                  isVeryLongIdea && styles.titleVeryLong,
+                ]}
+              >
+                {content.idea}
               </Text>
             </View>
           )}
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>OBJETIVO</Text>
+          {!editing && (
+            <View style={styles.metaRow}>
+              {content.format && (
+                <MetaItem icon="phone-portrait-outline" text={content.format} />
+              )}
 
-          {editing ? (
-            <View style={styles.objectiveList}>
-              {objectives.map((item) => {
-                const selected = objective === item;
-
-                return (
-                  <TouchableOpacity
-                    key={item}
-                    style={[
-                      styles.objectiveOption,
-
-                      selected && styles.objectiveOptionSelected,
-                    ]}
-                    onPress={() => setObjective(selected ? null : item)}
-                  >
-                    <View
-                      style={[styles.radio, selected && styles.radioSelected]}
-                    >
-                      {selected && <View style={styles.radioDot} />}
-                    </View>
-
-                    <Text style={styles.objectiveText}>{item}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {content.objective && (
+                <MetaItem icon="flag-outline" text={content.objective} />
+              )}
             </View>
-          ) : (
-            <Text
-              style={
-                content.objective ? styles.objectiveRead : styles.emptyValue
-              }
-            >
-              {content.objective ?? "Nenhum objetivo definido"}
-            </Text>
           )}
         </View>
-
-        {reference && (
-          <View style={styles.referenceSection}>
-            <Text style={styles.sectionLabel}>REFERÊNCIA ORIGINAL</Text>
-
-            <View style={styles.referenceCard}>
-              <View style={styles.referenceHeader}>
-                <View style={styles.referenceSourceIcon}>
-                  <Ionicons
-                    name={getSourceIcon(reference.source)}
-                    size={20}
-                    color={colors.rose}
-                  />
-                </View>
-
-                <View style={styles.referenceHeaderContent}>
-                  <View style={styles.referenceMeta}>
-                    <Text style={styles.referenceSource}>
-                      {reference.source}
-                    </Text>
-
-                    {reference.category && (
-                      <>
-                        <View style={styles.referenceMetaDot} />
-
-                        <Text style={styles.referenceCategory}>
-                          {reference.category}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-
-                  <Text style={styles.referenceTitle}>
-                    {reference.note.trim()
-                      ? reference.note
-                      : `Referência do ${reference.source}`}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.referenceLink}>
-                <Ionicons
-                  name="link-outline"
-                  size={16}
-                  color={colors.textMuted}
-                />
-
-                <Text style={styles.referenceUrl} numberOfLines={1}>
-                  {cleanUrl(reference.url)}
-                </Text>
-              </View>
-
-              <Text style={styles.referenceHint}>
-                Abra a referência para rever formato, edição e estrutura antes
-                de produzir.
-              </Text>
-
-              <View style={styles.referenceActions}>
-                <TouchableOpacity
-                  style={styles.openReferenceButton}
-                  activeOpacity={0.8}
-                  onPress={handleOpenReference}
-                >
-                  <Ionicons
-                    name="open-outline"
-                    size={17}
-                    color={colors.surface}
-                  />
-
-                  <Text style={styles.openReferenceButtonText}>
-                    Abrir referência
-                  </Text>
-                </TouchableOpacity>
-
-                {originalInspirationAvailable ? (
-                  <TouchableOpacity
-                    style={styles.viewInspirationButton}
-                    activeOpacity={0.8}
-                    onPress={handleViewInspiration}
-                  >
-                    <Text style={styles.viewInspirationButtonText}>
-                      Ver inspiração salva
-                    </Text>
-
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={colors.rose}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.referenceSnapshotNotice}>
-                    <Ionicons
-                      name="archive-outline"
-                      size={16}
-                      color={colors.textMuted}
-                    />
-
-                    <Text style={styles.referenceSnapshotNoticeText}>
-                      A inspiração foi removida da biblioteca, mas esta
-                      referência continua salva no conteúdo.
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
 
         {editing ? (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Ionicons name="checkmark" size={19} color={colors.surface} />
+          <View style={styles.editingArea}>
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>FORMATO</Text>
 
-            <Text style={styles.saveButtonText}>Salvar alterações</Text>
-          </TouchableOpacity>
+              <View style={styles.options}>
+                {formats.map((item) => {
+                  const selected = format === item;
+
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      style={[styles.option, selected && styles.optionSelected]}
+                      onPress={() => setFormat(selected ? null : item)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionText,
+
+                          selected && styles.optionTextSelected,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>OBJETIVO</Text>
+
+              <View style={styles.objectiveList}>
+                {objectives.map((item) => {
+                  const selected = objective === item;
+
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      style={[
+                        styles.objectiveOption,
+
+                        selected && styles.objectiveOptionSelected,
+                      ]}
+                      onPress={() => setObjective(selected ? null : item)}
+                    >
+                      <View
+                        style={[styles.radio, selected && styles.radioSelected]}
+                      >
+                        {selected && <View style={styles.radioDot} />}
+                      </View>
+
+                      <Text style={styles.objectiveText}>{item}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+
+                !idea.trim() && styles.saveButtonDisabled,
+              ]}
+              disabled={!idea.trim()}
+              activeOpacity={0.86}
+              onPress={handleSave}
+            >
+              <View style={styles.saveButtonMark}>
+                <Ionicons
+                  name="checkmark"
+                  size={17}
+                  color={idea.trim() ? colors.terracotta : colors.textMuted}
+                />
+              </View>
+
+              <Text
+                style={[
+                  styles.saveButtonText,
+
+                  !idea.trim() && styles.saveButtonTextDisabled,
+                ]}
+              >
+                Salvar alterações
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
-            <View style={styles.scriptHeader}>
+            <View style={styles.sectionHeader}>
               <View>
-                <Text style={styles.scriptTitle}>Roteiro</Text>
+                <Text style={styles.sectionTitle}>Roteiro</Text>
 
-                <Text style={styles.scriptSubtitle}>
-                  O que será dito ou desenvolvido no conteúdo.
+                <Text style={styles.sectionSubtitle}>
+                  Sua estrutura para criar este conteúdo.
                 </Text>
               </View>
 
               <TouchableOpacity
-                style={styles.editScriptButton}
+                style={styles.editScriptAction}
+                activeOpacity={0.8}
                 onPress={handleEditScript}
               >
                 <Ionicons
@@ -612,95 +612,285 @@ export default function ContentDetailsScreen() {
             </View>
 
             {!hasScript ? (
-              <View style={styles.emptyScript}>
-                <View style={styles.emptyScriptIcon}>
+              <TouchableOpacity
+                style={styles.emptyScript}
+                activeOpacity={0.85}
+                onPress={handleEditScript}
+              >
+                <View style={styles.emptyScriptMark}>
                   <Ionicons
                     name="document-text-outline"
-                    size={24}
+                    size={21}
                     color={colors.amber}
                   />
                 </View>
 
-                <View
-                  style={{
-                    flex: 1,
-                  }}
-                >
+                <View style={{ flex: 1 }}>
                   <Text style={styles.emptyScriptTitle}>
                     Roteiro ainda vazio
                   </Text>
 
                   <Text style={styles.emptyScriptText}>
-                    Adicione hook, desenvolvimento e CTA quando estiver pronto.
+                    Comece com uma estrutura simples e ajuste do seu jeito.
                   </Text>
                 </View>
-              </View>
+
+                <Ionicons name="arrow-forward" size={17} color={colors.amber} />
+              </TouchableOpacity>
             ) : (
-              <View style={styles.scriptCard}>
-                <ScriptSection
-                  label="HOOK"
-                  text={content.script.hook}
-                  color={colors.terracotta}
-                />
+              <View style={styles.scriptSurface}>
+                {content.script.hook.trim() && (
+                  <View style={styles.scriptSection}>
+                    <ScriptHeader
+                      icon="flash-outline"
+                      label="HOOK"
+                      hint="Como começa"
+                      color={colors.terracotta}
+                      background={colors.terracottaLight}
+                    />
 
-                <View style={styles.scriptDivider} />
+                    <Text style={styles.hookText}>{content.script.hook}</Text>
+                  </View>
+                )}
 
-                <View style={styles.scriptSection}>
-                  <Text
-                    style={[
-                      styles.scriptLabel,
+                {content.script.hook.trim() &&
+                  content.script.points.some((point) => point.trim()) && (
+                    <View style={styles.scriptDivider} />
+                  )}
 
-                      {
-                        color: colors.amber,
-                      },
-                    ]}
-                  >
-                    DESENVOLVIMENTO
-                  </Text>
+                {content.script.points.some((point) => point.trim()) && (
+                  <View style={styles.scriptSection}>
+                    <ScriptHeader
+                      icon="list-outline"
+                      label="DESENVOLVIMENTO"
+                      hint={`${
+                        content.script.points.filter((point) => point.trim())
+                          .length
+                      } ${
+                        content.script.points.filter((point) => point.trim())
+                          .length === 1
+                          ? "etapa"
+                          : "etapas"
+                      }`}
+                      color={colors.amber}
+                      background={colors.amberLight}
+                    />
 
-                  {content.script.points
-                    .filter((point) => point.trim())
-                    .map((point, index) => (
-                      <View key={`${point}-${index}`} style={styles.pointRow}>
-                        <View style={styles.pointNumber}>
-                          <Text style={styles.pointNumberText}>
-                            {index + 1}
-                          </Text>
-                        </View>
+                    <View style={styles.points}>
+                      {content.script.points
+                        .filter((point) => point.trim())
+                        .map((point, index) => (
+                          <View
+                            key={`${point}-${index}`}
+                            style={styles.pointRow}
+                          >
+                            <View style={styles.pointNumber}>
+                              <Text style={styles.pointNumberText}>
+                                {String(index + 1).padStart(2, "0")}
+                              </Text>
+                            </View>
 
-                        <Text style={styles.pointText}>{point}</Text>
-                      </View>
-                    ))}
-                </View>
+                            <Text style={styles.pointText}>{point}</Text>
+                          </View>
+                        ))}
+                    </View>
+                  </View>
+                )}
 
-                <View style={styles.scriptDivider} />
+                {content.script.cta.trim() &&
+                  (content.script.hook.trim() ||
+                    content.script.points.some((point) => point.trim())) && (
+                    <View style={styles.scriptDivider} />
+                  )}
 
-                <ScriptSection
-                  label="CTA"
-                  text={content.script.cta}
-                  color={colors.sage}
-                />
+                {content.script.cta.trim() && (
+                  <View style={styles.scriptSection}>
+                    <ScriptHeader
+                      icon="megaphone-outline"
+                      label="CTA"
+                      hint="Como termina"
+                      color={colors.sage}
+                      background={colors.sageLight}
+                    />
+
+                    <Text style={styles.ctaText}>{content.script.cta}</Text>
+                  </View>
+                )}
               </View>
             )}
 
-            <TouchableOpacity
-              style={styles.fullEditButton}
-              onPress={handleEditScript}
-            >
-              <Ionicons
-                name="document-text-outline"
-                size={19}
-                color={colors.surface}
-              />
+            {content.reference && (
+              <>
+                <View style={styles.referenceHeader}>
+                  <View>
+                    <Text style={styles.sectionTitle}>Referência</Text>
 
-              <Text style={styles.fullEditButtonText}>Editar roteiro</Text>
-            </TouchableOpacity>
+                    <Text style={styles.sectionSubtitle}>
+                      O conteúdo que deu origem a esta ideia.
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.referenceCard}>
+                  <View style={styles.referenceTop}>
+                    <View style={styles.referenceIdentity}>
+                      <View style={styles.referenceMark}>
+                        <Ionicons
+                          name={getSourceIcon(content.reference.source)}
+                          size={18}
+                          color={colors.rose}
+                        />
+                      </View>
+
+                      <View>
+                        <Text style={styles.referenceSource}>
+                          {content.reference.source}
+                        </Text>
+
+                        <Text style={styles.referenceCategory}>
+                          {content.reference.category ?? "Referência original"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.referenceOpen}
+                      activeOpacity={0.8}
+                      onPress={handleOpenReference}
+                    >
+                      <Ionicons
+                        name="open-outline"
+                        size={17}
+                        color={colors.rose}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {content.reference.note?.trim() && (
+                    <Text style={styles.referenceNote}>
+                      {content.reference.note}
+                    </Text>
+                  )}
+
+                  <Text style={styles.referenceUrl} numberOfLines={1}>
+                    {cleanUrl(content.reference.url)}
+                  </Text>
+
+                  <View style={styles.referenceActions}>
+                    <TouchableOpacity
+                      style={styles.openReferenceAction}
+                      onPress={handleOpenReference}
+                    >
+                      <Text style={styles.openReferenceText}>
+                        Abrir original
+                      </Text>
+
+                      <Ionicons
+                        name="arrow-forward"
+                        size={15}
+                        color={colors.rose}
+                      />
+                    </TouchableOpacity>
+
+                    {inspirationExists && (
+                      <TouchableOpacity
+                        style={styles.savedInspirationAction}
+                        onPress={handleOpenInspiration}
+                      >
+                        <Text style={styles.savedInspirationText}>
+                          Ver inspiração salva
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </>
+            )}
+
+            <View style={styles.flowSection}>
+              <Text style={styles.sectionTitle}>Próxima etapa</Text>
+
+              <Text style={styles.sectionSubtitle}>
+                Mova o conteúdo pelo seu fluxo quando fizer sentido.
+              </Text>
+
+              {nextStatus && nextMeta ? (
+                <TouchableOpacity
+                  style={[
+                    styles.advanceButton,
+
+                    {
+                      backgroundColor: nextMeta.background,
+                    },
+                  ]}
+                  activeOpacity={0.85}
+                  onPress={handleAdvance}
+                >
+                  <View style={styles.advanceInfo}>
+                    <View
+                      style={[
+                        styles.advanceMark,
+
+                        {
+                          backgroundColor: nextMeta.foreground,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={nextMeta.icon}
+                        size={17}
+                        color={colors.surface}
+                      />
+                    </View>
+
+                    <View>
+                      <Text style={styles.advanceEyebrow}>AVANÇAR PARA</Text>
+
+                      <Text
+                        style={[
+                          styles.advanceText,
+
+                          {
+                            color: nextMeta.foreground,
+                          },
+                        ]}
+                      >
+                        {nextMeta.label}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={nextMeta.foreground}
+                  />
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.completedFlow}>
+                  <View style={styles.completedMark}>
+                    <Ionicons name="checkmark" size={17} color={colors.sage} />
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.completedTitle}>Fluxo concluído</Text>
+
+                    <Text style={styles.completedText}>
+                      Este conteúdo já foi publicado.
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.bottomDivider} />
+
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={handleDelete}
               activeOpacity={0.8}
+              onPress={handleDelete}
             >
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+              <Ionicons name="trash-outline" size={16} color={colors.danger} />
 
               <Text style={styles.deleteButtonText}>Excluir conteúdo</Text>
             </TouchableOpacity>
@@ -711,42 +901,77 @@ export default function ContentDetailsScreen() {
   );
 }
 
-type ScriptSectionProps = {
-  label: string;
+type MetaItemProps = {
+  icon: keyof typeof Ionicons.glyphMap;
   text: string;
-  color: string;
 };
 
-function ScriptSection({ label, text, color }: ScriptSectionProps) {
+function MetaItem({ icon, text }: MetaItemProps) {
   return (
-    <View style={styles.scriptSection}>
-      <Text style={[styles.scriptLabel, { color }]}>{label}</Text>
+    <View style={styles.metaItem}>
+      <Ionicons name={icon} size={13} color={colors.textMuted} />
 
-      <Text style={text ? styles.scriptText : styles.scriptEmptyText}>
-        {text || "Não definido"}
-      </Text>
+      <Text style={styles.metaItemText}>{text}</Text>
     </View>
   );
 }
 
-function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
-  switch (source) {
-    case "Instagram":
-      return "logo-instagram";
+type ScriptHeaderProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  color: string;
+  background: string;
+};
 
-    case "TikTok":
-      return "musical-note-outline";
+function ScriptHeader({
+  icon,
+  label,
+  hint,
+  color,
+  background,
+}: ScriptHeaderProps) {
+  return (
+    <View style={styles.scriptHeaderRow}>
+      <View
+        style={[
+          styles.scriptMark,
 
-    case "YouTube":
-      return "logo-youtube";
+          {
+            backgroundColor: background,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={17} color={color} />
+      </View>
 
-    default:
-      return "link-outline";
-  }
+      <View>
+        <Text
+          style={[
+            styles.scriptLabel,
+
+            {
+              color,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+
+        <Text style={styles.scriptHint}>{hint}</Text>
+      </View>
+    </View>
+  );
 }
 
-function cleanUrl(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
+function getNextStatus(status: ContentStatus): ContentStatus | null {
+  const index = statusOrder.indexOf(status);
+
+  if (index < 0 || index === statusOrder.length - 1) {
+    return null;
+  }
+
+  return statusOrder[index + 1];
 }
 
 function getStatusMeta(status: ContentStatus) {
@@ -795,173 +1020,333 @@ function getStatusMeta(status: ContentStatus) {
   }
 }
 
+function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
+  switch (source) {
+    case "Instagram":
+      return "logo-instagram";
+
+    case "TikTok":
+      return "musical-note-outline";
+
+    case "YouTube":
+      return "logo-youtube";
+
+    default:
+      return "link-outline";
+  }
+}
+
 function formatDate(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
 
   const date = new Date(year, month - 1, day);
 
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  });
+  return date
+    .toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+    })
+    .replace(".", "")
+    .toUpperCase();
+}
+
+function cleanUrl(url: string) {
+  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+
+    paddingBottom: 50,
   },
 
   header: {
     height: 68,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   headerButtonEditing: {
-    backgroundColor: "#F5E4E1",
+    backgroundColor: "#F7E7E4",
   },
 
   headerTitle: {
-    fontSize: typography.subheading,
-    fontWeight: "700",
+    fontSize: 18,
+
+    fontFamily: fonts.semibold,
+
     color: colors.text,
   },
 
-  statusArea: {
+  hero: {
+    paddingTop: 22,
+
+    paddingBottom: 30,
+  },
+
+  heroTop: {
     flexDirection: "row",
+
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginTop: spacing.md,
-    marginBottom: spacing.xl,
+
+    justifyContent: "space-between",
   },
 
-  statusIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
+  statusPill: {
+    minHeight: 32,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    flexDirection: "row",
+
     alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.md,
+
+    gap: 6,
   },
 
-  statusLabel: {
-    fontSize: typography.caption,
-    fontWeight: "800",
+  statusText: {
+    fontSize: 11,
+
     letterSpacing: 0.7,
+
+    fontFamily: fonts.bold,
   },
 
-  statusDescription: {
-    marginTop: 3,
-    fontSize: typography.caption,
+  datePill: {
+    minHeight: 32,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.blueLight,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  dateText: {
+    fontSize: 11,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.blue,
+  },
+
+  title: {
+    maxWidth: 345,
+
+    marginTop: 17,
+
+    fontSize: 31,
+
+    lineHeight: 38,
+
+    letterSpacing: -0.9,
+
+    fontFamily: fonts.bold,
+
+    color: colors.text,
+  },
+
+  longIdeaSurface: {
+    marginTop: 16,
+
+    padding: 17,
+
+    borderRadius: 20,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+  },
+
+  longIdeaLabel: {
+    marginBottom: 10,
+
+    fontSize: 11,
+
+    letterSpacing: 0.9,
+
+    fontFamily: fonts.bold,
+
     color: colors.textSecondary,
   },
 
-  dateBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: colors.blueLight,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: radius.round,
+  titleLong: {
+    marginTop: 0,
+
+    maxWidth: "100%",
+
+    fontSize: 21,
+
+    lineHeight: 31,
+
+    letterSpacing: -0.25,
+
+    fontFamily: fonts.semibold,
   },
 
-  dateBadgeText: {
-    fontSize: typography.tiny,
-    fontWeight: "700",
-    color: colors.blue,
-  },
+  titleVeryLong: {
+    fontSize: 18,
 
-  section: {
-    marginBottom: spacing.xl,
-  },
+    lineHeight: 29,
 
-  sectionLabel: {
-    marginBottom: spacing.sm,
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: colors.textMuted,
-  },
+    letterSpacing: 0,
 
-  idea: {
-    fontSize: 25,
-    lineHeight: 32,
-    fontWeight: "700",
-    color: colors.text,
+    fontFamily: fonts.regular,
   },
 
   ideaInput: {
-    minHeight: 110,
+    minHeight: 115,
+
+    marginTop: 16,
+
+    padding: 15,
+
+    borderRadius: 19,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    fontSize: typography.subheading,
-    lineHeight: 23,
+
+    fontSize: 20,
+
+    lineHeight: 29,
+
+    fontFamily: fonts.semibold,
+
     color: colors.text,
   },
 
-  valueBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.blueLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.round,
+  metaRow: {
+    marginTop: 15,
+
+    flexDirection: "row",
+
+    flexWrap: "wrap",
+
+    gap: 8,
   },
 
-  valueBadgeText: {
-    fontSize: typography.caption,
-    fontWeight: "700",
-    color: colors.blue,
+  metaItem: {
+    minHeight: 30,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceMuted,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  metaItemText: {
+    fontSize: 12,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  editingArea: {
+    paddingTop: 2,
+  },
+
+  field: {
+    marginBottom: 27,
+  },
+
+  fieldLabel: {
+    marginBottom: 10,
+
+    fontSize: 10,
+
+    letterSpacing: 1,
+
+    fontFamily: fonts.bold,
+
+    color: colors.textMuted,
   },
 
   options: {
     flexDirection: "row",
+
     flexWrap: "wrap",
-    gap: spacing.sm,
+
+    gap: 8,
   },
 
   option: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    minHeight: 38,
+
+    paddingHorizontal: 15,
+
     borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   optionSelected: {
-    backgroundColor: colors.blue,
-    borderColor: colors.blue,
+    backgroundColor: colors.text,
+
+    borderColor: colors.text,
   },
 
   optionText: {
-    fontSize: typography.caption,
-    fontWeight: "600",
+    fontSize: 12,
+
+    fontFamily: fonts.semibold,
+
     color: colors.textSecondary,
   },
 
@@ -969,418 +1354,706 @@ const styles = StyleSheet.create({
     color: colors.surface,
   },
 
-  objectiveRead: {
-    fontSize: typography.body,
-    color: colors.text,
-  },
-
-  emptyValue: {
-    fontSize: typography.body,
-    color: colors.textMuted,
-  },
-
   objectiveList: {
-    gap: spacing.sm,
+    gap: 8,
   },
 
   objectiveOption: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
+    minHeight: 54,
+
+    paddingHorizontal: 14,
+
+    borderRadius: 17,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+
+    flexDirection: "row",
+
+    alignItems: "center",
   },
 
   objectiveOptionSelected: {
-    borderColor: colors.primary,
+    borderColor: colors.terracotta,
+
+    backgroundColor: colors.terracottaLight,
   },
 
   radio: {
     width: 20,
     height: 20,
+
+    marginRight: 11,
+
     borderRadius: radius.round,
+
     borderWidth: 1.5,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
-    marginRight: spacing.md,
   },
 
   radioSelected: {
-    borderColor: colors.primary,
+    borderColor: colors.terracotta,
   },
 
   radioDot: {
     width: 10,
     height: 10,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primary,
+
+    backgroundColor: colors.terracotta,
   },
 
   objectiveText: {
-    fontSize: typography.body,
-    fontWeight: "600",
+    fontSize: 14,
+
+    fontFamily: fonts.medium,
+
     color: colors.text,
-  },
-
-  referenceSection: {
-    marginBottom: spacing.xl,
-  },
-
-  referenceCard: {
-    backgroundColor: colors.roseLight,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "#E3CDD2",
-    padding: spacing.md,
-  },
-
-  referenceHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-
-  referenceSourceIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.md,
-  },
-
-  referenceHeaderContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  referenceMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-  },
-
-  referenceSource: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    color: colors.rose,
-  },
-
-  referenceMetaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: radius.round,
-    backgroundColor: colors.textMuted,
-    marginHorizontal: 6,
-  },
-
-  referenceCategory: {
-    fontSize: typography.tiny,
-    fontWeight: "700",
-    color: colors.textSecondary,
-  },
-
-  referenceTitle: {
-    marginTop: 5,
-    fontSize: typography.body,
-    lineHeight: 20,
-    fontWeight: "700",
-    color: colors.text,
-  },
-
-  referenceLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-
-  referenceUrl: {
-    flex: 1,
-    fontSize: typography.tiny,
-    color: colors.textMuted,
-  },
-
-  referenceHint: {
-    marginTop: spacing.sm,
-    fontSize: typography.caption,
-    lineHeight: 17,
-    color: colors.textSecondary,
-  },
-
-  referenceActions: {
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-
-  openReferenceButton: {
-    minHeight: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.rose,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-
-  openReferenceButtonText: {
-    fontSize: typography.body,
-    fontWeight: "700",
-    color: colors.surface,
-  },
-
-  viewInspirationButton: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-  },
-
-  viewInspirationButtonText: {
-    fontSize: typography.caption,
-    fontWeight: "700",
-    color: colors.rose,
-  },
-
-  referenceSnapshotNotice: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-
-  referenceSnapshotNoticeText: {
-    flex: 1,
-    fontSize: typography.tiny,
-    lineHeight: 16,
-    color: colors.textMuted,
   },
 
   saveButton: {
-    height: 54,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    minHeight: 58,
+
+    paddingHorizontal: 14,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.terracotta,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "center",
-    gap: spacing.sm,
+  },
+
+  saveButtonDisabled: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  saveButtonMark: {
+    width: 34,
+    height: 34,
+
+    marginRight: 10,
+
+    borderRadius: 11,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   saveButtonText: {
-    fontSize: typography.body,
-    fontWeight: "700",
+    fontSize: 13,
+
+    fontFamily: fonts.bold,
+
     color: colors.surface,
   },
 
-  scriptHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: spacing.md,
+  saveButtonTextDisabled: {
+    color: colors.textMuted,
   },
 
-  scriptTitle: {
-    fontSize: typography.heading,
-    fontWeight: "700",
+  sectionHeader: {
+    marginBottom: 14,
+
+    flexDirection: "row",
+
+    alignItems: "flex-end",
+
+    justifyContent: "space-between",
+
+    gap: 12,
+  },
+
+  sectionTitle: {
+    fontSize: 24,
+
+    lineHeight: 31,
+
+    letterSpacing: -0.5,
+
+    fontFamily: fonts.bold,
+
     color: colors.text,
   },
 
-  scriptSubtitle: {
-    marginTop: 3,
-    maxWidth: 260,
-    fontSize: typography.caption,
-    lineHeight: 17,
+  sectionSubtitle: {
+    maxWidth: 295,
+
+    marginTop: 5,
+
+    fontSize: 14,
+
+    lineHeight: 21,
+
+    fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
-  editScriptButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
+  editScriptAction: {
+    minHeight: 40,
+
+    paddingHorizontal: 11,
+
+    borderRadius: 12,
+
     backgroundColor: colors.amberLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.round,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
   },
 
   editScriptText: {
-    fontSize: typography.caption,
-    fontWeight: "700",
+    fontSize: 12,
+
+    fontFamily: fonts.semibold,
+
     color: colors.amber,
   },
 
-  scriptCard: {
+  emptyScript: {
+    minHeight: 82,
+
+    marginBottom: 30,
+
+    padding: 14,
+
+    borderRadius: 19,
+
+    backgroundColor: colors.amberLight,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  emptyScriptMark: {
+    width: 42,
+    height: 42,
+
+    marginRight: 11,
+
+    borderRadius: 13,
+
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
-  scriptSection: {
-    paddingVertical: spacing.sm,
-  },
+  emptyScriptTitle: {
+    fontSize: 15,
 
-  scriptLabel: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  },
+    fontFamily: fonts.semibold,
 
-  scriptText: {
-    fontSize: typography.body,
-    lineHeight: 21,
     color: colors.text,
   },
 
-  scriptEmptyText: {
-    fontSize: typography.body,
-    color: colors.textMuted,
+  emptyScriptText: {
+    marginTop: 4,
+
+    paddingRight: 8,
+
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  scriptSurface: {
+    marginBottom: 32,
+
+    overflow: "hidden",
+
+    borderRadius: 22,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    ...shadows.soft,
+  },
+
+  scriptSection: {
+    padding: 20,
+  },
+
+  scriptHeaderRow: {
+    marginBottom: 15,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  scriptMark: {
+    width: 38,
+    height: 38,
+
+    marginRight: 10,
+
+    borderRadius: 11,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  scriptLabel: {
+    fontSize: 11,
+
+    letterSpacing: 0.9,
+
+    fontFamily: fonts.bold,
+  },
+
+  scriptHint: {
+    marginTop: 2,
+
+    fontSize: 12,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  hookText: {
+    fontSize: 19,
+
+    lineHeight: 29,
+
+    letterSpacing: -0.2,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
+  },
+
+  ctaText: {
+    fontSize: 17,
+
+    lineHeight: 26,
+
+    fontFamily: fonts.medium,
+
+    color: colors.text,
   },
 
   scriptDivider: {
     height: 1,
+
+    marginHorizontal: 18,
+
     backgroundColor: colors.divider,
-    marginVertical: spacing.sm,
+  },
+
+  points: {
+    gap: 15,
   },
 
   pointRow: {
     flexDirection: "row",
+
     alignItems: "flex-start",
-    marginBottom: spacing.md,
   },
 
   pointNumber: {
-    width: 24,
-    height: 24,
+    width: 29,
+    height: 29,
+
+    marginRight: 11,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.amberLight,
+
     alignItems: "center",
+
     justifyContent: "center",
-    marginRight: spacing.sm,
-    marginTop: 1,
   },
 
   pointNumberText: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
+    fontSize: 10,
+
+    fontFamily: fonts.bold,
+
     color: colors.amber,
   },
 
   pointText: {
     flex: 1,
-    fontSize: typography.body,
-    lineHeight: 21,
+
+    paddingTop: 2,
+
+    fontSize: 16,
+
+    lineHeight: 25,
+
+    fontFamily: fonts.regular,
+
     color: colors.text,
   },
 
-  emptyScript: {
+  referenceHeader: {
+    marginBottom: 14,
+  },
+
+  referenceCard: {
+    marginBottom: 32,
+
+    padding: 15,
+
+    borderRadius: 20,
+
+    backgroundColor: colors.roseLight,
+  },
+
+  referenceTop: {
     flexDirection: "row",
+
     alignItems: "center",
-    backgroundColor: colors.amberLight,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+
+    justifyContent: "space-between",
   },
 
-  emptyScriptIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
+  referenceIdentity: {
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  referenceMark: {
+    width: 38,
+    height: 38,
+
+    marginRight: 10,
+
+    borderRadius: 12,
+
     backgroundColor: colors.surface,
+
     alignItems: "center",
+
     justifyContent: "center",
-    marginRight: spacing.md,
   },
 
-  emptyScriptTitle: {
-    fontSize: typography.body,
-    fontWeight: "700",
+  referenceSource: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
     color: colors.text,
   },
 
-  emptyScriptText: {
+  referenceCategory: {
     marginTop: 3,
-    fontSize: typography.caption,
-    lineHeight: 17,
+
+    fontSize: 12,
+
+    fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
-  fullEditButton: {
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: colors.terracotta,
-    flexDirection: "row",
+  referenceOpen: {
+    width: 34,
+    height: 34,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
     alignItems: "center",
+
     justifyContent: "center",
-    gap: spacing.sm,
   },
 
-  fullEditButtonText: {
-    fontSize: typography.body,
-    fontWeight: "700",
-    color: colors.surface,
+  referenceNote: {
+    marginTop: 14,
+
+    fontSize: 15,
+
+    lineHeight: 23,
+
+    fontFamily: fonts.medium,
+
+    color: colors.text,
+  },
+
+  referenceUrl: {
+    marginTop: 8,
+
+    fontSize: 12,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  referenceActions: {
+    minHeight: 45,
+
+    marginTop: 12,
+
+    borderTopWidth: 1,
+
+    borderTopColor: "rgba(207,130,149,0.22)",
+
+    flexDirection: "row",
+
+    alignItems: "flex-end",
+
+    justifyContent: "space-between",
+
+    gap: 10,
+  },
+
+  openReferenceAction: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  openReferenceText: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.rose,
+  },
+
+  savedInspirationAction: {
+    paddingVertical: 4,
+  },
+
+  savedInspirationText: {
+    fontSize: 12,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  flowSection: {
+    marginTop: 2,
+  },
+
+  advanceButton: {
+    minHeight: 68,
+
+    marginTop: 13,
+
+    paddingHorizontal: 13,
+
+    borderRadius: 19,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  advanceInfo: {
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  advanceMark: {
+    width: 40,
+    height: 40,
+
+    marginRight: 11,
+
+    borderRadius: 13,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  advanceEyebrow: {
+    fontSize: 10,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.textSecondary,
+  },
+
+  advanceText: {
+    marginTop: 3,
+
+    fontSize: 15,
+
+    fontFamily: fonts.bold,
+  },
+
+  completedFlow: {
+    minHeight: 68,
+
+    marginTop: 13,
+
+    paddingHorizontal: 13,
+
+    borderRadius: 19,
+
+    backgroundColor: colors.sageLight,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  completedMark: {
+    width: 40,
+    height: 40,
+
+    marginRight: 11,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  completedTitle: {
+    fontSize: 15,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.sage,
+  },
+
+  completedText: {
+    marginTop: 3,
+
+    fontSize: 12,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  bottomDivider: {
+    height: 1,
+
+    marginTop: 32,
+
+    backgroundColor: colors.divider,
+  },
+
+  deleteButton: {
+    minHeight: 52,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 6,
+  },
+
+  deleteButtonText: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.danger,
   },
 
   center: {
     flex: 1,
+
+    paddingHorizontal: 30,
+
     alignItems: "center",
+
     justifyContent: "center",
-    padding: spacing.lg,
-    gap: spacing.md,
   },
 
   loadingText: {
+    marginTop: 12,
+
+    fontSize: 13,
+
+    fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
+  errorMark: {
+    width: 54,
+    height: 54,
+
+    marginBottom: 16,
+
+    borderRadius: 17,
+
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
   errorTitle: {
-    fontSize: typography.heading,
-    fontWeight: "700",
+    fontSize: 20,
+
+    fontFamily: fonts.bold,
+
     color: colors.text,
   },
 
-  backText: {
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  deleteButton: {
-    minHeight: 48,
+  errorButton: {
+    marginTop: 18,
 
-    marginTop: spacing.md,
+    paddingHorizontal: 18,
 
-    flexDirection: "row",
+    paddingVertical: 11,
 
-    alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 14,
 
-    gap: spacing.sm,
+    backgroundColor: colors.text,
   },
 
-  deleteButtonText: {
-    fontSize: typography.body,
+  errorButtonText: {
+    fontSize: 11,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
-    color: colors.danger,
+    color: colors.surface,
   },
 });

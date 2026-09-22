@@ -18,7 +18,7 @@ import { getInspirations } from "../../services/inspirationStorage";
 
 import { Inspiration } from "../../types/inspiration";
 
-import { colors, radius, shadows, spacing } from "../../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
 const filters = [
   "Todas",
@@ -97,7 +97,7 @@ export default function InspirationsScreen() {
           </View>
 
           <View style={styles.headerMark}>
-            <Ionicons name="bulb-outline" size={21} color={colors.rose} />
+            <Ionicons name="bulb-outline" size={22} color={colors.rose} />
           </View>
         </View>
 
@@ -107,7 +107,7 @@ export default function InspirationsScreen() {
           onPress={() => router.push("/inspiracao/nova")}
         >
           <View style={styles.saveReferenceMark}>
-            <Ionicons name="add" size={22} color={colors.surface} />
+            <Ionicons name="add" size={23} color={colors.surface} />
           </View>
 
           <View style={{ flex: 1 }}>
@@ -118,13 +118,13 @@ export default function InspirationsScreen() {
             </Text>
           </View>
 
-          <Ionicons name="arrow-forward" size={18} color={colors.terracotta} />
+          <Ionicons name="arrow-forward" size={19} color={colors.terracotta} />
         </TouchableOpacity>
 
         {inspirations.length > 0 && (
           <>
             <View style={styles.libraryHeader}>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.libraryTitle}>Biblioteca</Text>
 
                 <Text style={styles.librarySubtitle}>
@@ -251,7 +251,7 @@ function InspirationCard({
             >
               <Ionicons
                 name={getSourceIcon(inspiration.source)}
-                size={16}
+                size={17}
                 color={accent.foreground}
               />
             </View>
@@ -273,7 +273,11 @@ function InspirationCard({
             <Text style={styles.source}>{inspiration.source}</Text>
           </View>
 
-          <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={colors.textSecondary}
+          />
         </View>
 
         <Text
@@ -300,7 +304,7 @@ function InspirationCard({
         >
           <View style={styles.createActionLeft}>
             <View style={styles.sparkleMark}>
-              <Ionicons name="sparkles" size={15} color={colors.terracotta} />
+              <Ionicons name="sparkles" size={16} color={colors.terracotta} />
             </View>
 
             <View>
@@ -310,7 +314,7 @@ function InspirationCard({
             </View>
           </View>
 
-          <Ionicons name="arrow-forward" size={17} color={colors.terracotta} />
+          <Ionicons name="arrow-forward" size={18} color={colors.terracotta} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -435,7 +439,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
 
-    paddingBottom: 135,
+    paddingBottom: 140,
   },
 
   header: {
@@ -455,30 +459,32 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
 
-    lineHeight: 37,
+    lineHeight: 40,
 
     letterSpacing: -0.9,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
 
   subtitle: {
-    maxWidth: 285,
+    maxWidth: 300,
 
-    marginTop: 6,
+    marginTop: 7,
 
-    fontSize: 13,
+    fontSize: 14,
 
-    lineHeight: 19,
+    lineHeight: 21,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
   headerMark: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
 
     marginTop: 3,
 
@@ -492,7 +498,7 @@ const styles = StyleSheet.create({
   },
 
   saveReference: {
-    minHeight: 80,
+    minHeight: 88,
 
     padding: spacing.md,
 
@@ -508,8 +514,8 @@ const styles = StyleSheet.create({
   },
 
   saveReferenceMark: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
 
     marginRight: spacing.md,
 
@@ -523,9 +529,11 @@ const styles = StyleSheet.create({
   },
 
   saveReferenceTitle: {
-    fontSize: 15,
+    fontSize: 16,
 
-    fontWeight: "700",
+    lineHeight: 22,
+
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
@@ -533,13 +541,15 @@ const styles = StyleSheet.create({
   saveReferenceText: {
     maxWidth: 245,
 
-    marginTop: 3,
+    marginTop: 4,
 
     paddingRight: spacing.sm,
 
-    fontSize: 10,
+    fontSize: 12,
 
-    lineHeight: 15,
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
@@ -552,22 +562,30 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
 
     justifyContent: "space-between",
+
+    gap: 12,
   },
 
   libraryTitle: {
-    fontSize: 22,
+    fontSize: 24,
+
+    lineHeight: 31,
 
     letterSpacing: -0.5,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
 
   librarySubtitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 11,
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
@@ -575,7 +593,7 @@ const styles = StyleSheet.create({
   countPill: {
     paddingHorizontal: 10,
 
-    paddingVertical: 6,
+    paddingVertical: 7,
 
     borderRadius: radius.round,
 
@@ -583,9 +601,9 @@ const styles = StyleSheet.create({
   },
 
   countText: {
-    fontSize: 9,
+    fontSize: 10,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.textSecondary,
   },
@@ -597,9 +615,9 @@ const styles = StyleSheet.create({
   },
 
   filter: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
 
-    paddingVertical: 9,
+    paddingVertical: 10,
 
     borderRadius: radius.round,
 
@@ -617,9 +635,9 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
-    fontSize: 11,
+    fontSize: 12,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
   },
@@ -689,8 +707,8 @@ const styles = StyleSheet.create({
   },
 
   sourceMark: {
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
 
     marginRight: 9,
 
@@ -702,11 +720,11 @@ const styles = StyleSheet.create({
   },
 
   category: {
-    fontSize: 8,
+    fontSize: 10,
 
-    fontWeight: "800",
+    fontFamily: fonts.bold,
 
-    letterSpacing: 0.7,
+    letterSpacing: 0.6,
   },
 
   metaDot: {
@@ -721,9 +739,11 @@ const styles = StyleSheet.create({
   },
 
   source: {
-    fontSize: 9,
+    fontSize: 10,
 
-    color: colors.textMuted,
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
   },
 
   cardTitle: {
@@ -733,11 +753,11 @@ const styles = StyleSheet.create({
 
     fontSize: 17,
 
-    lineHeight: 23,
+    lineHeight: 24,
 
     letterSpacing: -0.2,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
@@ -747,19 +767,23 @@ const styles = StyleSheet.create({
 
     fontSize: 16,
 
-    lineHeight: 22,
+    lineHeight: 23,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
   },
 
   cardUrl: {
-    marginTop: 7,
+    marginTop: 8,
 
-    fontSize: 10,
+    fontSize: 11,
 
-    color: colors.textMuted,
+    lineHeight: 16,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
   },
 
   cardDivider: {
@@ -771,7 +795,7 @@ const styles = StyleSheet.create({
   },
 
   createAction: {
-    minHeight: 54,
+    minHeight: 60,
 
     flexDirection: "row",
 
@@ -787,8 +811,8 @@ const styles = StyleSheet.create({
   },
 
   sparkleMark: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
 
     marginRight: 10,
 
@@ -802,21 +826,23 @@ const styles = StyleSheet.create({
   },
 
   createEyebrow: {
-    fontSize: 7,
+    fontSize: 9,
 
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
 
-    fontWeight: "800",
+    fontFamily: fonts.bold,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   createText: {
     marginTop: 2,
 
-    fontSize: 12,
+    fontSize: 13,
 
-    fontWeight: "700",
+    lineHeight: 18,
+
+    fontFamily: fonts.bold,
 
     color: colors.terracotta,
   },
@@ -905,11 +931,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
 
-    lineHeight: 28,
+    lineHeight: 29,
 
     letterSpacing: -0.5,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     textAlign: "center",
 
@@ -923,15 +949,17 @@ const styles = StyleSheet.create({
 
     fontSize: 13,
 
-    lineHeight: 19,
+    lineHeight: 20,
 
     textAlign: "center",
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
   emptyButton: {
-    minHeight: 50,
+    minHeight: 52,
 
     marginTop: 24,
 
@@ -953,7 +981,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 13,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.surface,
   },
@@ -984,7 +1012,7 @@ const styles = StyleSheet.create({
   emptyFilterTitle: {
     fontSize: 18,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
@@ -992,7 +1020,11 @@ const styles = StyleSheet.create({
   emptyFilterText: {
     marginTop: 5,
 
-    fontSize: 12,
+    fontSize: 13,
+
+    lineHeight: 19,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
@@ -1002,7 +1034,7 @@ const styles = StyleSheet.create({
 
     fontSize: 12,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.terracotta,
   },

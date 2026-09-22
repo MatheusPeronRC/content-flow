@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 
 import {
     ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -18,88 +20,162 @@ import { getContentById, updateContent } from "../../services/contentStorage";
 
 import { ContentItem } from "../../types/content";
 
-import { colors, radius, spacing, typography } from "../../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
 export default function RoteiroScreen() {
   const { contentId } = useLocalSearchParams<{
-    contentId: string;
+    contentId?: string;
   }>();
 
   const [content, setContent] = useState<ContentItem | null>(null);
 
   const [loading, setLoading] = useState(true);
 
+  const [saving, setSaving] = useState(false);
+
   const [hook, setHook] = useState("");
 
-  const [points, setPoints] = useState(["", "", ""]);
+  const [points, setPoints] = useState<string[]>([""]);
 
   const [cta, setCta] = useState("");
 
-  useEffect(() => {
-    async function loadContent() {
-      if (!contentId) {
-        return;
-      }
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
 
-      try {
-        const data = await getContentById(contentId);
+      async function load() {
+        if (!contentId) {
+          if (active) {
+            setLoading(false);
+          }
 
-        if (!data) {
           return;
         }
 
-        setContent(data);
+        try {
+          const data = await getContentById(contentId);
 
-        setHook(data.script.hook);
+          if (!active) {
+            return;
+          }
 
-        setPoints(
-          data.script.points.length > 0 ? data.script.points : ["", "", ""],
-        );
+          if (!data) {
+            setContent(null);
+            return;
+          }
 
-        setCta(data.script.cta);
-      } finally {
-        setLoading(false);
+          setContent(data);
+
+          setHook(data.script?.hook ?? "");
+
+          const savedPoints = data.script?.points ?? [];
+
+          setPoints(savedPoints.length > 0 ? savedPoints : [""]);
+
+          setCta(data.script?.cta ?? "");
+        } catch (error) {
+          console.error("Erro ao carregar roteiro:", error);
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
       }
-    }
 
-    loadContent();
-  }, [contentId]);
+      load();
+
+      return () => {
+        active = false;
+      };
+    }, [contentId]),
+  );
+
+  const canAdvance =
+    content?.status === "ideia" || content?.status === "roteiro";
+
+  const hasAnyScript = useMemo(() => {
+    return (
+      hook.trim().length > 0 ||
+      points.some((point) => point.trim().length > 0) ||
+      cta.trim().length > 0
+    );
+  }, [hook, points, cta]);
 
   function updatePoint(index: number, value: string) {
-    setPoints((currentPoints) =>
-      currentPoints.map((point, currentIndex) =>
-        currentIndex === index ? value : point,
+    setPoints((current) =>
+      current.map((point, pointIndex) =>
+        pointIndex === index ? value : point,
       ),
     );
   }
 
-  async function handleFinishScript() {
-    if (!content) {
+  function addPoint() {
+    setPoints((current) => [...current, ""]);
+  }
+
+  function removePoint(index: number) {
+    setPoints((current) => {
+      if (current.length === 1) {
+        return [""];
+      }
+
+      return current.filter((_, pointIndex) => pointIndex !== index);
+    });
+  }
+
+  async function saveScript(advance: boolean) {
+    if (!content || saving) {
       return;
     }
 
-    await updateContent(content.id, {
-      status: "gravar",
+    if (advance && canAdvance && !hasAnyScript) {
+      return;
+    }
 
-      script: {
-        hook: hook.trim(),
+    try {
+      setSaving(true);
 
-        points: points.map((point) => point.trim()),
+      const normalizedPoints = points
+        .map((point) => point.trim())
+        .filter(Boolean);
 
-        cta: cta.trim(),
-      },
-    });
+      const shouldAdvance = advance && canAdvance;
 
-    router.replace("/");
+      await updateContent(content.id, {
+        script: {
+          hook: hook.trim(),
+          points: normalizedPoints,
+          cta: cta.trim(),
+        },
+
+        ...(shouldAdvance
+          ? {
+              status: "gravar" as const,
+            }
+          : {}),
+      });
+
+      router.replace({
+        pathname: "/conteudo/[id]",
+
+        params: {
+          id: content.id,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao salvar roteiro:", error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loading}>
-          <ActivityIndicator color={colors.primary} />
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.terracotta} />
 
-          <Text style={styles.loadingText}>Carregando roteiro...</Text>
+          <Text style={styles.loadingText}>Abrindo seu roteiro...</Text>
         </View>
       </SafeAreaView>
     );
@@ -108,187 +184,444 @@ export default function RoteiroScreen() {
   if (!content) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loading}>
-          <Text style={styles.errorTitle}>Conteúdo não encontrado</Text>
+        <View style={styles.center}>
+          <View style={styles.errorMark}>
+            <Ionicons
+              name="document-text-outline"
+              size={24}
+              color={colors.textMuted}
+            />
+          </View>
 
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>Voltar</Text>
+          <Text style={styles.errorTitle}>Roteiro não encontrado</Text>
+
+          <TouchableOpacity
+            style={styles.errorButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.errorButtonText}>Voltar</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
+  const ideaLength = content.idea.trim().length;
+
+  const isLongIdea = ideaLength > 80;
+
+  const isVeryLongIdea = ideaLength > 180;
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
-          </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>Roteiro</Text>
-
-          <View style={styles.headerSpace} />
-        </View>
-
-        <View style={styles.intro}>
-          <Text style={styles.label}>SEU CONTEÚDO</Text>
-
-          <Text style={styles.title}>{content.idea}</Text>
-
-          <View style={styles.meta}>
-            {content.format && (
-              <View style={styles.metaPill}>
-                <Text style={styles.metaText}>{content.format}</Text>
-              </View>
-            )}
-
-            {content.objective && (
-              <View style={styles.metaPill}>
-                <Text style={styles.metaText}>{content.objective}</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.number}>
-              <Text style={styles.numberText}>1</Text>
-            </View>
-
-            <View style={styles.sectionHeaderText}>
-              <Text style={styles.sectionTitle}>Hook</Text>
-
-              <Text style={styles.sectionDescription}>
-                Como você vai prender a atenção logo no início?
-              </Text>
-            </View>
-          </View>
-
-          <TextInput
-            value={hook}
-            onChangeText={setHook}
-            placeholder="Ex.: Se você acha que creatina engorda, precisa ouvir isso..."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.formGroup}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.number}>
-              <Text style={styles.numberText}>2</Text>
-            </View>
-
-            <View style={styles.sectionHeaderText}>
-              <Text style={styles.sectionTitle}>Pontos principais</Text>
-
-              <Text style={styles.sectionDescription}>
-                Organize o que precisa ser dito.
-              </Text>
-            </View>
-          </View>
-
-          {points.map((point, index) => (
-            <View key={index} style={styles.pointRow}>
-              <View style={styles.pointNumber}>
-                <Text style={styles.pointNumberText}>{index + 1}</Text>
-              </View>
-
-              <TextInput
-                value={point}
-                onChangeText={(value) => updatePoint(index, value)}
-                placeholder={`Ponto ${index + 1}`}
-                placeholderTextColor={colors.textMuted}
-                multiline
-                style={styles.pointInput}
-              />
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.formGroup}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.number}>
-              <Text style={styles.numberText}>3</Text>
-            </View>
-
-            <View style={styles.sectionHeaderText}>
-              <Text style={styles.sectionTitle}>CTA</Text>
-
-              <Text style={styles.sectionDescription}>
-                O que você quer que a pessoa faça depois?
-              </Text>
-            </View>
-          </View>
-
-          <TextInput
-            value={cta}
-            onChangeText={setCta}
-            placeholder="Ex.: Salve este vídeo para consultar depois."
-            placeholderTextColor={colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            style={styles.input}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={styles.finishButton}
-          onPress={handleFinishScript}
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={
+            Platform.OS === "ios" ? "interactive" : "on-drag"
+          }
         >
-          <Text style={styles.finishButtonText}>Roteiro pronto</Text>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.back()}
+            >
+              <Ionicons name="arrow-back" size={20} color={colors.text} />
+            </TouchableOpacity>
 
-          <Ionicons name="checkmark" size={19} color={colors.surface} />
-        </TouchableOpacity>
-      </ScrollView>
+            <Text style={styles.headerTitle}>Editar roteiro</Text>
+
+            <View style={styles.headerSpace} />
+          </View>
+
+          <View style={styles.hero}>
+            <Text style={styles.eyebrow}>SEU ROTEIRO</Text>
+
+            <Text
+              style={[
+                styles.title,
+
+                isLongIdea && styles.titleLong,
+
+                isVeryLongIdea && styles.titleVeryLong,
+              ]}
+            >
+              {content.idea}
+            </Text>
+
+            <View style={styles.heroMeta}>
+              {content.format && (
+                <View style={styles.formatBadge}>
+                  <Text style={styles.formatText}>{content.format}</Text>
+                </View>
+              )}
+
+              <Text style={styles.flexibilityText}>Monte do seu jeito</Text>
+            </View>
+
+            <Text style={styles.description}>
+              Use esta estrutura como apoio, não como regra. Escreva do jeito
+              que você realmente falaria.
+            </Text>
+          </View>
+
+          <ScriptEditorCard
+            icon="flash-outline"
+            label="HOOK"
+            hint="A abertura do conteúdo"
+            color={colors.terracotta}
+            background={colors.terracottaLight}
+          >
+            <TextInput
+              value={hook}
+              onChangeText={setHook}
+              multiline
+              scrollEnabled={false}
+              textAlignVertical="top"
+              placeholder="Como você quer começar? Escreva uma frase, pergunta ou ideia que prenda a atenção..."
+              placeholderTextColor={colors.textMuted}
+              style={styles.largeInput}
+            />
+          </ScriptEditorCard>
+
+          <View style={styles.developmentSection}>
+            <View style={styles.developmentTop}>
+              <View style={styles.sectionIdentity}>
+                <View
+                  style={[
+                    styles.sectionMark,
+
+                    {
+                      backgroundColor: colors.amberLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="list-outline"
+                    size={19}
+                    color={colors.amber}
+                  />
+                </View>
+
+                <View>
+                  <Text
+                    style={[
+                      styles.sectionLabel,
+
+                      {
+                        color: colors.amber,
+                      },
+                    ]}
+                  >
+                    DESENVOLVIMENTO
+                  </Text>
+
+                  <Text style={styles.sectionHint}>
+                    Construa sua linha de raciocínio
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.stepsCount}>
+                <Text style={styles.stepsCountText}>
+                  {points.length} {points.length === 1 ? "etapa" : "etapas"}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={styles.developmentDescription}>
+              Cada etapa pode ser um argumento, exemplo, explicação ou lembrete
+              do que você quer falar.
+            </Text>
+
+            <View style={styles.points}>
+              {points.map((point, index) => (
+                <View key={index} style={styles.pointCard}>
+                  <View style={styles.pointHeader}>
+                    <View style={styles.pointHeaderLeft}>
+                      <View style={styles.pointNumber}>
+                        <Text style={styles.pointNumberText}>
+                          {String(index + 1).padStart(2, "0")}
+                        </Text>
+                      </View>
+
+                      <Text style={styles.pointLabel}>Etapa {index + 1}</Text>
+                    </View>
+
+                    {points.length > 1 && (
+                      <TouchableOpacity
+                        style={styles.removePoint}
+                        activeOpacity={0.75}
+                        onPress={() => removePoint(index)}
+                      >
+                        <Ionicons
+                          name="trash-outline"
+                          size={16}
+                          color={colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <TextInput
+                    value={point}
+                    onChangeText={(value) => updatePoint(index, value)}
+                    multiline
+                    scrollEnabled={false}
+                    textAlignVertical="top"
+                    placeholder="Desenvolva esta parte do conteúdo..."
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.pointInput}
+                  />
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.addPointButton}
+              activeOpacity={0.8}
+              onPress={addPoint}
+            >
+              <View style={styles.addPointMark}>
+                <Ionicons name="add" size={18} color={colors.amber} />
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.addPointTitle}>Adicionar etapa</Text>
+
+                <Text style={styles.addPointHint}>
+                  Continue desenvolvendo sua ideia.
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <ScriptEditorCard
+            icon="megaphone-outline"
+            label="CTA"
+            hint="Como você quer terminar"
+            color={colors.sage}
+            background={colors.sageLight}
+          >
+            <TextInput
+              value={cta}
+              onChangeText={setCta}
+              multiline
+              scrollEnabled={false}
+              textAlignVertical="top"
+              placeholder="Quer pedir para salvar, comentar, compartilhar ou fazer alguma outra ação?"
+              placeholderTextColor={colors.textMuted}
+              style={styles.mediumInput}
+            />
+          </ScriptEditorCard>
+
+          <View style={styles.optionalNote}>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={colors.textMuted}
+            />
+
+            <Text style={styles.optionalNoteText}>
+              Hook e CTA são opcionais. Use apenas o que fizer sentido para este
+              conteúdo.
+            </Text>
+          </View>
+
+          {canAdvance ? (
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                activeOpacity={0.8}
+                disabled={saving}
+                onPress={() => saveScript(false)}
+              >
+                <Ionicons
+                  name="bookmark-outline"
+                  size={17}
+                  color={colors.text}
+                />
+
+                <Text style={styles.secondaryButtonText}>
+                  Salvar sem avançar
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+
+                  !hasAnyScript && styles.primaryButtonDisabled,
+                ]}
+                activeOpacity={0.86}
+                disabled={saving || !hasAnyScript}
+                onPress={() => saveScript(true)}
+              >
+                <View style={styles.primaryButtonMark}>
+                  <Ionicons
+                    name="checkmark"
+                    size={17}
+                    color={hasAnyScript ? colors.terracotta : colors.textMuted}
+                  />
+                </View>
+
+                <Text
+                  style={[
+                    styles.primaryButtonText,
+
+                    !hasAnyScript && styles.primaryButtonTextDisabled,
+                  ]}
+                >
+                  Roteiro pronto
+                </Text>
+
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={hasAnyScript ? colors.surface : colors.textMuted}
+                  style={styles.primaryButtonArrow}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                activeOpacity={0.86}
+                disabled={saving}
+                onPress={() => saveScript(false)}
+              >
+                <View style={styles.primaryButtonMark}>
+                  <Ionicons
+                    name="checkmark"
+                    size={17}
+                    color={colors.terracotta}
+                  />
+                </View>
+
+                <Text style={styles.primaryButtonText}>Salvar alterações</Text>
+
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={colors.surface}
+                  style={styles.primaryButtonArrow}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+type ScriptEditorCardProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  color: string;
+  background: string;
+  children: React.ReactNode;
+};
+
+function ScriptEditorCard({
+  icon,
+  label,
+  hint,
+  color,
+  background,
+  children,
+}: ScriptEditorCardProps) {
+  return (
+    <View style={styles.scriptCard}>
+      <View style={styles.sectionIdentity}>
+        <View
+          style={[
+            styles.sectionMark,
+            {
+              backgroundColor: background,
+            },
+          ]}
+        >
+          <Ionicons name={icon} size={19} color={color} />
+        </View>
+
+        <View>
+          <Text
+            style={[
+              styles.sectionLabel,
+              {
+                color,
+              },
+            ]}
+          >
+            {label}
+          </Text>
+
+          <Text style={styles.sectionHint}>{hint}</Text>
+        </View>
+      </View>
+
+      {children}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
   safeArea: {
     flex: 1,
+
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 50,
+
+    paddingBottom: 54,
   },
 
   header: {
     height: 68,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
   },
 
-  closeButton: {
-    width: 40,
-    height: 40,
+  headerButton: {
+    width: 42,
+    height: 42,
+
     borderRadius: radius.round,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
+
     borderColor: colors.border,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   headerTitle: {
-    fontSize: typography.subheading,
-    fontWeight: "700",
+    fontSize: 18,
+
+    fontFamily: fonts.semibold,
+
     color: colors.text,
   },
 
@@ -296,170 +629,579 @@ const styles = StyleSheet.create({
     width: 40,
   },
 
-  intro: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+  hero: {
+    paddingTop: 20,
+
+    paddingBottom: 28,
   },
 
-  label: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    color: colors.primary,
+  eyebrow: {
+    marginBottom: 10,
+
+    fontSize: 10,
+
+    letterSpacing: 1.1,
+
+    fontFamily: fonts.bold,
+
+    color: colors.amber,
   },
 
   title: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "700",
+    maxWidth: 340,
+
+    fontSize: 30,
+
+    lineHeight: 37,
+
+    letterSpacing: -0.9,
+
+    fontFamily: fonts.bold,
+
     color: colors.text,
-    marginTop: spacing.sm,
   },
 
-  meta: {
+  titleLong: {
+    fontSize: 22,
+
+    lineHeight: 32,
+
+    letterSpacing: -0.3,
+
+    fontFamily: fonts.semibold,
+  },
+
+  titleVeryLong: {
+    fontSize: 18,
+
+    lineHeight: 29,
+
+    letterSpacing: 0,
+
+    fontFamily: fonts.regular,
+  },
+
+  heroMeta: {
+    marginTop: 12,
+
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
 
-  metaPill: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.round,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-
-  metaText: {
-    fontSize: typography.caption,
-    fontWeight: "600",
-    color: colors.primary,
-  },
-
-  formGroup: {
-    marginBottom: spacing.xl,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    marginBottom: spacing.md,
-  },
-
-  number: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.round,
-    backgroundColor: colors.primary,
     alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.md,
+
+    gap: 9,
   },
 
-  numberText: {
-    color: colors.surface,
-    fontWeight: "700",
+  formatBadge: {
+    paddingHorizontal: 10,
+
+    paddingVertical: 6,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.amberLight,
   },
 
-  sectionHeaderText: {
-    flex: 1,
+  formatText: {
+    fontSize: 11,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.amber,
   },
 
-  sectionTitle: {
-    fontSize: typography.subheading,
-    fontWeight: "700",
-    color: colors.text,
-  },
+  flexibilityText: {
+    fontSize: 12,
 
-  sectionDescription: {
-    fontSize: typography.caption,
-    lineHeight: 17,
+    fontFamily: fonts.medium,
+
     color: colors.textSecondary,
-    marginTop: 2,
   },
 
-  input: {
-    minHeight: 100,
+  description: {
+    maxWidth: 340,
+
+    marginTop: 14,
+
+    fontSize: 14,
+
+    lineHeight: 22,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  scriptCard: {
+    marginBottom: 16,
+
+    padding: 20,
+
+    borderRadius: 22,
+
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
+
     borderWidth: 1,
+
     borderColor: colors.border,
-    padding: spacing.md,
-    fontSize: typography.body,
-    lineHeight: 21,
+
+    ...shadows.soft,
+  },
+
+  sectionIdentity: {
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  sectionMark: {
+    width: 40,
+    height: 40,
+
+    marginRight: 11,
+
+    borderRadius: 12,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  sectionLabel: {
+    fontSize: 11,
+
+    letterSpacing: 0.9,
+
+    fontFamily: fonts.bold,
+  },
+
+  sectionHint: {
+    marginTop: 2,
+
+    fontSize: 12,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  largeInput: {
+    minHeight: 145,
+
+    marginTop: 17,
+
+    padding: 17,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.surfaceSoft,
+
+    fontSize: 17,
+
+    lineHeight: 27,
+
+    fontFamily: fonts.medium,
+
     color: colors.text,
   },
 
-  pointRow: {
+  mediumInput: {
+    minHeight: 125,
+
+    marginTop: 17,
+
+    padding: 17,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.surfaceSoft,
+
+    fontSize: 16,
+
+    lineHeight: 25,
+
+    fontFamily: fonts.regular,
+
+    color: colors.text,
+  },
+
+  developmentSection: {
+    marginBottom: 16,
+
+    padding: 20,
+
+    borderRadius: 22,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    ...shadows.soft,
+  },
+
+  developmentTop: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: spacing.sm,
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    gap: 10,
+  },
+
+  stepsCount: {
+    paddingHorizontal: 9,
+
+    paddingVertical: 5,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.amberLight,
+  },
+
+  stepsCountText: {
+    fontSize: 10,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.amber,
+  },
+
+  developmentDescription: {
+    marginTop: 15,
+
+    marginBottom: 16,
+
+    fontSize: 13,
+
+    lineHeight: 20,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  points: {
+    gap: 12,
+  },
+
+  pointCard: {
+    padding: 15,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.surfaceSoft,
+
+    borderWidth: 1,
+
+    borderColor: colors.divider,
+  },
+
+  pointHeader: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  pointHeaderLeft: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 8,
   },
 
   pointNumber: {
     width: 30,
     height: 30,
+
     borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
+
+    backgroundColor: colors.amberLight,
+
     alignItems: "center",
+
     justifyContent: "center",
-    marginTop: 10,
-    marginRight: spacing.sm,
   },
 
   pointNumberText: {
-    fontSize: typography.caption,
-    fontWeight: "700",
-    color: colors.primary,
+    fontSize: 10,
+
+    fontFamily: fonts.bold,
+
+    color: colors.amber,
   },
 
-  pointInput: {
-    flex: 1,
-    minHeight: 52,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    color: colors.text,
-    fontSize: typography.body,
-  },
+  pointLabel: {
+    fontSize: 12,
 
-  finishButton: {
-    height: 54,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
+    fontFamily: fonts.semibold,
 
-  finishButtonText: {
-    color: colors.surface,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
-
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-
-  loadingText: {
     color: colors.textSecondary,
   },
 
-  errorTitle: {
-    fontSize: typography.heading,
-    fontWeight: "700",
+  removePoint: {
+    width: 32,
+    height: 32,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  pointInput: {
+    minHeight: 104,
+
+    marginTop: 12,
+
+    padding: 0,
+
+    fontSize: 16,
+
+    lineHeight: 25,
+
+    fontFamily: fonts.regular,
+
     color: colors.text,
   },
 
-  backText: {
-    color: colors.primary,
-    fontWeight: "700",
+  addPointButton: {
+    minHeight: 70,
+
+    marginTop: 12,
+
+    paddingHorizontal: 12,
+
+    borderRadius: 17,
+
+    borderWidth: 1,
+
+    borderStyle: "dashed",
+
+    borderColor: colors.border,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  addPointMark: {
+    width: 34,
+    height: 34,
+
+    marginRight: 10,
+
+    borderRadius: 11,
+
+    backgroundColor: colors.amberLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  addPointTitle: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
+  },
+
+  addPointHint: {
+    marginTop: 3,
+
+    fontSize: 11,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  optionalNote: {
+    marginTop: 2,
+
+    marginBottom: 22,
+
+    paddingHorizontal: 4,
+
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: 7,
+  },
+
+  optionalNoteText: {
+    flex: 1,
+
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  actions: {
+    marginTop: 2,
+  },
+
+  secondaryButton: {
+    minHeight: 52,
+
+    marginBottom: 9,
+
+    borderRadius: 16,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 7,
+  },
+
+  secondaryButtonText: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
+  },
+
+  primaryButton: {
+    minHeight: 60,
+
+    paddingHorizontal: 14,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.terracotta,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    position: "relative",
+  },
+
+  primaryButtonDisabled: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  primaryButtonMark: {
+    position: "absolute",
+
+    left: 14,
+
+    width: 34,
+    height: 34,
+
+    borderRadius: 11,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  primaryButtonText: {
+    fontSize: 14,
+
+    fontFamily: fonts.bold,
+
+    color: colors.surface,
+
+    textAlign: "center",
+  },
+
+  primaryButtonArrow: {
+    position: "absolute",
+
+    right: 16,
+  },
+
+  primaryButtonTextDisabled: {
+    color: colors.textMuted,
+  },
+
+  center: {
+    flex: 1,
+
+    paddingHorizontal: 30,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  loadingText: {
+    marginTop: 12,
+
+    fontSize: 13,
+
+    fontFamily: fonts.regular,
+
+    color: colors.textSecondary,
+  },
+
+  errorMark: {
+    width: 54,
+    height: 54,
+
+    marginBottom: 16,
+
+    borderRadius: 17,
+
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  errorTitle: {
+    fontSize: 22,
+
+    fontFamily: fonts.bold,
+
+    color: colors.text,
+  },
+
+  errorButton: {
+    marginTop: 18,
+
+    paddingHorizontal: 18,
+
+    paddingVertical: 11,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.text,
+  },
+
+  errorButtonText: {
+    fontSize: 13,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.surface,
   },
 });

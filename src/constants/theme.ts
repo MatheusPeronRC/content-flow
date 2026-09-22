@@ -8,7 +8,6 @@ export const colors = {
   surfaceMuted: "#ECE7E1",
 
   // IDENTIDADE
-  // O "primary" deixa de ser verde e vira carvão.
   primary: "#292624",
   primaryDark: "#1F1C1A",
   primaryLight: "#EEEAE5",
@@ -38,13 +37,14 @@ export const colors = {
   sageLight: "#E6EFE9",
 
   // TEXTO
+  // Mais contraste que a versão anterior.
   text: "#252220",
-  textSecondary: "#726D67",
-  textMuted: "#A29C95",
+  textSecondary: "#625D58",
+  textMuted: "#89837D",
 
   // ESTRUTURA
-  border: "#E5DED6",
-  divider: "#EEE8E1",
+  border: "#E3DCD4",
+  divider: "#EAE3DC",
 
   // FEEDBACK
   success: "#72947F",
@@ -57,7 +57,7 @@ export const colors = {
   story: "#EDE9F7",
   inspiration: "#F6E6EB",
 
-  // NOVOS TOKENS
+  // TOKENS ESPECIAIS
   ink: "#292624",
   inkDark: "#1F1C1A",
   inkSoft: "#3B3734",
@@ -76,32 +76,26 @@ export const sectionColors = {
     background: colors.primaryLight,
     foreground: colors.primary,
   },
-
   create: {
     background: colors.terracottaLight,
     foreground: colors.terracotta,
   },
-
   inspiration: {
     background: colors.roseLight,
     foreground: colors.rose,
   },
-
   planning: {
     background: colors.blueLight,
     foreground: colors.blue,
   },
-
   script: {
     background: colors.amberLight,
     foreground: colors.amber,
   },
-
   editing: {
     background: colors.lavenderLight,
     foreground: colors.lavender,
   },
-
   success: {
     background: colors.sageLight,
     foreground: colors.sage,
@@ -113,27 +107,22 @@ export const statusColors = {
     background: colors.roseLight,
     foreground: colors.rose,
   },
-
   roteiro: {
     background: colors.amberLight,
     foreground: "#A8782C",
   },
-
   gravar: {
     background: colors.terracottaLight,
     foreground: colors.terracotta,
   },
-
   editar: {
     background: colors.lavenderLight,
     foreground: colors.lavender,
   },
-
   pronto: {
     background: colors.sageLight,
     foreground: colors.sage,
   },
-
   publicado: {
     background: colors.blueLight,
     foreground: colors.blue,
@@ -161,14 +150,27 @@ export const radius = {
   round: 999,
 };
 
+// Escala global de legibilidade.
+// Evitar usar tamanhos menores que labelSmall em novas telas.
 export const typography = {
   display: 34,
-  title: 28,
-  heading: 20,
-  subheading: 16,
-  body: 14,
+  title: 30,
+  heading: 24,
+  subheading: 18,
+  body: 15,
+  bodySmall: 13,
   caption: 12,
+  label: 11,
+  labelSmall: 10,
   tiny: 10,
+};
+
+export const fonts = {
+  regular: "Manrope_400Regular",
+  medium: "Manrope_500Medium",
+  semibold: "Manrope_600SemiBold",
+  bold: "Manrope_700Bold",
+  extraBold: "Manrope_800ExtraBold",
 };
 
 export const fontWeight = {
@@ -180,13 +182,26 @@ export const fontWeight = {
 };
 
 export const lineHeight = {
-  display: 41,
-  title: 34,
-  heading: 26,
-  subheading: 22,
-  body: 21,
-  caption: 17,
-  tiny: 14,
+  display: 42,
+  title: 38,
+  heading: 31,
+  subheading: 25,
+  body: 23,
+  bodySmall: 20,
+  caption: 18,
+  label: 16,
+  tiny: 15,
+};
+
+// Referência para qualquer nova tela do ContentFlow.
+export const readability = {
+  minReadable: 10,
+  metadata: 11,
+  secondary: 13,
+  body: 15,
+  cardTitle: 17,
+  sectionTitle: 24,
+  screenTitle: 30,
 };
 
 export const shadows = {
@@ -244,20 +259,4 @@ export const shadows = {
     shadowRadius: 22,
     elevation: 5,
   },
-  
-};
-
-export const fonts = {
-  regular: "Manrope_400Regular",
-
-  medium: "Manrope_500Medium",
-
-  semibold:
-    "Manrope_600SemiBold",
-
-  bold:
-    "Manrope_700Bold",
-
-  extraBold:
-    "Manrope_800ExtraBold",
 };

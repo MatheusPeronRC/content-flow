@@ -63,11 +63,8 @@ export default function PlanejarScreen() {
 
       return {
         date,
-
         key: toDateKey(date),
-
         dayName: DAY_NAMES[index],
-
         dayNumber: date.getDate(),
       };
     });
@@ -168,7 +165,6 @@ export default function PlanejarScreen() {
           content.id === planningContent.id
             ? {
                 ...content,
-
                 plannedDate: date,
               }
             : content,
@@ -203,7 +199,7 @@ export default function PlanejarScreen() {
           </View>
 
           <View style={styles.headerMark}>
-            <Ionicons name="calendar-outline" size={21} color={colors.blue} />
+            <Ionicons name="calendar-outline" size={22} color={colors.blue} />
           </View>
         </View>
 
@@ -232,7 +228,7 @@ export default function PlanejarScreen() {
                     ? "checkmark"
                     : "flag-outline"
                 }
-                size={19}
+                size={20}
                 color={
                   remaining === 0 && weeklyTarget > 0
                     ? colors.sage
@@ -398,7 +394,7 @@ export default function PlanejarScreen() {
             <View style={styles.emptyDayMark}>
               <Ionicons
                 name="calendar-clear-outline"
-                size={20}
+                size={21}
                 color={colors.blue}
               />
             </View>
@@ -446,7 +442,7 @@ export default function PlanejarScreen() {
           <View style={styles.allPlanned}>
             <Ionicons
               name="checkmark-circle-outline"
-              size={20}
+              size={21}
               color={colors.sage}
             />
 
@@ -497,7 +493,7 @@ export default function PlanejarScreen() {
                     : "Planejar conteúdo"}
                 </Text>
 
-                <Text style={styles.sheetContent} numberOfLines={2}>
+                <Text style={styles.sheetContent} numberOfLines={3}>
                   {planningContent?.idea}
                 </Text>
               </View>
@@ -506,7 +502,7 @@ export default function PlanejarScreen() {
                 style={styles.sheetClose}
                 onPress={() => setPlanningContent(null)}
               >
-                <Ionicons name="close" size={19} color={colors.text} />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -575,11 +571,8 @@ export default function PlanejarScreen() {
 
 type PlanningCardProps = {
   content: ContentItem;
-
   onOpen: () => void;
-
   onPlan: () => void;
-
   unplanned?: boolean;
 };
 
@@ -616,7 +609,7 @@ function PlanningCard({
           },
         ]}
       >
-        <Ionicons name={status.icon} size={18} color={status.foreground} />
+        <Ionicons name={status.icon} size={19} color={status.foreground} />
       </View>
 
       <View style={styles.contentInfo}>
@@ -642,7 +635,7 @@ function PlanningCard({
           )}
         </View>
 
-        <Text style={styles.contentTitle} numberOfLines={2}>
+        <Text style={styles.contentTitle} numberOfLines={3}>
           {content.idea}
         </Text>
       </View>
@@ -795,7 +788,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
 
-    paddingBottom: 135,
+    paddingBottom: 140,
   },
 
   header: {
@@ -813,7 +806,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
 
-    lineHeight: 38,
+    lineHeight: 40,
 
     letterSpacing: -1,
 
@@ -823,9 +816,11 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    marginTop: 4,
+    marginTop: 6,
 
-    fontSize: 13,
+    fontSize: 14,
+
+    lineHeight: 21,
 
     fontFamily: fonts.regular,
 
@@ -833,8 +828,8 @@ const styles = StyleSheet.create({
   },
 
   headerMark: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
 
     marginTop: 3,
 
@@ -870,9 +865,9 @@ const styles = StyleSheet.create({
   },
 
   goalEyebrow: {
-    fontSize: 8,
+    fontSize: 10,
 
-    letterSpacing: 1.1,
+    letterSpacing: 1,
 
     fontFamily: fonts.bold,
 
@@ -880,9 +875,11 @@ const styles = StyleSheet.create({
   },
 
   goalTitle: {
-    marginTop: 4,
+    marginTop: 5,
 
-    fontSize: 21,
+    fontSize: 22,
+
+    lineHeight: 29,
 
     letterSpacing: -0.4,
 
@@ -892,8 +889,8 @@ const styles = StyleSheet.create({
   },
 
   goalStatus: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
 
     borderRadius: 14,
 
@@ -909,9 +906,9 @@ const styles = StyleSheet.create({
   },
 
   progressTrack: {
-    height: 5,
+    height: 6,
 
-    marginTop: 17,
+    marginTop: 18,
 
     overflow: "hidden",
 
@@ -929,11 +926,11 @@ const styles = StyleSheet.create({
   },
 
   goalHint: {
-    marginTop: 10,
+    marginTop: 11,
 
-    fontSize: 10,
+    fontSize: 12,
 
-    lineHeight: 15,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -951,8 +948,8 @@ const styles = StyleSheet.create({
   },
 
   weekArrow: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
@@ -972,9 +969,9 @@ const styles = StyleSheet.create({
   },
 
   weekNavLabel: {
-    fontSize: 8,
+    fontSize: 10,
 
-    letterSpacing: 1,
+    letterSpacing: 0.9,
 
     fontFamily: fonts.bold,
 
@@ -982,9 +979,11 @@ const styles = StyleSheet.create({
   },
 
   weekRange: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 14,
+    fontSize: 16,
+
+    lineHeight: 22,
 
     fontFamily: fonts.semibold,
 
@@ -996,7 +995,7 @@ const styles = StyleSheet.create({
 
     justifyContent: "space-between",
 
-    marginBottom: 32,
+    marginBottom: 34,
   },
 
   day: {
@@ -1008,11 +1007,11 @@ const styles = StyleSheet.create({
   dayName: {
     marginBottom: 8,
 
-    fontSize: 8,
+    fontSize: 10,
 
     fontFamily: fonts.semibold,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   dayNameSelected: {
@@ -1020,8 +1019,8 @@ const styles = StyleSheet.create({
   },
 
   dayNumberWrap: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
@@ -1045,7 +1044,7 @@ const styles = StyleSheet.create({
   },
 
   dayNumber: {
-    fontSize: 13,
+    fontSize: 14,
 
     fontFamily: fonts.semibold,
 
@@ -1090,13 +1089,13 @@ const styles = StyleSheet.create({
   },
 
   daySectionHeader: {
-    marginBottom: 14,
+    marginBottom: 15,
   },
 
   dayTitle: {
-    fontSize: 21,
+    fontSize: 24,
 
-    lineHeight: 27,
+    lineHeight: 31,
 
     letterSpacing: -0.5,
 
@@ -1106,9 +1105,11 @@ const styles = StyleSheet.create({
   },
 
   daySubtitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 11,
+    fontSize: 13,
+
+    lineHeight: 19,
 
     fontFamily: fonts.regular,
 
@@ -1116,9 +1117,9 @@ const styles = StyleSheet.create({
   },
 
   emptyDay: {
-    minHeight: 78,
+    minHeight: 84,
 
-    paddingVertical: 14,
+    paddingVertical: 15,
 
     flexDirection: "row",
 
@@ -1132,8 +1133,8 @@ const styles = StyleSheet.create({
   },
 
   emptyDayMark: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
 
     marginRight: spacing.md,
 
@@ -1147,7 +1148,9 @@ const styles = StyleSheet.create({
   },
 
   emptyDayTitle: {
-    fontSize: 13,
+    fontSize: 15,
+
+    lineHeight: 21,
 
     fontFamily: fonts.semibold,
 
@@ -1155,11 +1158,11 @@ const styles = StyleSheet.create({
   },
 
   emptyDayText: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 10,
+    fontSize: 12,
 
-    lineHeight: 15,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -1173,7 +1176,7 @@ const styles = StyleSheet.create({
   unplannedHeader: {
     marginTop: 38,
 
-    marginBottom: 14,
+    marginBottom: 15,
 
     flexDirection: "row",
 
@@ -1183,7 +1186,9 @@ const styles = StyleSheet.create({
   },
 
   unplannedTitle: {
-    fontSize: 21,
+    fontSize: 24,
+
+    lineHeight: 31,
 
     letterSpacing: -0.5,
 
@@ -1193,9 +1198,11 @@ const styles = StyleSheet.create({
   },
 
   unplannedSubtitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 11,
+    fontSize: 13,
+
+    lineHeight: 19,
 
     fontFamily: fonts.regular,
 
@@ -1203,9 +1210,9 @@ const styles = StyleSheet.create({
   },
 
   unplannedCount: {
-    minWidth: 28,
+    minWidth: 30,
 
-    height: 28,
+    height: 30,
 
     paddingHorizontal: 8,
 
@@ -1219,7 +1226,7 @@ const styles = StyleSheet.create({
   },
 
   unplannedCountText: {
-    fontSize: 10,
+    fontSize: 11,
 
     fontFamily: fonts.bold,
 
@@ -1231,15 +1238,15 @@ const styles = StyleSheet.create({
   },
 
   contentCard: {
-    minHeight: 82,
+    minHeight: 88,
 
     position: "relative",
 
     overflow: "hidden",
 
-    padding: 13,
+    padding: 14,
 
-    paddingLeft: 16,
+    paddingLeft: 17,
 
     flexDirection: "row",
 
@@ -1269,8 +1276,8 @@ const styles = StyleSheet.create({
   },
 
   contentIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
 
     marginRight: 12,
 
@@ -1294,9 +1301,9 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    fontSize: 8,
+    fontSize: 10,
 
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
 
     fontFamily: fonts.bold,
   },
@@ -1313,19 +1320,19 @@ const styles = StyleSheet.create({
   },
 
   formatText: {
-    fontSize: 9,
+    fontSize: 10,
 
-    fontFamily: fonts.regular,
+    fontFamily: fonts.medium,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   contentTitle: {
-    marginTop: 4,
+    marginTop: 5,
 
-    fontSize: 13,
+    fontSize: 15,
 
-    lineHeight: 18,
+    lineHeight: 22,
 
     fontFamily: fonts.semibold,
 
@@ -1333,11 +1340,11 @@ const styles = StyleSheet.create({
   },
 
   planButton: {
-    minHeight: 36,
+    minHeight: 38,
 
     marginLeft: 8,
 
-    paddingHorizontal: 10,
+    paddingHorizontal: 11,
 
     borderRadius: 12,
 
@@ -1351,7 +1358,7 @@ const styles = StyleSheet.create({
   },
 
   planButtonText: {
-    fontSize: 9,
+    fontSize: 11,
 
     fontFamily: fonts.semibold,
 
@@ -1367,7 +1374,7 @@ const styles = StyleSheet.create({
   },
 
   allPlanned: {
-    minHeight: 76,
+    minHeight: 82,
 
     flexDirection: "row",
 
@@ -1375,7 +1382,7 @@ const styles = StyleSheet.create({
 
     gap: 12,
 
-    paddingVertical: 14,
+    paddingVertical: 15,
 
     borderTopWidth: 1,
 
@@ -1385,7 +1392,9 @@ const styles = StyleSheet.create({
   },
 
   allPlannedTitle: {
-    fontSize: 13,
+    fontSize: 15,
+
+    lineHeight: 21,
 
     fontFamily: fonts.semibold,
 
@@ -1393,9 +1402,11 @@ const styles = StyleSheet.create({
   },
 
   allPlannedText: {
-    marginTop: 2,
+    marginTop: 3,
 
-    fontSize: 10,
+    fontSize: 12,
+
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -1446,7 +1457,9 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
-    fontSize: 23,
+    fontSize: 24,
+
+    lineHeight: 31,
 
     letterSpacing: -0.5,
 
@@ -1460,9 +1473,9 @@ const styles = StyleSheet.create({
 
     marginTop: 6,
 
-    fontSize: 12,
+    fontSize: 13,
 
-    lineHeight: 18,
+    lineHeight: 20,
 
     fontFamily: fonts.regular,
 
@@ -1470,8 +1483,8 @@ const styles = StyleSheet.create({
   },
 
   sheetClose: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
@@ -1487,7 +1500,9 @@ const styles = StyleSheet.create({
 
     marginBottom: 12,
 
-    fontSize: 11,
+    fontSize: 13,
+
+    lineHeight: 19,
 
     fontFamily: fonts.semibold,
 
@@ -1505,7 +1520,7 @@ const styles = StyleSheet.create({
   sheetDay: {
     flex: 1,
 
-    height: 64,
+    height: 68,
 
     borderRadius: 16,
 
@@ -1521,11 +1536,11 @@ const styles = StyleSheet.create({
   },
 
   sheetDayName: {
-    fontSize: 7,
+    fontSize: 9,
 
     fontFamily: fonts.semibold,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   sheetDayNameSelected: {
@@ -1535,7 +1550,7 @@ const styles = StyleSheet.create({
   sheetDayNumber: {
     marginTop: 4,
 
-    fontSize: 15,
+    fontSize: 16,
 
     fontFamily: fonts.bold,
 
@@ -1547,7 +1562,7 @@ const styles = StyleSheet.create({
   },
 
   removePlanning: {
-    minHeight: 44,
+    minHeight: 46,
 
     marginTop: 18,
 
@@ -1561,7 +1576,7 @@ const styles = StyleSheet.create({
   },
 
   removePlanningText: {
-    fontSize: 11,
+    fontSize: 12,
 
     fontFamily: fonts.semibold,
 

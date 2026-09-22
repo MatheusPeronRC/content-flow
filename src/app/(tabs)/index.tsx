@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   },
 
   brandName: {
-    fontSize: 16,
+    fontSize: 17,
 
     fontFamily: fonts.bold,
 
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: spacing.sm,
 
-    fontSize: 14,
+    fontSize: 15,
 
     fontFamily: fonts.semibold,
 
@@ -612,13 +612,13 @@ const styles = StyleSheet.create({
   },
 
   heroText: {
-    maxWidth: 320,
+    maxWidth: 325,
 
     marginTop: 12,
 
-    fontSize: 14,
+    fontSize: 15,
 
-    lineHeight: 21,
+    lineHeight: 23,
 
     fontFamily: fonts.regular,
 
@@ -648,11 +648,11 @@ const styles = StyleSheet.create({
   },
 
   weekGoalLabel: {
-    fontSize: 9,
+    fontSize: 10,
 
-    letterSpacing: 1.2,
+    letterSpacing: 1,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.terracotta,
   },
@@ -717,17 +717,19 @@ const styles = StyleSheet.create({
   goalHint: {
     flex: 1,
 
-    fontSize: 11,
+    fontSize: 12,
 
-    lineHeight: 16,
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
 
     color: "#CFC8C1",
   },
 
   completedText: {
-    fontSize: 10,
+    fontSize: 11,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.sageLight,
   },
@@ -739,11 +741,13 @@ const styles = StyleSheet.create({
 
     justifyContent: "space-between",
 
-    marginBottom: spacing.md,
+    marginBottom: 18,
   },
 
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
+
+    lineHeight: 31,
 
     letterSpacing: -0.6,
 
@@ -753,17 +757,21 @@ const styles = StyleSheet.create({
   },
 
   sectionSubtitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 12,
+    fontSize: 13,
+
+    lineHeight: 19,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
   textAction: {
-    fontSize: 12,
+    fontSize: 13,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.primary,
   },
@@ -798,19 +806,23 @@ const styles = StyleSheet.create({
   },
 
   emptyTodayTitle: {
-    fontSize: 14,
+    fontSize: 15,
 
-    fontWeight: "700",
+    lineHeight: 21,
+
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
 
   emptyTodayText: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 11,
+    fontSize: 13,
 
-    lineHeight: 16,
+    lineHeight: 19,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
@@ -835,9 +847,9 @@ const styles = StyleSheet.create({
   },
 
   todayContent: {
-    minHeight: 72,
+    minHeight: 78,
 
-    paddingVertical: 12,
+    paddingVertical: 13,
 
     flexDirection: "row",
 
@@ -862,21 +874,21 @@ const styles = StyleSheet.create({
   },
 
   todayStatus: {
-    fontSize: 9,
+    fontSize: 10,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 
   todayContentTitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 14,
+    fontSize: 15,
 
-    lineHeight: 19,
+    lineHeight: 22,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.text,
   },
@@ -910,16 +922,16 @@ const styles = StyleSheet.create({
   dayLabel: {
     marginBottom: 8,
 
-    fontSize: 8,
+    fontSize: 10,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.textMuted,
   },
 
   dayCircle: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
 
     borderRadius: radius.round,
 
@@ -947,9 +959,9 @@ const styles = StyleSheet.create({
   },
 
   dayNumber: {
-    fontSize: 13,
+    fontSize: 14,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
   },
@@ -957,19 +969,19 @@ const styles = StyleSheet.create({
   dayNumberToday: {
     color: colors.primary,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
 
   dayNumberPlanned: {
     color: colors.terracotta,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
 
   dayNumberCompleted: {
     color: colors.surface,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
 
   dayDot: {
@@ -1010,9 +1022,9 @@ const styles = StyleSheet.create({
   },
 
   weekActionText: {
-    fontSize: 13,
+    fontSize: 14,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.blue,
   },
@@ -1049,21 +1061,25 @@ const styles = StyleSheet.create({
   },
 
   inspirationTitle: {
-    fontSize: 15,
+    fontSize: 16,
 
-    fontWeight: "700",
+    lineHeight: 22,
+
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
 
   inspirationText: {
-    marginTop: 3,
+    marginTop: 4,
 
     paddingRight: spacing.sm,
 
-    fontSize: 11,
+    fontSize: 13,
 
-    lineHeight: 16,
+    lineHeight: 19,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },

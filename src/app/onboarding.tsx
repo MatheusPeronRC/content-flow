@@ -1,8 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -13,157 +16,132 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { saveCreatorProfile } from "../services/profileStorage";
+import {
+    getCreatorProfile,
+    saveCreatorProfile,
+} from "../services/profileStorage";
 
-import { ContentFormat, CreatorObjective } from "../types/creatorProfile";
+import {
+    ContentFormat,
+    CreatorObjective,
+    CreatorProfile,
+} from "../types/creatorProfile";
 
-import { colors, radius, spacing, typography } from "../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../constants/theme";
+
+const TOTAL_STEPS = 4;
 
 const professionSuggestions = [
   "Nutricionista",
   "Personal trainer",
   "Fisioterapeuta",
   "Dentista",
-  "Psicólogo",
-  "Fotógrafo",
+  "Esteticista",
+  "Fotógrafo(a)",
   "Designer",
+  "Consultor(a)",
 ];
 
-const objectives: {
+const objectiveOptions: Array<{
   value: CreatorObjective;
   title: string;
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
   background: string;
-  foreground: string;
-}[] = [
+  color: string;
+}> = [
   {
     value: "clientes",
-
     title: "Atrair clientes",
-
-    description: "Transformar conteúdo em novas oportunidades e atendimentos.",
-
+    description:
+      "Criar conteúdo para gerar oportunidades e novos atendimentos.",
     icon: "people-outline",
-
     background: colors.terracottaLight,
-
-    foreground: colors.terracotta,
+    color: colors.terracotta,
   },
-
   {
     value: "autoridade",
-
     title: "Construir autoridade",
-
-    description: "Ser lembrado como referência na sua área.",
-
+    description: "Ser lembrado como referência no seu assunto.",
     icon: "ribbon-outline",
-
     background: colors.amberLight,
-
-    foreground: colors.amber,
+    color: colors.amber,
   },
-
   {
     value: "audiencia",
-
     title: "Crescer audiência",
-
-    description: "Alcançar mais pessoas e construir uma comunidade.",
-
+    description: "Alcançar mais pessoas e criar uma comunidade.",
     icon: "trending-up-outline",
-
     background: colors.blueLight,
-
-    foreground: colors.blue,
+    color: colors.blue,
   },
-
   {
     value: "vendas",
-
-    title: "Vender produtos ou serviços",
-
-    description: "Usar seu conteúdo para apoiar suas vendas.",
-
-    icon: "bag-outline",
-
-    background: colors.sageLight,
-
-    foreground: colors.sage,
+    title: "Vender mais",
+    description: "Usar conteúdo para apresentar e vender produtos ou serviços.",
+    icon: "bag-handle-outline",
+    background: colors.roseLight,
+    color: colors.rose,
   },
 ];
 
-const frequencies = [
+const frequencyOptions = [
   {
     value: 2,
-    title: "1–2x",
-    description: "Começar com calma",
+    label: "2 por semana",
+    description: "Um ritmo leve para começar.",
   },
-
   {
     value: 3,
-    title: "3x",
-    description: "Bom equilíbrio",
+    label: "3 por semana",
+    description: "Consistência sem pesar na rotina.",
   },
-
   {
     value: 5,
-    title: "4–5x",
-    description: "Ritmo consistente",
+    label: "5 por semana",
+    description: "Uma presença mais frequente.",
   },
-
   {
     value: 7,
-    title: "Todos os dias",
-    description: "Alta frequência",
+    label: "Todos os dias",
+    description: "Conteúdo como parte da rotina diária.",
   },
 ];
 
-const formats: {
+const formatOptions: Array<{
   value: ContentFormat;
   icon: keyof typeof Ionicons.glyphMap;
+  description: string;
   background: string;
-  foreground: string;
-}[] = [
+  color: string;
+}> = [
   {
     value: "Reel",
-
     icon: "videocam-outline",
-
+    description: "Vídeos curtos e diretos.",
     background: colors.terracottaLight,
-
-    foreground: colors.terracotta,
+    color: colors.terracotta,
   },
-
   {
     value: "Carrossel",
-
     icon: "albums-outline",
-
+    description: "Conteúdo visual em etapas.",
     background: colors.amberLight,
-
-    foreground: colors.amber,
+    color: colors.amber,
   },
-
   {
     value: "Story",
-
     icon: "phone-portrait-outline",
-
+    description: "Conteúdo rápido e próximo.",
     background: colors.lavenderLight,
-
-    foreground: colors.lavender,
+    color: colors.lavender,
   },
-
   {
     value: "Foto",
-
     icon: "image-outline",
-
+    description: "Imagem acompanhada de texto.",
     background: colors.blueLight,
-
-    foreground: colors.blue,
+    color: colors.blue,
   },
 ];
 
@@ -171,16 +149,47 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(1);
 
   const [profession, setProfession] = useState("");
-
   const [objective, setObjective] = useState<CreatorObjective | null>(null);
-
   const [postsPerWeek, setPostsPerWeek] = useState<number | null>(null);
+  const [formats, setFormats] = useState<ContentFormat[]>([]);
 
-  const [selectedFormats, setSelectedFormats] = useState<ContentFormat[]>([]);
-
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasExistingProfile, setHasExistingProfile] = useState(false);
 
-  function canContinue() {
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      try {
+        const profile = await getCreatorProfile();
+
+        if (!active || !profile) {
+          return;
+        }
+
+        setProfession(profile.profession ?? "");
+        setObjective(profile.objective ?? null);
+        setPostsPerWeek(profile.postsPerWeek ?? null);
+        setFormats(profile.formats ?? []);
+        setHasExistingProfile(Boolean(profile.onboardingCompleted));
+      } catch (error) {
+        console.error("Erro ao carregar perfil no onboarding:", error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const canContinue = useMemo(() => {
     switch (step) {
       case 1:
         return profession.trim().length >= 2;
@@ -192,15 +201,77 @@ export default function OnboardingScreen() {
         return postsPerWeek !== null;
 
       case 4:
-        return selectedFormats.length > 0;
+        return formats.length > 0;
 
       default:
         return false;
     }
+  }, [step, profession, objective, postsPerWeek, formats]);
+
+  function handleBack() {
+    if (step > 1) {
+      setStep((current) => current - 1);
+      return;
+    }
+
+    if (hasExistingProfile) {
+      router.back();
+    }
+  }
+
+  function handleContinue() {
+    if (!canContinue) {
+      return;
+    }
+
+    if (step < TOTAL_STEPS) {
+      setStep((current) => current + 1);
+      return;
+    }
+
+    handleFinish();
+  }
+
+  async function handleFinish() {
+    if (
+      !profession.trim() ||
+      !objective ||
+      !postsPerWeek ||
+      formats.length === 0 ||
+      saving
+    ) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const existingProfile = await getCreatorProfile();
+
+      const now = new Date().toISOString();
+
+      const profile: CreatorProfile = {
+        profession: profession.trim(),
+        objective,
+        postsPerWeek,
+        formats,
+        onboardingCompleted: true,
+        createdAt: existingProfile?.createdAt ?? now,
+        updatedAt: now,
+      };
+
+      await saveCreatorProfile(profile);
+
+      router.replace("/");
+    } catch (error) {
+      console.error("Erro ao finalizar onboarding:", error);
+    } finally {
+      setSaving(false);
+    }
   }
 
   function toggleFormat(format: ContentFormat) {
-    setSelectedFormats((current) => {
+    setFormats((current) => {
       if (current.includes(format)) {
         return current.filter((item) => item !== format);
       }
@@ -209,111 +280,100 @@ export default function OnboardingScreen() {
     });
   }
 
-  function handleBack() {
-    if (step <= 1) {
-      return;
-    }
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.terracotta} />
 
-    setStep((current) => current - 1);
-  }
-
-  async function handleContinue() {
-    if (!canContinue() || saving) {
-      return;
-    }
-
-    if (step < 4) {
-      setStep((current) => current + 1);
-
-      return;
-    }
-
-    if (!objective || !postsPerWeek) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const now = new Date().toISOString();
-
-      await saveCreatorProfile({
-        profession: profession.trim(),
-
-        objective,
-
-        postsPerWeek,
-
-        formats: selectedFormats,
-
-        onboardingCompleted: true,
-
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      router.replace("/");
-    } catch (error) {
-      console.error("Erro ao salvar onboarding:", error);
-
-      setSaving(false);
-    }
+          <Text style={styles.loadingText}>Preparando seu espaço...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.top}>
-          <View style={styles.topRow}>
-            {step > 1 ? (
-              <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={styles.topBar}>
+          <View style={styles.topAction}>
+            {(step > 1 || hasExistingProfile) && (
+              <TouchableOpacity
+                style={styles.backButton}
+                activeOpacity={0.8}
+                onPress={handleBack}
+              >
                 <Ionicons name="arrow-back" size={20} color={colors.text} />
               </TouchableOpacity>
-            ) : (
-              <View style={styles.backSpace} />
             )}
-
-            <Text style={styles.stepText}>{step} de 4</Text>
-
-            <View style={styles.backSpace} />
           </View>
 
-          <View style={styles.progress}>
-            {[1, 2, 3, 4].map((item) => (
-              <View
-                key={item}
-                style={[
-                  styles.progressItem,
+          <View style={styles.brand}>
+            <View style={styles.brandMark}>
+              <Ionicons name="sparkles" size={15} color={colors.surface} />
+            </View>
 
-                  item <= step && styles.progressItemActive,
-                ]}
-              />
-            ))}
+            <Text style={styles.brandName}>ContentFlow</Text>
+          </View>
+
+          <View style={styles.topAction} />
+        </View>
+
+        <View style={styles.progressArea}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.stepLabel}>
+              PASSO {step} DE {TOTAL_STEPS}
+            </Text>
+
+            <Text style={styles.progressPercent}>
+              {Math.round((step / TOTAL_STEPS) * 100)}%
+            </Text>
+          </View>
+
+          <View style={styles.progressTrack}>
+            {Array.from({
+              length: TOTAL_STEPS,
+            }).map((_, index) => {
+              const active = index + 1 <= step;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressSegment,
+                    active && styles.progressSegmentActive,
+                  ]}
+                />
+              );
+            })}
           </View>
         </View>
 
         <ScrollView
           contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {step === 1 && (
-            <ProfessionStep profession={profession} onChange={setProfession} />
+            <ProfessionStep
+              profession={profession}
+              onChangeProfession={setProfession}
+            />
           )}
 
           {step === 2 && (
-            <ObjectiveStep value={objective} onChange={setObjective} />
+            <ObjectiveStep objective={objective} onSelect={setObjective} />
           )}
 
           {step === 3 && (
-            <FrequencyStep value={postsPerWeek} onChange={setPostsPerWeek} />
+            <FrequencyStep value={postsPerWeek} onSelect={setPostsPerWeek} />
           )}
 
           {step === 4 && (
-            <FormatStep
-              selectedFormats={selectedFormats}
-              onToggle={toggleFormat}
-            />
+            <FormatsStep formats={formats} onToggle={toggleFormat} />
           )}
         </ScrollView>
 
@@ -321,167 +381,193 @@ export default function OnboardingScreen() {
           <TouchableOpacity
             style={[
               styles.continueButton,
-
-              !canContinue() && styles.continueButtonDisabled,
+              !canContinue && styles.continueButtonDisabled,
             ]}
-            disabled={!canContinue() || saving}
-            activeOpacity={0.85}
+            disabled={!canContinue || saving}
+            activeOpacity={0.86}
             onPress={handleContinue}
           >
+            {step === TOTAL_STEPS ? (
+              <View style={styles.continueMark}>
+                <Ionicons
+                  name="sparkles"
+                  size={17}
+                  color={canContinue ? colors.terracotta : colors.textMuted}
+                />
+              </View>
+            ) : null}
+
             <Text
               style={[
                 styles.continueText,
-
-                !canContinue() && styles.continueTextDisabled,
+                !canContinue && styles.continueTextDisabled,
               ]}
             >
               {saving
-                ? "Salvando..."
-                : step === 4
-                  ? "Começar no ContentFlow"
+                ? "Preparando..."
+                : step === TOTAL_STEPS
+                  ? "Entrar no ContentFlow"
                   : "Continuar"}
             </Text>
 
-            {!saving && (
-              <Ionicons
-                name={step === 4 ? "sparkles-outline" : "arrow-forward"}
-                size={18}
-                color={canContinue() ? colors.surface : colors.textMuted}
-              />
-            )}
+            <Ionicons
+              name="arrow-forward"
+              size={19}
+              color={canContinue ? colors.surface : colors.textMuted}
+            />
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 type ProfessionStepProps = {
   profession: string;
-
-  onChange: (value: string) => void;
+  onChangeProfession: (value: string) => void;
 };
 
-function ProfessionStep({ profession, onChange }: ProfessionStepProps) {
+function ProfessionStep({
+  profession,
+  onChangeProfession,
+}: ProfessionStepProps) {
   return (
     <>
-      <StepHeader
+      <StepIntro
         eyebrow="SOBRE VOCÊ"
-        title="O que você faz?"
-        description="O ContentFlow vai usar isso para entender melhor o tipo de conteúdo que você cria."
+        title={"Com o que você\ntrabalha?"}
+        description="Isso ajuda o ContentFlow a organizar uma experiência mais próxima da sua rotina de criação."
       />
 
-      <Text style={styles.inputLabel}>Sua profissão ou nicho</Text>
+      <View style={styles.inputSection}>
+        <Text style={styles.fieldLabel}>PROFISSÃO OU NICHO</Text>
 
-      <View style={styles.professionInput}>
-        <Ionicons
-          name="briefcase-outline"
-          size={20}
-          color={colors.terracotta}
-        />
+        <View
+          style={[
+            styles.professionInputWrap,
+            profession.trim() && styles.professionInputWrapActive,
+          ]}
+        >
+          <View style={styles.professionMark}>
+            <Ionicons
+              name="briefcase-outline"
+              size={20}
+              color={colors.terracotta}
+            />
+          </View>
 
-        <TextInput
-          value={profession}
-          onChangeText={onChange}
-          placeholder="Ex.: Nutricionista"
-          placeholderTextColor={colors.textMuted}
-          style={styles.professionTextInput}
-          autoCapitalize="sentences"
-        />
-      </View>
+          <TextInput
+            value={profession}
+            onChangeText={onChangeProfession}
+            autoCapitalize="sentences"
+            placeholder="Ex.: Nutricionista, designer, personal trainer..."
+            placeholderTextColor={colors.textMuted}
+            style={styles.professionInput}
+            returnKeyType="done"
+          />
+        </View>
 
-      <Text style={styles.suggestionLabel}>Algumas sugestões</Text>
+        <Text style={styles.suggestionsLabel}>ALGUMAS IDEIAS</Text>
 
-      <View style={styles.suggestions}>
-        {professionSuggestions.map((item) => {
-          const selected = profession === item;
+        <View style={styles.suggestions}>
+          {professionSuggestions.map((item) => {
+            const selected = profession === item;
 
-          return (
-            <TouchableOpacity
-              key={item}
-              style={[styles.suggestion, selected && styles.suggestionSelected]}
-              onPress={() => onChange(item)}
-            >
-              <Text
+            return (
+              <TouchableOpacity
+                key={item}
                 style={[
-                  styles.suggestionText,
-
-                  selected && styles.suggestionTextSelected,
+                  styles.suggestionChip,
+                  selected && styles.suggestionChipSelected,
                 ]}
+                activeOpacity={0.8}
+                onPress={() => onChangeProfession(item)}
               >
-                {item}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                <Text
+                  style={[
+                    styles.suggestionText,
+                    selected && styles.suggestionTextSelected,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-      <View style={styles.tip}>
-        <Ionicons
-          name="information-circle-outline"
-          size={19}
-          color={colors.blue}
-        />
+        <View style={styles.helper}>
+          <Ionicons
+            name="information-circle-outline"
+            size={17}
+            color={colors.textSecondary}
+          />
 
-        <Text style={styles.tipText}>
-          Não encontrou sua profissão? Digite normalmente no campo acima.
-        </Text>
+          <Text style={styles.helperText}>
+            Não encontrou a sua? Digite livremente no campo acima.
+          </Text>
+        </View>
       </View>
     </>
   );
 }
 
 type ObjectiveStepProps = {
-  value: CreatorObjective | null;
-
-  onChange: (objective: CreatorObjective) => void;
+  objective: CreatorObjective | null;
+  onSelect: (value: CreatorObjective) => void;
 };
 
-function ObjectiveStep({ value, onChange }: ObjectiveStepProps) {
+function ObjectiveStep({ objective, onSelect }: ObjectiveStepProps) {
   return (
     <>
-      <StepHeader
+      <StepIntro
         eyebrow="SEU OBJETIVO"
-        title="O que você quer conquistar com seu conteúdo?"
-        description="Escolha seu principal objetivo neste momento. Você poderá mudar isso depois."
+        title={"O que você quer\nconquistar com conteúdo?"}
+        description="Não precisa ser definitivo. Você poderá mudar essa escolha depois."
       />
 
       <View style={styles.optionList}>
-        {objectives.map((item) => {
-          const selected = value === item.value;
+        {objectiveOptions.map((item) => {
+          const selected = objective === item.value;
 
           return (
             <TouchableOpacity
               key={item.value}
               style={[
-                styles.objectiveCard,
-
-                selected && styles.objectiveCardSelected,
+                styles.largeOption,
+                selected && styles.largeOptionSelected,
               ]}
-              onPress={() => onChange(item.value)}
+              activeOpacity={0.85}
+              onPress={() => onSelect(item.value)}
             >
               <View
                 style={[
-                  styles.objectiveIcon,
-
+                  styles.largeOptionMark,
                   {
                     backgroundColor: item.background,
                   },
                 ]}
               >
-                <Ionicons name={item.icon} size={22} color={item.foreground} />
+                <Ionicons name={item.icon} size={22} color={item.color} />
               </View>
 
-              <View style={styles.objectiveContent}>
-                <Text style={styles.objectiveTitle}>{item.title}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.largeOptionTitle}>{item.title}</Text>
 
-                <Text style={styles.objectiveDescription}>
+                <Text style={styles.largeOptionDescription}>
                   {item.description}
                 </Text>
               </View>
 
-              <View style={[styles.radio, selected && styles.radioSelected]}>
-                {selected && <View style={styles.radioDot} />}
+              <View
+                style={[
+                  styles.selectionCircle,
+                  selected && styles.selectionCircleSelected,
+                ]}
+              >
+                {selected && (
+                  <Ionicons name="checkmark" size={14} color={colors.surface} />
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -493,142 +579,61 @@ function ObjectiveStep({ value, onChange }: ObjectiveStepProps) {
 
 type FrequencyStepProps = {
   value: number | null;
-
-  onChange: (value: number) => void;
+  onSelect: (value: number) => void;
 };
 
-function FrequencyStep({ value, onChange }: FrequencyStepProps) {
+function FrequencyStep({ value, onSelect }: FrequencyStepProps) {
   return (
     <>
-      <StepHeader
-        eyebrow="SUA ROTINA"
-        title="Quantas vezes você quer publicar por semana?"
-        description="Escolha um ritmo realista. Consistência vale mais do que tentar publicar demais."
+      <StepIntro
+        eyebrow="SEU RITMO"
+        title={"Quantos conteúdos\ncabem na sua semana?"}
+        description="Vamos usar isso como uma meta de planejamento — sem cobrança e sem transformar conteúdo em obrigação."
       />
 
       <View style={styles.frequencyList}>
-        {frequencies.map((item) => {
+        {frequencyOptions.map((item) => {
           const selected = value === item.value;
 
           return (
             <TouchableOpacity
               key={item.value}
               style={[
-                styles.frequencyCard,
-
-                selected && styles.frequencyCardSelected,
+                styles.frequencyOption,
+                selected && styles.frequencyOptionSelected,
               ]}
-              onPress={() => onChange(item.value)}
+              activeOpacity={0.85}
+              onPress={() => onSelect(item.value)}
             >
-              <View>
+              <View
+                style={[
+                  styles.frequencyNumber,
+                  selected && styles.frequencyNumberSelected,
+                ]}
+              >
                 <Text
                   style={[
-                    styles.frequencyTitle,
-
-                    selected && styles.frequencyTitleSelected,
+                    styles.frequencyNumberText,
+                    selected && styles.frequencyNumberTextSelected,
                   ]}
                 >
-                  {item.title}
+                  {item.value}
                 </Text>
+              </View>
 
-                <Text
-                  style={[
-                    styles.frequencyDescription,
+              <View style={{ flex: 1 }}>
+                <Text style={styles.frequencyTitle}>{item.label}</Text>
 
-                    selected && styles.frequencyDescriptionSelected,
-                  ]}
-                >
+                <Text style={styles.frequencyDescription}>
                   {item.description}
-                </Text>
-              </View>
-
-              <View
-                style={[
-                  styles.frequencyCheck,
-
-                  selected && styles.frequencyCheckSelected,
-                ]}
-              >
-                {selected && (
-                  <Ionicons name="checkmark" size={16} color={colors.surface} />
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={styles.frequencyHint}>
-        <Ionicons name="calendar-outline" size={21} color={colors.blue} />
-
-        <Text style={styles.frequencyHintText}>
-          Essa escolha será usada como sua meta semanal no planejamento.
-        </Text>
-      </View>
-    </>
-  );
-}
-
-type FormatStepProps = {
-  selectedFormats: ContentFormat[];
-
-  onToggle: (format: ContentFormat) => void;
-};
-
-function FormatStep({ selectedFormats, onToggle }: FormatStepProps) {
-  return (
-    <>
-      <StepHeader
-        eyebrow="SEUS FORMATOS"
-        title="O que você gosta de publicar?"
-        description="Escolha todos que fizerem sentido para você."
-      />
-
-      <View style={styles.formatGrid}>
-        {formats.map((item) => {
-          const selected = selectedFormats.includes(item.value);
-
-          return (
-            <TouchableOpacity
-              key={item.value}
-              style={[
-                styles.formatCard,
-
-                selected && {
-                  borderColor: item.foreground,
-
-                  backgroundColor: item.background,
-                },
-              ]}
-              onPress={() => onToggle(item.value)}
-            >
-              <View
-                style={[
-                  styles.formatIcon,
-
-                  {
-                    backgroundColor: selected
-                      ? colors.surface
-                      : item.background,
-                  },
-                ]}
-              >
-                <Ionicons name={item.icon} size={25} color={item.foreground} />
-              </View>
-
-              <View>
-                <Text style={styles.formatTitle}>{item.value}</Text>
-
-                <Text style={styles.formatSubtitle}>
-                  {selected ? "Selecionado" : "Toque para selecionar"}
                 </Text>
               </View>
 
               {selected && (
                 <Ionicons
                   name="checkmark-circle"
-                  size={22}
-                  color={item.foreground}
+                  size={24}
+                  color={colors.blue}
                 />
               )}
             </TouchableOpacity>
@@ -636,20 +641,95 @@ function FormatStep({ selectedFormats, onToggle }: FormatStepProps) {
         })}
       </View>
 
-      <View style={styles.finishCard}>
-        <View style={styles.finishIcon}>
-          <Ionicons
-            name="sparkles-outline"
-            size={22}
-            color={colors.terracotta}
-          />
+      <View style={styles.weekPreview}>
+        <Text style={styles.weekPreviewLabel}>SUA FUTURA META</Text>
+
+        <Text style={styles.weekPreviewTitle}>
+          {value
+            ? `${value} ${value === 1 ? "conteúdo" : "conteúdos"} por semana`
+            : "Escolha um ritmo"}
+        </Text>
+
+        <Text style={styles.weekPreviewText}>
+          Essa meta aparece na Home e no planejamento semanal.
+        </Text>
+      </View>
+    </>
+  );
+}
+
+type FormatsStepProps = {
+  formats: ContentFormat[];
+  onToggle: (format: ContentFormat) => void;
+};
+
+function FormatsStep({ formats, onToggle }: FormatsStepProps) {
+  return (
+    <>
+      <StepIntro
+        eyebrow="SEUS FORMATOS"
+        title={"O que você costuma\ncriar?"}
+        description="Escolha todos que fizerem sentido. O ContentFlow continua flexível para outros formatos depois."
+      />
+
+      <View style={styles.formatGrid}>
+        {formatOptions.map((item) => {
+          const selected = formats.includes(item.value);
+
+          return (
+            <TouchableOpacity
+              key={item.value}
+              style={[styles.formatCard, selected && styles.formatCardSelected]}
+              activeOpacity={0.85}
+              onPress={() => onToggle(item.value)}
+            >
+              <View style={styles.formatCardTop}>
+                <View
+                  style={[
+                    styles.formatMark,
+                    {
+                      backgroundColor: item.background,
+                    },
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={22} color={item.color} />
+                </View>
+
+                <View
+                  style={[
+                    styles.selectionCircle,
+                    selected && styles.selectionCircleSelected,
+                  ]}
+                >
+                  {selected && (
+                    <Ionicons
+                      name="checkmark"
+                      size={14}
+                      color={colors.surface}
+                    />
+                  )}
+                </View>
+              </View>
+
+              <Text style={styles.formatTitle}>{item.value}</Text>
+
+              <Text style={styles.formatDescription}>{item.description}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.finishMessage}>
+        <View style={styles.finishMessageMark}>
+          <Ionicons name="sparkles" size={18} color={colors.terracotta} />
         </View>
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.finishTitle}>Tudo pronto</Text>
+          <Text style={styles.finishMessageTitle}>Pronto para começar.</Text>
 
-          <Text style={styles.finishDescription}>
-            Essas preferências poderão ser alteradas depois no seu perfil.
+          <Text style={styles.finishMessageText}>
+            Essas escolhas servem para adaptar o espaço à sua rotina, não para
+            limitar o que você pode criar.
           </Text>
         </View>
       </View>
@@ -657,15 +737,15 @@ function FormatStep({ selectedFormats, onToggle }: FormatStepProps) {
   );
 }
 
-type StepHeaderProps = {
+type StepIntroProps = {
   eyebrow: string;
   title: string;
   description: string;
 };
 
-function StepHeader({ eyebrow, title, description }: StepHeaderProps) {
+function StepIntro({ eyebrow, title, description }: StepIntroProps) {
   return (
-    <View style={styles.intro}>
+    <View style={styles.stepIntro}>
       <Text style={styles.eyebrow}>{eyebrow}</Text>
 
       <Text style={styles.title}>{title}</Text>
@@ -676,212 +756,235 @@ function StepHeader({ eyebrow, title, description }: StepHeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
-  container: {
+  loading: {
     flex: 1,
-  },
-
-  top: {
-    paddingHorizontal: spacing.lg,
-  },
-
-  topRow: {
-    height: 58,
-
-    flexDirection: "row",
-
     alignItems: "center",
-
-    justifyContent: "space-between",
-  },
-
-  backButton: {
-    width: 38,
-    height: 38,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    alignItems: "center",
-
     justifyContent: "center",
   },
 
-  backSpace: {
-    width: 38,
-  },
-
-  stepText: {
-    fontSize: typography.caption,
-
-    fontWeight: "700",
-
+  loadingText: {
+    marginTop: 12,
+    fontSize: 13,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  progress: {
+  topBar: {
+    height: 66,
+    paddingHorizontal: spacing.lg,
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
 
+  topAction: {
+    width: 42,
+    height: 42,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  brandMark: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: colors.terracotta,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  brandName: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    letterSpacing: -0.3,
+  },
+
+  progressArea: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: 6,
+    paddingBottom: 5,
+  },
+
+  progressHeader: {
+    marginBottom: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  stepLabel: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textSecondary,
+  },
+
+  progressPercent: {
+    fontSize: 11,
+    fontFamily: fonts.semibold,
+    color: colors.terracotta,
+  },
+
+  progressTrack: {
+    height: 5,
+    flexDirection: "row",
     gap: 6,
   },
 
-  progressItem: {
+  progressSegment: {
     flex: 1,
-
     height: 5,
-
     borderRadius: radius.round,
-
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
   },
 
-  progressItemActive: {
+  progressSegmentActive: {
     backgroundColor: colors.terracotta,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
-    paddingBottom: spacing.xl,
+    paddingBottom: 130,
   },
 
-  intro: {
-    paddingTop: spacing.xl,
-
-    paddingBottom: spacing.xl,
+  stepIntro: {
+    paddingTop: 36,
+    paddingBottom: 30,
   },
 
   eyebrow: {
-    marginBottom: spacing.sm,
-
-    fontSize: typography.tiny,
-
-    fontWeight: "800",
-
-    letterSpacing: 1.2,
-
+    marginBottom: 10,
+    fontSize: 10,
+    letterSpacing: 1,
+    fontFamily: fonts.bold,
     color: colors.terracotta,
   },
 
   title: {
-    maxWidth: 350,
-
-    fontSize: 29,
-
-    lineHeight: 35,
-
-    fontWeight: "700",
-
+    maxWidth: 345,
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -1,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
   description: {
-    marginTop: spacing.sm,
-
-    maxWidth: 350,
-
-    fontSize: typography.body,
-
-    lineHeight: 21,
-
+    maxWidth: 345,
+    marginTop: 13,
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  inputLabel: {
-    marginBottom: spacing.sm,
+  inputSection: {
+    paddingBottom: 10,
+  },
 
-    fontSize: typography.caption,
+  fieldLabel: {
+    marginBottom: 10,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textSecondary,
+  },
 
-    fontWeight: "700",
+  professionInputWrap: {
+    minHeight: 66,
+    paddingHorizontal: 13,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+  },
 
-    color: colors.text,
+  professionInputWrapActive: {
+    borderColor: colors.terracotta,
+  },
+
+  professionMark: {
+    width: 42,
+    height: 42,
+    marginRight: 11,
+    borderRadius: 13,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   professionInput: {
-    minHeight: 56,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: spacing.sm,
-
-    paddingHorizontal: spacing.md,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.surface,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-  },
-
-  professionTextInput: {
     flex: 1,
-
-    minHeight: 54,
-
-    fontSize: 16,
-
+    minHeight: 64,
+    paddingVertical: 0,
+    paddingRight: 6,
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: fonts.regular,
     color: colors.text,
   },
 
-  suggestionLabel: {
-    marginTop: spacing.xl,
-
-    marginBottom: spacing.sm,
-
-    fontSize: typography.caption,
-
-    fontWeight: "700",
-
+  suggestionsLabel: {
+    marginTop: 24,
+    marginBottom: 11,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
   },
 
   suggestions: {
     flexDirection: "row",
-
     flexWrap: "wrap",
-
-    gap: spacing.sm,
+    gap: 9,
   },
 
-  suggestion: {
-    paddingHorizontal: spacing.md,
-
-    paddingVertical: 10,
-
+  suggestionChip: {
+    minHeight: 42,
+    paddingHorizontal: 15,
     borderRadius: radius.round,
-
-    backgroundColor: colors.surfaceSoft,
-
+    backgroundColor: colors.surface,
     borderWidth: 1,
-
     borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  suggestionSelected: {
+  suggestionChipSelected: {
     backgroundColor: colors.terracottaLight,
-
     borderColor: colors.terracotta,
   },
 
   suggestionText: {
-    fontSize: typography.caption,
-
-    fontWeight: "600",
-
+    fontSize: 12,
+    fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
 
@@ -889,362 +992,304 @@ const styles = StyleSheet.create({
     color: colors.terracotta,
   },
 
-  tip: {
-    marginTop: spacing.xl,
-
+  helper: {
+    marginTop: 18,
     flexDirection: "row",
-
     alignItems: "flex-start",
-
-    gap: spacing.sm,
-
-    padding: spacing.md,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.blueLight,
+    gap: 7,
   },
 
-  tipText: {
+  helperText: {
     flex: 1,
-
-    fontSize: typography.caption,
-
+    fontSize: 12,
     lineHeight: 18,
-
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   optionList: {
-    gap: spacing.sm,
+    gap: 11,
   },
 
-  objectiveCard: {
-    minHeight: 94,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    padding: spacing.md,
-
-    borderRadius: radius.lg,
-
+  largeOption: {
+    minHeight: 92,
+    padding: 14,
+    borderRadius: 20,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    ...shadows.soft,
   },
 
-  objectiveCardSelected: {
-    borderColor: colors.primary,
-
-    borderWidth: 1.5,
+  largeOptionSelected: {
+    borderColor: colors.terracotta,
+    backgroundColor: colors.surfaceSoft,
   },
 
-  objectiveIcon: {
+  largeOptionMark: {
     width: 48,
     height: 48,
-
-    borderRadius: radius.md,
-
+    marginRight: 13,
+    borderRadius: 15,
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
-  objectiveContent: {
-    flex: 1,
-  },
-
-  objectiveTitle: {
-    fontSize: typography.subheading,
-
-    fontWeight: "700",
-
+  largeOptionTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  objectiveDescription: {
+  largeOptionDescription: {
+    maxWidth: 245,
     marginTop: 4,
-
-    paddingRight: spacing.sm,
-
-    fontSize: typography.caption,
-
-    lineHeight: 17,
-
+    paddingRight: 8,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  radio: {
-    width: 22,
-    height: 22,
-
+  selectionCircle: {
+    width: 26,
+    height: 26,
     borderRadius: radius.round,
-
     borderWidth: 1.5,
-
     borderColor: colors.border,
-
+    backgroundColor: colors.surface,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  radioSelected: {
-    borderColor: colors.primary,
-  },
-
-  radioDot: {
-    width: 12,
-    height: 12,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.primary,
+  selectionCircleSelected: {
+    borderColor: colors.terracotta,
+    backgroundColor: colors.terracotta,
   },
 
   frequencyList: {
-    gap: spacing.sm,
+    gap: 10,
   },
 
-  frequencyCard: {
+  frequencyOption: {
     minHeight: 78,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "space-between",
-
-    paddingHorizontal: spacing.lg,
-
-    borderRadius: radius.lg,
-
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 19,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
-  frequencyCardSelected: {
-    backgroundColor: colors.blue,
-
+  frequencyOptionSelected: {
     borderColor: colors.blue,
+    backgroundColor: colors.blueLight,
   },
 
-  frequencyTitle: {
-    fontSize: typography.heading,
+  frequencyNumber: {
+    width: 46,
+    height: 46,
+    marginRight: 13,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    fontWeight: "800",
+  frequencyNumberSelected: {
+    backgroundColor: colors.blue,
+  },
 
+  frequencyNumberText: {
+    fontSize: 18,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  frequencyTitleSelected: {
+  frequencyNumberTextSelected: {
     color: colors.surface,
+  },
+
+  frequencyTitle: {
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
 
   frequencyDescription: {
     marginTop: 3,
-
-    fontSize: typography.caption,
-
+    paddingRight: 8,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  frequencyDescriptionSelected: {
-    color: "#E5EFF3",
+  weekPreview: {
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 19,
+    backgroundColor: colors.terracottaLight,
   },
 
-  frequencyCheck: {
-    width: 28,
-    height: 28,
-
-    borderRadius: radius.round,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    alignItems: "center",
-
-    justifyContent: "center",
+  weekPreviewLabel: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
 
-  frequencyCheckSelected: {
-    backgroundColor: colors.primary,
-
-    borderColor: colors.primary,
+  weekPreviewTitle: {
+    marginTop: 5,
+    fontSize: 18,
+    lineHeight: 25,
+    fontFamily: fonts.bold,
+    color: colors.text,
   },
 
-  frequencyHint: {
-    marginTop: spacing.xl,
-
-    flexDirection: "row",
-
-    alignItems: "flex-start",
-
-    gap: spacing.sm,
-
-    padding: spacing.md,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.blueLight,
-  },
-
-  frequencyHintText: {
-    flex: 1,
-
-    fontSize: typography.caption,
-
+  weekPreviewText: {
+    marginTop: 4,
+    fontSize: 12,
     lineHeight: 18,
-
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   formatGrid: {
-    gap: spacing.sm,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
 
   formatCard: {
-    minHeight: 82,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    padding: spacing.md,
-
-    borderRadius: radius.lg,
-
+    width: "48.5%",
+    minHeight: 148,
+    padding: 14,
+    borderRadius: 20,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
+    ...shadows.soft,
   },
 
-  formatIcon: {
-    width: 46,
-    height: 46,
+  formatCardSelected: {
+    borderColor: colors.terracotta,
+  },
 
-    borderRadius: radius.md,
+  formatCardTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+  },
 
+  formatMark: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
   formatTitle: {
-    fontSize: typography.subheading,
-
-    fontWeight: "700",
-
+    marginTop: 16,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  formatSubtitle: {
-    marginTop: 3,
-
-    fontSize: typography.tiny,
-
+  formatDescription: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  finishCard: {
-    marginTop: spacing.xl,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    padding: spacing.md,
-
-    borderRadius: radius.lg,
-
+  finishMessage: {
+    marginTop: 18,
+    padding: 15,
+    borderRadius: 19,
     backgroundColor: colors.terracottaLight,
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
 
-  finishIcon: {
-    width: 44,
-    height: 44,
-
-    borderRadius: radius.md,
-
+  finishMessageMark: {
+    width: 36,
+    height: 36,
+    marginRight: 11,
+    borderRadius: 12,
     backgroundColor: colors.surface,
-
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
-  finishTitle: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
+  finishMessageTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  finishDescription: {
+  finishMessageText: {
     marginTop: 3,
-
-    fontSize: typography.caption,
-
-    lineHeight: 17,
-
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   footer: {
-    padding: spacing.lg,
-
-    paddingTop: spacing.md,
-
-    borderTopWidth: 1,
-
-    borderTopColor: colors.border,
-
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 10 : 18,
     backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 
   continueButton: {
-    height: 54,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.primary,
-
+    minHeight: 60,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: colors.terracotta,
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "center",
-
-    gap: spacing.sm,
+    position: "relative",
   },
 
   continueButtonDisabled: {
     backgroundColor: colors.surfaceMuted,
   },
 
+  continueMark: {
+    position: "absolute",
+    left: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   continueText: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
+    fontSize: 15,
+    fontFamily: fonts.bold,
     color: colors.surface,
+    textAlign: "center",
   },
 
   continueTextDisabled: {

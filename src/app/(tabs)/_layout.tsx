@@ -15,7 +15,7 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius, shadows, spacing } from "../../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
 import { getCreatorProfile } from "../../services/profileStorage";
 
@@ -82,7 +82,7 @@ export default function TabsLayout() {
 
           tabBarActiveTintColor: colors.text,
 
-          tabBarInactiveTintColor: colors.textMuted,
+          tabBarInactiveTintColor: colors.textSecondary,
 
           tabBarHideOnKeyboard: true,
 
@@ -93,9 +93,9 @@ export default function TabsLayout() {
             right: 14,
             bottom: 12,
 
-            height: 78,
+            height: 80,
 
-            paddingTop: 8,
+            paddingTop: 9,
             paddingBottom: 9,
 
             borderTopWidth: 0,
@@ -123,11 +123,11 @@ export default function TabsLayout() {
           },
 
           tabBarLabelStyle: {
-            marginTop: -1,
+            marginTop: 1,
 
-            fontSize: 9,
+            fontSize: 11,
 
-            fontWeight: "600",
+            fontFamily: fonts.semibold,
           },
         }}
       >
@@ -139,7 +139,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "home" : "home-outline"}
-                size={21}
+                size={23}
                 color={color}
               />
             ),
@@ -154,7 +154,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "bulb" : "bulb-outline"}
-                size={21}
+                size={23}
                 color={color}
               />
             ),
@@ -191,7 +191,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "calendar" : "calendar-outline"}
-                size={21}
+                size={23}
                 color={color}
               />
             ),
@@ -206,7 +206,7 @@ export default function TabsLayout() {
             tabBarIcon: ({ color, focused }) => (
               <Ionicons
                 name={focused ? "layers" : "layers-outline"}
-                size={21}
+                size={23}
                 color={color}
               />
             ),
@@ -345,23 +345,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.terracotta,
 
     alignItems: "center",
+
     justifyContent: "center",
 
-    // sobe só um pouco
     marginTop: -4,
 
     ...shadows.elevated,
   },
 
   createLabel: {
-    fontSize: 10,
+    marginTop: 4,
 
-    fontWeight: "700",
+    fontSize: 11,
+
+    fontFamily: fonts.bold,
 
     color: colors.terracotta,
-
-    // separa o texto do botão
-    marginTop: 4,
   },
 
   modalBackdrop: {
@@ -410,11 +409,13 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
-    fontSize: 24,
+    fontSize: 25,
+
+    lineHeight: 32,
 
     letterSpacing: -0.5,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
@@ -422,14 +423,18 @@ const styles = StyleSheet.create({
   sheetSubtitle: {
     marginTop: 5,
 
-    fontSize: 13,
+    fontSize: 14,
+
+    lineHeight: 20,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
   closeButton: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
@@ -441,7 +446,7 @@ const styles = StyleSheet.create({
   },
 
   option: {
-    minHeight: 96,
+    minHeight: 104,
 
     padding: spacing.md,
 
@@ -463,8 +468,8 @@ const styles = StyleSheet.create({
   },
 
   optionMark: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
 
     marginRight: spacing.md,
 
@@ -486,9 +491,11 @@ const styles = StyleSheet.create({
   },
 
   optionTitle: {
-    fontSize: 15,
+    fontSize: 16,
 
-    fontWeight: "700",
+    lineHeight: 22,
+
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },
@@ -496,21 +503,23 @@ const styles = StyleSheet.create({
   optionText: {
     maxWidth: 240,
 
-    marginTop: 4,
+    marginTop: 5,
 
     paddingRight: spacing.sm,
 
-    fontSize: 11,
+    fontSize: 13,
 
-    lineHeight: 16,
+    lineHeight: 19,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
   recommended: {
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
 
-    paddingVertical: 3,
+    paddingVertical: 4,
 
     borderRadius: radius.round,
 
@@ -518,11 +527,11 @@ const styles = StyleSheet.create({
   },
 
   recommendedText: {
-    fontSize: 7,
+    fontSize: 9,
 
     letterSpacing: 0.4,
 
-    fontWeight: "800",
+    fontFamily: fonts.bold,
 
     color: colors.rose,
   },

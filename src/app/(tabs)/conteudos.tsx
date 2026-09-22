@@ -194,7 +194,7 @@ export default function ContentsScreen() {
           </View>
 
           <View style={styles.headerMark}>
-            <Ionicons name="layers-outline" size={21} color={colors.lavender} />
+            <Ionicons name="layers-outline" size={22} color={colors.lavender} />
           </View>
         </View>
 
@@ -327,7 +327,7 @@ export default function ContentsScreen() {
 
                 <Text style={styles.sheetTitle}>Alterar etapa</Text>
 
-                <Text style={styles.sheetContent} numberOfLines={2}>
+                <Text style={styles.sheetContent} numberOfLines={3}>
                   {selectedContent?.idea}
                 </Text>
               </View>
@@ -336,7 +336,7 @@ export default function ContentsScreen() {
                 style={styles.sheetClose}
                 onPress={() => setSelectedContent(null)}
               >
-                <Ionicons name="close" size={19} color={colors.text} />
+                <Ionicons name="close" size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -410,8 +410,8 @@ export default function ContentsScreen() {
                     ) : (
                       <Ionicons
                         name="chevron-forward"
-                        size={16}
-                        color={colors.textMuted}
+                        size={17}
+                        color={colors.textSecondary}
                       />
                     )}
                   </TouchableOpacity>
@@ -521,7 +521,7 @@ function ContentCard({
             >
               <Ionicons
                 name={status.icon}
-                size={16}
+                size={17}
                 color={status.foreground}
               />
             </View>
@@ -568,7 +568,7 @@ function ContentCard({
           >
             <Ionicons
               name="ellipsis-horizontal"
-              size={19}
+              size={20}
               color={colors.textSecondary}
             />
           </TouchableOpacity>
@@ -618,7 +618,7 @@ function ContentCard({
               >
                 <Ionicons
                   name="arrow-forward"
-                  size={16}
+                  size={17}
                   color={nextMeta.foreground}
                 />
               </View>
@@ -630,7 +630,7 @@ function ContentCard({
 
             <View style={styles.finishedArea}>
               <View style={styles.finishedMark}>
-                <Ionicons name="checkmark" size={14} color={colors.sage} />
+                <Ionicons name="checkmark" size={15} color={colors.sage} />
               </View>
 
               <View>
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
 
-    paddingBottom: 135,
+    paddingBottom: 140,
   },
 
   header: {
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
 
-    lineHeight: 38,
+    lineHeight: 40,
 
     letterSpacing: -1,
 
@@ -869,11 +869,11 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    marginTop: 4,
+    marginTop: 6,
 
-    fontSize: 13,
+    fontSize: 14,
 
-    lineHeight: 19,
+    lineHeight: 21,
 
     fontFamily: fonts.regular,
 
@@ -881,8 +881,8 @@ const styles = StyleSheet.create({
   },
 
   headerMark: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
 
     marginTop: 3,
 
@@ -896,11 +896,11 @@ const styles = StyleSheet.create({
   },
 
   overview: {
-    minHeight: 76,
+    minHeight: 84,
 
     marginBottom: 26,
 
-    paddingVertical: 15,
+    paddingVertical: 16,
 
     paddingHorizontal: 10,
 
@@ -922,17 +922,19 @@ const styles = StyleSheet.create({
   },
 
   overviewValue: {
-    fontSize: 21,
+    fontSize: 23,
 
-    lineHeight: 26,
+    lineHeight: 29,
 
     fontFamily: fonts.bold,
   },
 
   overviewLabel: {
-    marginTop: 2,
+    marginTop: 3,
 
-    fontSize: 9,
+    fontSize: 11,
+
+    lineHeight: 16,
 
     fontFamily: fonts.medium,
 
@@ -942,7 +944,7 @@ const styles = StyleSheet.create({
   overviewDivider: {
     width: 1,
 
-    height: 33,
+    height: 38,
 
     backgroundColor: colors.divider,
   },
@@ -954,9 +956,9 @@ const styles = StyleSheet.create({
   },
 
   filter: {
-    minHeight: 36,
+    minHeight: 40,
 
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
 
     flexDirection: "row",
 
@@ -980,7 +982,7 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
-    fontSize: 10,
+    fontSize: 12,
 
     fontFamily: fonts.semibold,
 
@@ -992,11 +994,11 @@ const styles = StyleSheet.create({
   },
 
   filterCount: {
-    minWidth: 18,
+    minWidth: 20,
 
-    height: 18,
+    height: 20,
 
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
 
     borderRadius: radius.round,
 
@@ -1012,7 +1014,7 @@ const styles = StyleSheet.create({
   },
 
   filterCountText: {
-    fontSize: 8,
+    fontSize: 9,
 
     fontFamily: fonts.bold,
 
@@ -1024,13 +1026,13 @@ const styles = StyleSheet.create({
   },
 
   listHeader: {
-    marginBottom: 14,
+    marginBottom: 15,
   },
 
   listTitle: {
-    fontSize: 22,
+    fontSize: 24,
 
-    lineHeight: 28,
+    lineHeight: 31,
 
     letterSpacing: -0.6,
 
@@ -1040,9 +1042,11 @@ const styles = StyleSheet.create({
   },
 
   listSubtitle: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 11,
+    fontSize: 12,
+
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -1076,17 +1080,17 @@ const styles = StyleSheet.create({
     top: 15,
     bottom: 15,
 
-    width: 3,
+    width: 4,
 
     borderRadius: radius.round,
   },
 
   cardBody: {
-    paddingTop: 15,
+    paddingTop: 16,
 
     paddingRight: 15,
 
-    paddingBottom: 11,
+    paddingBottom: 12,
 
     paddingLeft: 18,
   },
@@ -1112,12 +1116,12 @@ const styles = StyleSheet.create({
   },
 
   statusMark: {
-    width: 29,
-    height: 29,
+    width: 32,
+    height: 32,
 
     marginRight: 9,
 
-    borderRadius: 9,
+    borderRadius: 10,
 
     alignItems: "center",
 
@@ -1125,9 +1129,9 @@ const styles = StyleSheet.create({
   },
 
   statusLabel: {
-    fontSize: 8,
+    fontSize: 10,
 
-    letterSpacing: 0.7,
+    letterSpacing: 0.5,
 
     fontFamily: fonts.bold,
   },
@@ -1144,16 +1148,18 @@ const styles = StyleSheet.create({
   },
 
   metaText: {
-    fontSize: 9,
+    fontSize: 10,
 
-    fontFamily: fonts.regular,
+    lineHeight: 15,
 
-    color: colors.textMuted,
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
   },
 
   optionsButton: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
 
     borderRadius: radius.round,
 
@@ -1171,9 +1177,9 @@ const styles = StyleSheet.create({
 
     fontSize: 17,
 
-    lineHeight: 23,
+    lineHeight: 25,
 
-    letterSpacing: -0.25,
+    letterSpacing: -0.2,
 
     fontFamily: fonts.semibold,
 
@@ -1189,7 +1195,7 @@ const styles = StyleSheet.create({
   },
 
   nextAction: {
-    minHeight: 58,
+    minHeight: 62,
 
     flexDirection: "row",
 
@@ -1199,28 +1205,30 @@ const styles = StyleSheet.create({
   },
 
   nextEyebrow: {
-    fontSize: 7,
+    fontSize: 9,
 
-    letterSpacing: 0.8,
+    letterSpacing: 0.7,
 
     fontFamily: fonts.bold,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   nextText: {
-    marginTop: 3,
+    marginTop: 4,
 
-    fontSize: 12,
+    fontSize: 13,
 
-    letterSpacing: 0.2,
+    lineHeight: 18,
+
+    letterSpacing: 0.1,
 
     fontFamily: fonts.bold,
   },
 
   nextArrow: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
 
     borderRadius: radius.round,
 
@@ -1230,7 +1238,7 @@ const styles = StyleSheet.create({
   },
 
   finishedArea: {
-    minHeight: 58,
+    minHeight: 62,
 
     flexDirection: "row",
 
@@ -1238,8 +1246,8 @@ const styles = StyleSheet.create({
   },
 
   finishedMark: {
-    width: 31,
-    height: 31,
+    width: 34,
+    height: 34,
 
     marginRight: 10,
 
@@ -1253,7 +1261,9 @@ const styles = StyleSheet.create({
   },
 
   finishedTitle: {
-    fontSize: 11,
+    fontSize: 12,
+
+    lineHeight: 17,
 
     fontFamily: fonts.semibold,
 
@@ -1261,13 +1271,15 @@ const styles = StyleSheet.create({
   },
 
   finishedText: {
-    marginTop: 1,
+    marginTop: 2,
 
-    fontSize: 9,
+    fontSize: 10,
+
+    lineHeight: 15,
 
     fontFamily: fonts.regular,
 
-    color: colors.textMuted,
+    color: colors.textSecondary,
   },
 
   emptyState: {
@@ -1350,9 +1362,9 @@ const styles = StyleSheet.create({
   emptyTitle: {
     maxWidth: 310,
 
-    fontSize: 21,
+    fontSize: 22,
 
-    lineHeight: 27,
+    lineHeight: 29,
 
     letterSpacing: -0.4,
 
@@ -1366,11 +1378,11 @@ const styles = StyleSheet.create({
   emptyText: {
     maxWidth: 295,
 
-    marginTop: 7,
+    marginTop: 8,
 
-    fontSize: 12,
+    fontSize: 13,
 
-    lineHeight: 18,
+    lineHeight: 20,
 
     textAlign: "center",
 
@@ -1380,7 +1392,7 @@ const styles = StyleSheet.create({
   },
 
   emptyAction: {
-    minHeight: 48,
+    minHeight: 50,
 
     marginTop: 22,
 
@@ -1400,7 +1412,7 @@ const styles = StyleSheet.create({
   },
 
   emptyActionText: {
-    fontSize: 12,
+    fontSize: 13,
 
     fontFamily: fonts.semibold,
 
@@ -1455,9 +1467,9 @@ const styles = StyleSheet.create({
   sheetEyebrow: {
     marginBottom: 5,
 
-    fontSize: 8,
+    fontSize: 10,
 
-    letterSpacing: 1,
+    letterSpacing: 0.8,
 
     fontFamily: fonts.bold,
 
@@ -1465,9 +1477,9 @@ const styles = StyleSheet.create({
   },
 
   sheetTitle: {
-    fontSize: 23,
+    fontSize: 24,
 
-    lineHeight: 29,
+    lineHeight: 31,
 
     letterSpacing: -0.5,
 
@@ -1479,11 +1491,11 @@ const styles = StyleSheet.create({
   sheetContent: {
     maxWidth: 275,
 
-    marginTop: 5,
+    marginTop: 6,
 
-    fontSize: 11,
+    fontSize: 13,
 
-    lineHeight: 17,
+    lineHeight: 20,
 
     fontFamily: fonts.regular,
 
@@ -1491,8 +1503,8 @@ const styles = StyleSheet.create({
   },
 
   sheetClose: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
 
     borderRadius: radius.round,
 
@@ -1508,7 +1520,9 @@ const styles = StyleSheet.create({
 
     marginBottom: 11,
 
-    fontSize: 11,
+    fontSize: 13,
+
+    lineHeight: 19,
 
     fontFamily: fonts.semibold,
 
@@ -1520,7 +1534,7 @@ const styles = StyleSheet.create({
   },
 
   statusOption: {
-    minHeight: 61,
+    minHeight: 68,
 
     paddingHorizontal: 12,
 
@@ -1544,8 +1558,8 @@ const styles = StyleSheet.create({
   },
 
   statusOptionMark: {
-    width: 37,
-    height: 37,
+    width: 40,
+    height: 40,
 
     marginRight: 12,
 
@@ -1557,9 +1571,9 @@ const styles = StyleSheet.create({
   },
 
   statusOptionTitle: {
-    fontSize: 10,
+    fontSize: 11,
 
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
 
     fontFamily: fonts.bold,
 
@@ -1567,9 +1581,11 @@ const styles = StyleSheet.create({
   },
 
   statusOptionText: {
-    marginTop: 2,
+    marginTop: 3,
 
-    fontSize: 9,
+    fontSize: 11,
+
+    lineHeight: 16,
 
     fontFamily: fonts.regular,
 
@@ -1577,8 +1593,8 @@ const styles = StyleSheet.create({
   },
 
   selectedStatus: {
-    width: 23,
-    height: 23,
+    width: 24,
+    height: 24,
 
     borderRadius: radius.round,
 
@@ -1588,7 +1604,7 @@ const styles = StyleSheet.create({
   },
 
   openContentAction: {
-    minHeight: 48,
+    minHeight: 52,
 
     marginTop: 18,
 
@@ -1606,7 +1622,7 @@ const styles = StyleSheet.create({
   },
 
   openContentText: {
-    fontSize: 12,
+    fontSize: 13,
 
     fontFamily: fonts.semibold,
 

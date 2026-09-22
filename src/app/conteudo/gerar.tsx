@@ -17,13 +17,7 @@ import { getInspirationById } from "../../services/inspirationStorage";
 
 import { ContentItem, ContentReference } from "../../types/content";
 
-import {
-    colors,
-    radius,
-    shadows,
-    spacing,
-    typography,
-} from "../../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
 type GeneratedScript = {
   title: string;
@@ -71,27 +65,17 @@ export default function GerarConteudoScreen() {
 
     const content: ContentItem = {
       id: Date.now().toString(),
-
-      // Mantemos o campo antigo para não quebrar conteúdos/rotas já existentes.
       inspirationId: inspirationId || undefined,
-
-      // A partir de agora, conteúdos vindos de inspiração também guardam
-      // uma cópia da referência original.
       reference,
-
       idea: script.title,
-
       format,
       objective: null,
-
       status,
-
       script: {
         hook: script.hook,
         points: script.points,
         cta: script.cta,
       },
-
       createdAt: now,
       updatedAt: now,
     };
@@ -103,7 +87,6 @@ export default function GerarConteudoScreen() {
 
   async function handleUseScript() {
     await createContent("gravar");
-
     router.replace("/");
   }
 
@@ -133,7 +116,7 @@ export default function GerarConteudoScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Sua versão</Text>
@@ -143,42 +126,71 @@ export default function GerarConteudoScreen() {
 
         <View style={styles.intro}>
           <View style={styles.aiLabel}>
-            <Ionicons name="sparkles" size={14} color={colors.primary} />
+            <View style={styles.aiSpark}>
+              <Ionicons name="sparkles" size={13} color={colors.terracotta} />
+            </View>
 
-            <Text style={styles.aiLabelText}>SIMULAÇÃO DO CONTENTFLOW</Text>
+            <Text style={styles.aiLabelText}>CONTENTFLOW</Text>
           </View>
 
-          <Text style={styles.title}>Aqui está uma versão para você.</Text>
+          <Text style={styles.title}>
+            Sua ideia já começou{"\n"}a ganhar forma.
+          </Text>
 
           <Text style={styles.description}>
-            Use como ponto de partida. Você pode usar, editar ou pedir outra
-            versão.
+            Use como ponto de partida. Você pode seguir assim, editar ou
+            experimentar outra versão.
           </Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>IDEIA</Text>
+        <View style={styles.ideaCard}>
+          <View style={styles.ideaTop}>
+            <Text style={styles.ideaLabel}>IDEIA</Text>
 
-          <Text style={styles.summaryTitle}>{script.title}</Text>
+            <View style={styles.formatBadge}>
+              <Text style={styles.formatText}>{format}</Text>
+            </View>
+          </View>
 
-          <View style={styles.formatBadge}>
-            <Text style={styles.formatText}>{format}</Text>
+          <Text style={styles.ideaTitle}>{script.title}</Text>
+        </View>
+
+        <View style={styles.scriptHeader}>
+          <View>
+            <Text style={styles.scriptTitle}>Roteiro</Text>
+
+            <Text style={styles.scriptSubtitle}>
+              Uma estrutura simples para você partir daqui.
+            </Text>
+          </View>
+
+          <View style={styles.versionBadge}>
+            <Text style={styles.versionText}>V{variation + 1}</Text>
           </View>
         </View>
 
-        <View style={styles.scriptCard}>
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
+        <View style={styles.scriptSurface}>
+          <View style={styles.hook}>
+            <View style={styles.sectionMeta}>
+              <View
+                style={[
+                  styles.sectionMark,
+                  { backgroundColor: colors.terracottaLight },
+                ]}
+              >
                 <Ionicons
                   name="flash-outline"
-                  size={18}
-                  color={colors.primary}
+                  size={17}
+                  color={colors.terracotta}
                 />
               </View>
 
               <View>
-                <Text style={styles.sectionLabel}>HOOK</Text>
+                <Text
+                  style={[styles.sectionEyebrow, { color: colors.terracotta }]}
+                >
+                  HOOK
+                </Text>
 
                 <Text style={styles.sectionHint}>Como começar</Text>
               </View>
@@ -189,18 +201,21 @@ export default function GerarConteudoScreen() {
 
           <View style={styles.divider} />
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                <Ionicons
-                  name="list-outline"
-                  size={18}
-                  color={colors.primary}
-                />
+          <View style={styles.development}>
+            <View style={styles.sectionMeta}>
+              <View
+                style={[
+                  styles.sectionMark,
+                  { backgroundColor: colors.amberLight },
+                ]}
+              >
+                <Ionicons name="list-outline" size={17} color={colors.amber} />
               </View>
 
               <View>
-                <Text style={styles.sectionLabel}>DESENVOLVIMENTO</Text>
+                <Text style={[styles.sectionEyebrow, { color: colors.amber }]}>
+                  DESENVOLVIMENTO
+                </Text>
 
                 <Text style={styles.sectionHint}>O que falar</Text>
               </View>
@@ -210,8 +225,14 @@ export default function GerarConteudoScreen() {
               {script.points.map((point, index) => (
                 <View key={index} style={styles.point}>
                   <View style={styles.pointNumber}>
-                    <Text style={styles.pointNumberText}>{index + 1}</Text>
+                    <Text style={styles.pointNumberText}>
+                      {String(index + 1).padStart(2, "0")}
+                    </Text>
                   </View>
+
+                  {index < script.points.length - 1 && (
+                    <View style={styles.pointLine} />
+                  )}
 
                   <Text style={styles.pointText}>{point}</Text>
                 </View>
@@ -221,18 +242,25 @@ export default function GerarConteudoScreen() {
 
           <View style={styles.divider} />
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
+          <View style={styles.cta}>
+            <View style={styles.sectionMeta}>
+              <View
+                style={[
+                  styles.sectionMark,
+                  { backgroundColor: colors.sageLight },
+                ]}
+              >
                 <Ionicons
                   name="megaphone-outline"
-                  size={18}
-                  color={colors.primary}
+                  size={17}
+                  color={colors.sage}
                 />
               </View>
 
               <View>
-                <Text style={styles.sectionLabel}>CTA</Text>
+                <Text style={[styles.sectionEyebrow, { color: colors.sage }]}>
+                  CTA
+                </Text>
 
                 <Text style={styles.sectionHint}>Como terminar</Text>
               </View>
@@ -244,39 +272,46 @@ export default function GerarConteudoScreen() {
 
         <TouchableOpacity
           style={styles.useButton}
-          activeOpacity={0.85}
+          activeOpacity={0.86}
           onPress={handleUseScript}
         >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={21}
-            color={colors.surface}
-          />
+          <View style={styles.useButtonMark}>
+            <Ionicons name="checkmark" size={17} color={colors.terracotta} />
+          </View>
 
           <Text style={styles.useButtonText}>Usar este roteiro</Text>
+
+          <Ionicons name="arrow-forward" size={18} color={colors.surface} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.editButton} onPress={handleEditScript}>
-          <Ionicons name="create-outline" size={18} color={colors.primary} />
+        <TouchableOpacity
+          style={styles.editButton}
+          activeOpacity={0.8}
+          onPress={handleEditScript}
+        >
+          <Ionicons name="create-outline" size={17} color={colors.text} />
 
           <Text style={styles.editButtonText}>Editar antes de usar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.regenerateButton}
+          activeOpacity={0.8}
           onPress={handleGenerateAgain}
         >
           <Ionicons
             name="refresh-outline"
-            size={18}
-            color={colors.textSecondary}
+            size={16}
+            color={colors.terracotta}
           />
 
           <Text style={styles.regenerateButtonText}>Gerar outra versão</Text>
         </TouchableOpacity>
 
         <View style={styles.mockWarning}>
-          <Ionicons name="flask-outline" size={17} color={colors.textMuted} />
+          <View style={styles.mockWarningMark}>
+            <Ionicons name="flask-outline" size={15} color={colors.textMuted} />
+          </View>
 
           <Text style={styles.mockWarningText}>
             Esta geração ainda é simulada. A IA real será conectada depois que
@@ -297,54 +332,37 @@ function generateMockScript(
 
   const variations: GeneratedScript[] = [
     {
-      title: `Minha versão sobre: ${shorten(subject)}`,
-
+      title: shorten(subject),
       hook: "Tem uma coisa nesse assunto que muita gente entende errado — e isso pode estar mudando completamente a forma como você enxerga o tema.",
-
       points: [
         `Comece explicando de forma simples a ideia principal: ${shorten(
           subject,
         )}.`,
-
         "Mostre qual é o erro, dúvida ou interpretação mais comum sobre esse assunto.",
-
         "Feche explicando o que a pessoa deveria entender ou fazer de forma diferente a partir disso.",
       ],
-
       cta: "Salve este conteúdo para lembrar disso quando precisar.",
     },
-
     {
-      title: `O que você precisa saber sobre ${shorten(subject)}`,
-
+      title: shorten(subject),
       hook: "Se você já ouviu isso e ficou em dúvida, presta atenção porque a explicação é mais simples do que parece.",
-
       points: [
         `Apresente o contexto da referência: ${shorten(subject)}.`,
-
         "Explique por que essa ideia chama atenção e qual parte merece ser analisada com mais cuidado.",
-
         "Dê uma conclusão prática e fácil de aplicar para o seu público.",
       ],
-
       cta: "Compartilhe com alguém que também precisa entender isso.",
     },
-
     {
-      title: `Antes de acreditar nisso, entenda ${shorten(subject)}`,
-
+      title: shorten(subject),
       hook: "Antes de repetir isso por aí, tem um detalhe importante que quase ninguém explica.",
-
       points: [
         `Mostre rapidamente qual é a afirmação ou ideia central: ${shorten(
           subject,
         )}.`,
-
         "Quebre o assunto em uma explicação curta, direta e sem termos complicados.",
-
         "Finalize mostrando como essa informação muda a forma de enxergar o problema.",
       ],
-
       cta: "Se esse conteúdo te ajudou, salva para consultar depois.",
     },
   ];
@@ -367,19 +385,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 48,
   },
-
   header: {
     height: 68,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   backButton: {
     width: 40,
     height: 40,
@@ -390,243 +405,300 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   headerTitle: {
-    fontSize: typography.subheading,
-    fontWeight: "700",
+    fontSize: 16,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
-
   headerSpace: {
     width: 40,
   },
-
   intro: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingTop: 18,
+    paddingBottom: 28,
   },
-
   aiLabel: {
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: spacing.sm,
+    gap: 7,
   },
-
+  aiSpark: {
+    width: 25,
+    height: 25,
+    borderRadius: 9,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   aiLabelText: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 1,
-    color: colors.primary,
+    fontSize: 10,
+    letterSpacing: 1.1,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
-
   title: {
-    fontSize: 29,
-    lineHeight: 35,
-    fontWeight: "700",
+    maxWidth: 340,
+    fontSize: 31,
+    lineHeight: 39,
+    letterSpacing: -0.9,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
-
   description: {
-    marginTop: spacing.sm,
-    fontSize: typography.body,
-    lineHeight: 21,
+    maxWidth: 335,
+    marginTop: 12,
+    fontSize: 14,
+    lineHeight: 22,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
-
-  summaryCard: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+  ideaCard: {
+    marginBottom: 30,
+    padding: 17,
+    borderRadius: 20,
+    backgroundColor: colors.terracottaLight,
   },
-
-  summaryLabel: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
+  ideaTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  ideaLabel: {
+    fontSize: 10,
     letterSpacing: 1,
-    color: colors.primary,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
-
-  summaryTitle: {
-    marginTop: 5,
-    fontSize: typography.subheading,
-    lineHeight: 22,
-    fontWeight: "700",
-    color: colors.text,
-  },
-
   formatBadge: {
-    alignSelf: "flex-start",
-    marginTop: spacing.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 10,
+    paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: radius.round,
+    backgroundColor: colors.surface,
   },
-
   formatText: {
-    fontSize: typography.tiny,
-    fontWeight: "700",
-    color: colors.primary,
-  },
-
-  scriptCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
-    ...shadows.card,
-  },
-
-  section: {
-    padding: spacing.lg,
-  },
-
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-
-  sectionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.sm,
-  },
-
-  sectionLabel: {
-    fontSize: typography.tiny,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    color: colors.primary,
-  },
-
-  sectionHint: {
-    marginTop: 1,
-    fontSize: typography.tiny,
-    color: colors.textMuted,
-  },
-
-  hookText: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: "700",
+    fontSize: 11,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
-
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-  },
-
-  points: {
-    gap: spacing.md,
-  },
-
-  point: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-
-  pointNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.round,
-    backgroundColor: colors.primaryLight,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: spacing.sm,
-  },
-
-  pointNumberText: {
-    fontSize: typography.caption,
-    fontWeight: "800",
-    color: colors.primary,
-  },
-
-  pointText: {
-    flex: 1,
-    paddingTop: 3,
-    fontSize: typography.body,
-    lineHeight: 21,
+  ideaTitle: {
+    marginTop: 12,
+    maxWidth: 315,
+    fontSize: 20,
+    lineHeight: 28,
+    letterSpacing: -0.3,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
-
-  ctaText: {
-    fontSize: typography.subheading,
-    lineHeight: 23,
-    fontWeight: "600",
+  scriptHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  scriptTitle: {
+    fontSize: 24,
+    lineHeight: 31,
+    letterSpacing: -0.5,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
-
-  useButton: {
-    height: 54,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-
-  useButtonText: {
-    color: colors.surface,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
-
-  editButton: {
-    height: 50,
-    marginTop: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-
-  editButtonText: {
-    color: colors.primary,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
-
-  regenerateButton: {
-    height: 46,
-    marginTop: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: spacing.sm,
-  },
-
-  regenerateButtonText: {
-    fontSize: typography.body,
-    fontWeight: "600",
+  scriptSubtitle: {
+    marginTop: 5,
+    fontSize: 13,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
-
-  mockWarning: {
-    marginTop: spacing.lg,
+  versionBadge: {
+    minWidth: 32,
+    height: 27,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  versionText: {
+    fontSize: 11,
+    fontFamily: fonts.bold,
+    color: colors.textSecondary,
+  },
+  scriptSurface: {
+    marginBottom: 24,
+    borderRadius: 22,
+    overflow: "hidden",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
+  },
+  hook: {
+    padding: 20,
+  },
+  development: {
+    padding: 20,
+  },
+  cta: {
+    padding: 20,
+  },
+  sectionMeta: {
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  sectionMark: {
+    width: 34,
+    height: 34,
+    marginRight: 10,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sectionEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.9,
+    fontFamily: fonts.bold,
+  },
+  sectionHint: {
+    marginTop: 2,
+    fontSize: 11,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+  hookText: {
+    fontSize: 20,
+    lineHeight: 31,
+    letterSpacing: -0.25,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+  divider: {
+    height: 1,
+    marginHorizontal: 18,
+    backgroundColor: colors.divider,
+  },
+  points: {
+    gap: 16,
+  },
+  point: {
+    minHeight: 40,
+    position: "relative",
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
   },
-
+  pointNumber: {
+    width: 27,
+    height: 27,
+    borderRadius: radius.round,
+    backgroundColor: colors.amberLight,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+  pointNumberText: {
+    fontSize: 9,
+    fontFamily: fonts.bold,
+    color: colors.amber,
+  },
+  pointLine: {
+    position: "absolute",
+    left: 13,
+    top: 27,
+    bottom: -17,
+    width: 1,
+    backgroundColor: colors.divider,
+  },
+  pointText: {
+    flex: 1,
+    paddingTop: 2,
+    marginLeft: 12,
+    fontSize: 15,
+    lineHeight: 24,
+    fontFamily: fonts.regular,
+    color: colors.text,
+  },
+  ctaText: {
+    fontSize: 16,
+    lineHeight: 25,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  useButton: {
+    minHeight: 60,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  useButtonMark: {
+    width: 33,
+    height: 33,
+    marginRight: 11,
+    borderRadius: 11,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  useButtonText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+  editButton: {
+    minHeight: 49,
+    marginTop: 9,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  editButtonText: {
+    fontSize: 13,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+  regenerateButton: {
+    minHeight: 43,
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  regenerateButtonText: {
+    fontSize: 12,
+    fontFamily: fonts.semibold,
+    color: colors.terracotta,
+  },
+  mockWarning: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+  },
+  mockWarningMark: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   mockWarningText: {
     flex: 1,
-    fontSize: typography.tiny,
-    lineHeight: 16,
+    paddingTop: 2,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
     color: colors.textMuted,
   },
 });
