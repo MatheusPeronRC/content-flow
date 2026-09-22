@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { getContents } from "../../services/contentStorage";
+import { ContentItem } from "../../types/content";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -49,8 +51,81 @@ const weekDays = [
     completed: false,
   },
 ];
+function getTaskInfo(content: ContentItem) {
+  switch (content.status) {
+    case "ideia":
+      return {
+        action: "Desenvolver ideia",
+        icon: "bulb-outline" as const,
+        color: colors.primaryLight,
+      };
 
+    case "roteiro":
+      return {
+        action: "Finalizar roteiro",
+        icon: "create-outline" as const,
+        color: colors.carousel,
+      };
+
+    case "gravar":
+      return {
+        action: "Gravar",
+        icon: "videocam-outline" as const,
+        color: colors.reel,
+      };
+
+    case "editar":
+      return {
+        action: "Editar",
+        icon: "cut-outline" as const,
+        color: colors.story,
+      };
+
+    case "pronto":
+      return {
+        action: "Publicar",
+        icon: "paper-plane-outline" as const,
+        color: colors.inspiration,
+      };
+
+    default:
+      return {
+        action: "Continuar",
+        icon: "document-text-outline" as const,
+        color: colors.primaryLight,
+      };
+  }
+}
 export default function HomeScreen() {
+  const [contents, setContents] = useState<ContentItem[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      async function loadContents() {
+        try {
+          const data = await getContents();
+
+          if (active) {
+            setContents(data);
+          }
+        } catch (error) {
+          console.error("Erro ao carregar conteúdos:", error);
+        }
+      }
+
+      loadContents();
+
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const pendingContents = contents
+    .filter((content) => content.status !== "publicado")
+    .slice(0, 3);
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -132,21 +207,50 @@ export default function HomeScreen() {
             subtitle="Conteúdos que precisam da sua atenção"
           />
 
-          <TaskCard
-            action="Gravar"
-            title="Creatina engorda?"
-            type="Reel"
-            icon="videocam-outline"
-            iconBackground={colors.reel}
-          />
+          {pendingContents.length === 0 ? (
+            <View style={styles.emptyTasks}>
+              <View style={styles.emptyTasksIcon}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={25}
+                  color={colors.primary}
+                />
+              </View>
 
-          <TaskCard
-            action="Finalizar roteiro"
-            title="3 erros no café da manhã"
-            type="Carrossel"
-            icon="create-outline"
-            iconBackground={colors.carousel}
-          />
+              <View style={styles.emptyTasksContent}>
+                <Text style={styles.emptyTasksTitle}>
+                  Tudo tranquilo por aqui
+                </Text>
+
+                <Text style={styles.emptyTasksText}>
+                  Crie um conteúdo para começar seu fluxo.
+                </Text>
+              </View>
+            </View>
+          ) : (
+            pendingContents.map((content) => {
+              const task = getTaskInfo(content);
+
+              return (
+                <TaskCard
+                  key={content.id}
+                  action={task.action}
+                  title={content.idea}
+                  type={content.format ?? "Conteúdo"}
+                  icon={task.icon}
+                  iconBackground={task.color}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/conteudo/roteiro",
+                      params: {
+                        contentId: content.id,
+                      },
+                    })
+                  }
+                />
+              );
+            })
+          )}
         </View>
 
         {/* SEMANA */}
@@ -536,6 +640,49 @@ const styles = StyleSheet.create({
 
     color: colors.textSecondary,
 
+    marginTop: 3,
+  },
+  emptyTasks: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: colors.surface,
+
+    borderRadius: radius.lg,
+
+    borderWidth: 1,
+    borderColor: colors.border,
+
+    padding: spacing.md,
+  },
+
+  emptyTasksIcon: {
+    width: 44,
+    height: 44,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.primaryLight,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginRight: spacing.md,
+  },
+
+  emptyTasksContent: {
+    flex: 1,
+  },
+
+  emptyTasksTitle: {
+    fontSize: typography.body,
+    fontWeight: "700",
+    color: colors.text,
+  },
+
+  emptyTasksText: {
+    fontSize: typography.caption,
+    color: colors.textSecondary,
     marginTop: 3,
   },
 });

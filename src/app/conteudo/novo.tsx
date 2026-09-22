@@ -43,7 +43,10 @@ export default function NovoConteudoScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionCard}>
+        <TouchableOpacity
+          style={styles.optionCard}
+          onPress={() => router.push("/conteudo/criar")}
+        >
           <View style={styles.iconContainer}>
             <Ionicons name="create-outline" size={24} color={colors.primary} />
           </View>

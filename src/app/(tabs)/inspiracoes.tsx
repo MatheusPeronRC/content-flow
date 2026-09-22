@@ -180,7 +180,17 @@ function InspirationCard({ inspiration }: InspirationCardProps) {
             <Text style={styles.source}>{inspiration.source}</Text>
           </View>
 
-          <TouchableOpacity style={styles.createButton}>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() =>
+              router.push({
+                pathname: "/conteudo/criar",
+                params: {
+                  inspirationId: inspiration.id,
+                },
+              })
+            }
+          >
             <Text style={styles.createButtonText}>Criar minha versão</Text>
 
             <Ionicons name="arrow-forward" size={14} color={colors.primary} />

@@ -29,3 +29,15 @@ export async function saveInspiration(
     JSON.stringify(updatedInspirations)
   );
 }
+
+export async function getInspirationById(
+  id: string
+): Promise<Inspiration | null> {
+  const inspirations = await getInspirations();
+
+  return (
+    inspirations.find(
+      (inspiration) => inspiration.id === id
+    ) ?? null
+  );
+}
