@@ -28,7 +28,7 @@ import {
     normalizeMediaUrl,
 } from "../../services/mediaMetadataService";
 
-import { colors, fonts, radius, spacing } from "../../constants/theme";
+import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
 const categories = ["Hook", "Tema", "Roteiro", "Formato", "Edição", "CTA"];
 
@@ -161,22 +161,61 @@ export default function NewInspirationScreen() {
             <View style={styles.headerSpace} />
           </View>
 
-          <View style={styles.hero}>
-            <Text style={styles.eyebrow}>SEU ACERVO CRIATIVO</Text>
+          <View style={styles.heroPanel}>
+            <View style={styles.heroBubbleOne} />
 
-            <Text style={styles.title}>
-              Guarde agora.{"\n"}
-              Organize depois.
+            <View style={styles.heroBubbleTwo} />
+
+            <View style={styles.heroTop}>
+              <View style={styles.heroBadge}>
+                <Ionicons name="sparkles" size={13} color={colors.rose} />
+
+                <Text style={styles.heroBadgeText}>SEU ACERVO CRIATIVO</Text>
+              </View>
+
+              <View style={styles.heroMark}>
+                <Ionicons name="bookmark" size={20} color={colors.surface} />
+              </View>
+            </View>
+
+            <Text style={styles.heroTitle}>
+              Viu algo bom?
+              {"\n"}
+              Guarda aqui.
             </Text>
 
-            <Text style={styles.description}>
+            <Text style={styles.heroDescription}>
               Cole o link e o ContentFlow tenta reconhecer a plataforma, a capa
               e as informações da referência.
             </Text>
+
+            <View style={styles.heroTip}>
+              <View style={styles.heroTipMark}>
+                <Ionicons name="flash-outline" size={16} color={colors.rose} />
+              </View>
+
+              <Text style={styles.heroTipText}>
+                Você organiza o motivo e a categoria em poucos segundos.
+              </Text>
+            </View>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.fieldLabel}>LINK DA REFERÊNCIA</Text>
+          <View style={styles.linkPanel}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionMarkBlue}>
+                <Ionicons name="link-outline" size={19} color={colors.blue} />
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionEyebrowBlue}>REFERÊNCIA</Text>
+
+                <Text style={styles.sectionTitle}>Cole o link</Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  Instagram, TikTok, YouTube, Kwai ou outro link.
+                </Text>
+              </View>
+            </View>
 
             <View
               style={[styles.urlField, url.trim() && styles.urlFieldActive]}
@@ -202,33 +241,36 @@ export default function NewInspirationScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
-                placeholder="Cole o link do Reel, TikTok, YouTube ou Kwai..."
+                placeholder="Cole o link aqui..."
                 placeholderTextColor={colors.textMuted}
                 style={styles.urlInput}
               />
             </View>
 
-            {!url.trim() ? (
-              <Text style={styles.fieldHelper}>
-                Instagram, TikTok, YouTube, Kwai e outros links.
-              </Text>
-            ) : (
+            {url.trim() && (
               <View style={styles.sourceDetected}>
-                {metadataLoading ? (
-                  <ActivityIndicator size="small" color={colors.terracotta} />
-                ) : (
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={17}
-                    color={colors.sage}
-                  />
-                )}
+                <View
+                  style={[
+                    styles.detectedMark,
+                    {
+                      backgroundColor: metadataLoading
+                        ? colors.terracottaLight
+                        : colors.sageLight,
+                    },
+                  ]}
+                >
+                  {metadataLoading ? (
+                    <ActivityIndicator size="small" color={colors.terracotta} />
+                  ) : (
+                    <Ionicons name="checkmark" size={15} color={colors.sage} />
+                  )}
+                </View>
 
                 <Text style={styles.sourceDetectedText}>
                   {metadataLoading
                     ? "Buscando capa e informações..."
                     : source === "Outro"
-                      ? "Link reconhecido como referência externa."
+                      ? "Referência externa reconhecida."
                       : `${source} reconhecido automaticamente.`}
                 </Text>
               </View>
@@ -240,10 +282,33 @@ export default function NewInspirationScreen() {
                   thumbnailUrl={metadata?.thumbnailUrl}
                   source={source}
                   variant="preview"
+                  style={styles.previewThumbnail}
                 />
 
                 <View style={styles.previewContent}>
-                  <Text style={styles.previewEyebrow}>REFERÊNCIA</Text>
+                  <View style={styles.previewMetaRow}>
+                    <Text style={styles.previewEyebrow}>PREVIEW</Text>
+
+                    <View
+                      style={[
+                        styles.previewSourcePill,
+                        {
+                          backgroundColor: sourceMeta.background,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.previewSourceText,
+                          {
+                            color: sourceMeta.color,
+                          },
+                        ]}
+                      >
+                        {source}
+                      </Text>
+                    </View>
+                  </View>
 
                   <Text style={styles.previewTitle} numberOfLines={3}>
                     {metadataLoading
@@ -259,7 +324,8 @@ export default function NewInspirationScreen() {
                     !metadata?.thumbnailUrl &&
                     (source === "Instagram" || source === "Kwai") ? (
                     <Text style={styles.previewFallbackText}>
-                      Link salvo com fallback visual por enquanto.
+                      Capa indisponível por enquanto. O link será salvo
+                      normalmente.
                     </Text>
                   ) : null}
                 </View>
@@ -267,17 +333,31 @@ export default function NewInspirationScreen() {
             )}
           </View>
 
-          <View style={styles.field}>
-            <View style={styles.fieldHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>CATEGORIA</Text>
+          <View style={styles.categoryPanel}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionMarkAmber}>
+                <Ionicons
+                  name="pricetags-outline"
+                  size={19}
+                  color={colors.amber}
+                />
+              </View>
 
-                <Text style={styles.fieldSubtitle}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionEyebrowAmber}>ORGANIZAÇÃO</Text>
+
+                <Text style={styles.sectionTitle}>
                   O que fez você salvar isso?
+                </Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  Escolha uma categoria para encontrar depois.
                 </Text>
               </View>
 
-              <Text style={styles.optional}>OPCIONAL</Text>
+              <View style={styles.optionalPill}>
+                <Text style={styles.optionalText}>OPCIONAL</Text>
+              </View>
             </View>
 
             <View style={styles.categories}>
@@ -291,10 +371,8 @@ export default function NewInspirationScreen() {
                     key={item}
                     style={[
                       styles.categoryOption,
-
                       selected && {
                         backgroundColor: accent.background,
-
                         borderColor: accent.foreground,
                       },
                     ]}
@@ -304,7 +382,6 @@ export default function NewInspirationScreen() {
                     <Text
                       style={[
                         styles.categoryText,
-
                         selected && {
                           color: accent.foreground,
                         },
@@ -312,23 +389,43 @@ export default function NewInspirationScreen() {
                     >
                       {item}
                     </Text>
+
+                    {selected && (
+                      <Ionicons
+                        name="checkmark"
+                        size={13}
+                        color={accent.foreground}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
           </View>
 
-          <View style={styles.field}>
-            <View style={styles.fieldHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>SUA ANOTAÇÃO</Text>
+          <View style={styles.notePanel}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionMarkLavender}>
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={19}
+                  color={colors.lavender}
+                />
+              </View>
 
-                <Text style={styles.fieldSubtitle}>
-                  Escreva por que essa referência chamou sua atenção.
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionEyebrowLavender}>SUA LEITURA</Text>
+
+                <Text style={styles.sectionTitle}>Por que vale guardar?</Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  Anote o detalhe que você não quer esquecer.
                 </Text>
               </View>
 
-              <Text style={styles.counter}>{note.length}/300</Text>
+              <View style={styles.counterPill}>
+                <Text style={styles.counter}>{note.length}/300</Text>
+              </View>
             </View>
 
             <TextInput
@@ -345,7 +442,11 @@ export default function NewInspirationScreen() {
 
             <View style={styles.tip}>
               <View style={styles.tipMark}>
-                <Ionicons name="bulb-outline" size={16} color={colors.rose} />
+                <Ionicons
+                  name="bulb-outline"
+                  size={16}
+                  color={colors.lavender}
+                />
               </View>
 
               <Text style={styles.tipText}>
@@ -355,39 +456,71 @@ export default function NewInspirationScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-            activeOpacity={0.86}
-            disabled={!canSave}
-            onPress={handleSave}
-          >
-            <View style={styles.saveButtonMark}>
+          <View style={styles.savePanel}>
+            <View style={styles.saveBubble} />
+
+            <View style={styles.saveBadge}>
               <Ionicons
-                name="bookmark"
-                size={18}
-                color={canSave ? colors.terracotta : colors.textMuted}
+                name="bookmark-outline"
+                size={14}
+                color={colors.terracotta}
               />
+
+              <Text style={styles.saveBadgeText}>SALVAR NO ACERVO</Text>
             </View>
 
-            <Text
-              style={[
-                styles.saveButtonText,
-                !canSave && styles.saveButtonTextDisabled,
-              ]}
-            >
-              {saving ? "Salvando..." : "Salvar inspiração"}
+            <Text style={styles.savePanelTitle}>Pronto para guardar.</Text>
+
+            <Text style={styles.savePanelText}>
+              Depois você pode editar, categorizar melhor ou transformar essa
+              referência em conteúdo.
             </Text>
 
-            <Ionicons
-              name="arrow-forward"
-              size={19}
-              color={canSave ? colors.surface : colors.textMuted}
-            />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+              activeOpacity={0.86}
+              disabled={!canSave}
+              onPress={handleSave}
+            >
+              <View style={styles.saveButtonMark}>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.terracotta} />
+                ) : (
+                  <Ionicons
+                    name="bookmark"
+                    size={18}
+                    color={canSave ? colors.terracotta : colors.textMuted}
+                  />
+                )}
+              </View>
 
-          <Text style={styles.bottomHint}>
-            Você pode editar essa referência depois na sua biblioteca.
-          </Text>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    styles.saveButtonText,
+                    !canSave && styles.saveButtonTextDisabled,
+                  ]}
+                >
+                  {saving ? "Salvando..." : "Salvar inspiração"}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.saveButtonHint,
+                    !canSave && styles.saveButtonHintDisabled,
+                  ]}
+                >
+                  Vai para sua biblioteca
+                </Text>
+              </View>
+
+              <Ionicons
+                name="arrow-forward"
+                size={19}
+                color={canSave ? colors.surface : colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -490,48 +623,35 @@ const styles = StyleSheet.create({
 
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
-    paddingBottom: 48,
+    paddingBottom: 54,
   },
 
   header: {
     height: 70,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
   headerButton: {
     width: 42,
     height: 42,
-
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   headerTitle: {
     fontSize: 18,
-
     fontFamily: fonts.semibold,
-
     color: colors.text,
   },
 
@@ -539,380 +659,511 @@ const styles = StyleSheet.create({
     width: 42,
   },
 
-  hero: {
-    paddingTop: 22,
-
-    paddingBottom: 32,
+  heroPanel: {
+    position: "relative",
+    overflow: "hidden",
+    marginTop: 14,
+    marginBottom: 16,
+    padding: 18,
+    borderRadius: 28,
+    backgroundColor: colors.roseLight,
+    borderWidth: 1,
+    borderColor: "rgba(207,130,149,0.15)",
+    ...shadows.card,
   },
 
-  eyebrow: {
-    marginBottom: 10,
+  heroBubbleOne: {
+    position: "absolute",
+    width: 126,
+    height: 126,
+    top: -48,
+    right: -36,
+    borderRadius: 63,
+    backgroundColor: "rgba(225,116,85,0.13)",
+  },
 
+  heroBubbleTwo: {
+    position: "absolute",
+    width: 82,
+    height: 82,
+    left: -28,
+    bottom: 24,
+    borderRadius: 41,
+    backgroundColor: "rgba(142,127,194,0.12)",
+  },
+
+  heroTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  heroBadge: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: radius.round,
+    backgroundColor: "rgba(255,253,252,0.8)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  heroBadgeText: {
     fontSize: 10,
-
-    letterSpacing: 1,
-
+    letterSpacing: 0.8,
     fontFamily: fonts.bold,
-
     color: colors.rose,
   },
 
-  title: {
-    maxWidth: 340,
+  heroMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: colors.rose,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.soft,
+  },
 
-    fontSize: 31,
-
-    lineHeight: 39,
-
-    letterSpacing: -0.9,
-
+  heroTitle: {
+    maxWidth: 330,
+    marginTop: 16,
+    fontSize: 30,
+    lineHeight: 37,
+    letterSpacing: -0.85,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
-  description: {
-    maxWidth: 340,
-
-    marginTop: 13,
-
-    fontSize: 14,
-
-    lineHeight: 22,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
-  },
-
-  field: {
-    marginBottom: 30,
-  },
-
-  fieldHeader: {
-    marginBottom: 12,
-
-    flexDirection: "row",
-
-    alignItems: "flex-start",
-
-    justifyContent: "space-between",
-
-    gap: 12,
-  },
-
-  fieldLabel: {
-    marginBottom: 5,
-
-    fontSize: 10,
-
-    letterSpacing: 0.9,
-
-    fontFamily: fonts.bold,
-
-    color: colors.textSecondary,
-  },
-
-  fieldSubtitle: {
-    maxWidth: 275,
-
+  heroDescription: {
+    maxWidth: 320,
+    marginTop: 8,
     fontSize: 13,
-
-    lineHeight: 19,
-
+    lineHeight: 20,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  optional: {
-    marginTop: 1,
+  heroTip: {
+    minHeight: 55,
+    marginTop: 15,
+    padding: 10,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,253,252,0.72)",
+    flexDirection: "row",
+    alignItems: "center",
+  },
 
-    fontSize: 10,
+  heroTipMark: {
+    width: 34,
+    height: 34,
+    marginRight: 9,
+    borderRadius: 11,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    letterSpacing: 0.5,
+  heroTipText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
 
+  linkPanel: {
+    marginBottom: 14,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.blueLight,
+    borderWidth: 1,
+    borderColor: "rgba(121,165,184,0.14)",
+    ...shadows.soft,
+  },
+
+  categoryPanel: {
+    marginBottom: 14,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.amberLight,
+    borderWidth: 1,
+    borderColor: "rgba(201,154,69,0.14)",
+    ...shadows.soft,
+  },
+
+  notePanel: {
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.lavenderLight,
+    borderWidth: 1,
+    borderColor: "rgba(142,127,194,0.14)",
+    ...shadows.soft,
+  },
+
+  sectionHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  sectionMarkBlue: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sectionMarkAmber: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sectionMarkLavender: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sectionEyebrowBlue: {
+    fontSize: 9,
+    letterSpacing: 0.8,
     fontFamily: fonts.bold,
+    color: colors.blue,
+  },
 
+  sectionEyebrowAmber: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.amber,
+  },
+
+  sectionEyebrowLavender: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.lavender,
+  },
+
+  sectionTitle: {
+    marginTop: 2,
+    fontSize: 17,
+    lineHeight: 23,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  sectionSubtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  optionalPill: {
+    minHeight: 28,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  optionalText: {
+    fontSize: 9,
+    letterSpacing: 0.55,
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
   },
 
   urlField: {
-    minHeight: 66,
-
-    paddingHorizontal: 13,
-
-    borderRadius: 19,
-
+    minHeight: 62,
+    paddingHorizontal: 11,
+    borderRadius: 17,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
-    borderColor: colors.border,
-
+    borderColor: "rgba(255,255,255,0.72)",
     flexDirection: "row",
-
     alignItems: "center",
   },
 
   urlFieldActive: {
-    borderColor: "#D5CEC6",
+    borderColor: "rgba(121,165,184,0.3)",
   },
 
   sourceMark: {
-    width: 42,
-    height: 42,
-
-    marginRight: 11,
-
-    borderRadius: 13,
-
+    width: 40,
+    height: 40,
+    marginRight: 10,
+    borderRadius: 12,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   urlInput: {
     flex: 1,
-
-    minHeight: 64,
-
+    minHeight: 60,
     paddingVertical: 0,
-
     fontSize: 14,
-
     lineHeight: 20,
-
     fontFamily: fonts.regular,
-
     color: colors.text,
   },
 
   sourceDetected: {
-    minHeight: 28,
-
+    minHeight: 38,
     marginTop: 9,
-
+    paddingHorizontal: 2,
     flexDirection: "row",
-
     alignItems: "center",
+    gap: 8,
+  },
 
-    gap: 7,
+  detectedMark: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sourceDetectedText: {
     flex: 1,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.medium,
-
-    color: colors.textSecondary,
-  },
-
-  fieldHelper: {
-    marginTop: 10,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   previewCard: {
-    minHeight: 148,
-
-    marginTop: 13,
-
-    padding: 13,
-
-    borderRadius: 21,
-
-    backgroundColor: colors.surface,
-
+    minHeight: 132,
+    marginTop: 10,
+    padding: 11,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,253,252,0.82)",
     borderWidth: 1,
-
-    borderColor: colors.border,
-
+    borderColor: "rgba(255,255,255,0.72)",
     flexDirection: "row",
-
     alignItems: "center",
+  },
+
+  previewThumbnail: {
+    width: 82,
+    height: 106,
+    borderRadius: 14,
   },
 
   previewContent: {
     flex: 1,
-
     minWidth: 0,
+    marginLeft: 11,
+  },
 
-    marginLeft: 13,
+  previewMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 6,
   },
 
   previewEyebrow: {
-    fontSize: 10,
-
+    fontSize: 9,
     letterSpacing: 0.8,
-
     fontFamily: fonts.bold,
+    color: colors.blue,
+  },
 
-    color: colors.terracotta,
+  previewSourcePill: {
+    minHeight: 24,
+    paddingHorizontal: 7,
+    borderRadius: radius.round,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  previewSourceText: {
+    fontSize: 9,
+    fontFamily: fonts.semibold,
   },
 
   previewTitle: {
-    marginTop: 6,
-
-    fontSize: 16,
-
-    lineHeight: 22,
-
+    marginTop: 7,
+    fontSize: 15,
+    lineHeight: 21,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   previewAuthor: {
-    marginTop: 7,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.medium,
-
     color: colors.textSecondary,
   },
 
   previewFallbackText: {
-    marginTop: 7,
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
+    marginTop: 6,
+    fontSize: 10,
+    lineHeight: 16,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   categories: {
     flexDirection: "row",
-
     flexWrap: "wrap",
-
-    gap: 9,
+    gap: 8,
   },
 
   categoryOption: {
-    minHeight: 42,
-
-    paddingHorizontal: 16,
-
+    minHeight: 40,
+    paddingHorizontal: 13,
     borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
-
+    backgroundColor: "rgba(255,253,252,0.8)",
     borderWidth: 1,
-
-    borderColor: colors.border,
-
+    borderColor: "rgba(255,255,255,0.72)",
+    flexDirection: "row",
     alignItems: "center",
-
     justifyContent: "center",
+    gap: 5,
   },
 
   categoryText: {
-    fontSize: 12,
-
+    fontSize: 11,
     fontFamily: fonts.semibold,
-
     color: colors.textSecondary,
   },
 
+  counterPill: {
+    minHeight: 28,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   counter: {
-    marginTop: 1,
-
-    fontSize: 11,
-
+    fontSize: 10,
     fontFamily: fonts.medium,
-
     color: colors.textSecondary,
   },
 
   noteInput: {
-    minHeight: 165,
-
-    padding: 17,
-
-    borderRadius: 20,
-
+    minHeight: 155,
+    padding: 15,
+    borderRadius: 18,
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
-    borderColor: colors.border,
-
+    borderColor: "rgba(255,255,255,0.72)",
     fontSize: 15,
-
     lineHeight: 24,
-
     fontFamily: fonts.regular,
-
     color: colors.text,
   },
 
   tip: {
-    marginTop: 11,
-
+    marginTop: 10,
     flexDirection: "row",
-
     alignItems: "flex-start",
-
-    gap: 9,
+    gap: 8,
   },
 
   tipMark: {
     width: 30,
     height: 30,
-
     borderRadius: 10,
-
-    backgroundColor: colors.roseLight,
-
+    backgroundColor: colors.surface,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   tipText: {
     flex: 1,
-
     paddingTop: 2,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  saveButton: {
-    minHeight: 60,
+  savePanel: {
+    position: "relative",
+    overflow: "hidden",
+    padding: 17,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    ...shadows.hero,
+  },
 
-    paddingHorizontal: 14,
+  saveBubble: {
+    position: "absolute",
+    width: 116,
+    height: 116,
+    top: -46,
+    right: -30,
+    borderRadius: 58,
+    backgroundColor: "rgba(225,116,85,0.18)",
+  },
 
-    borderRadius: 18,
-
-    backgroundColor: colors.terracotta,
-
+  saveBadge: {
+    alignSelf: "flex-start",
+    minHeight: 29,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
+    backgroundColor: "rgba(255,253,252,0.1)",
     flexDirection: "row",
-
     alignItems: "center",
+    gap: 5,
+  },
+
+  saveBadgeText: {
+    fontSize: 9,
+    letterSpacing: 0.75,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  savePanelTitle: {
+    marginTop: 12,
+    fontSize: 21,
+    lineHeight: 28,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+
+  savePanelText: {
+    maxWidth: 305,
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
+    color: "rgba(255,253,252,0.68)",
+  },
+
+  saveButton: {
+    minHeight: 62,
+    marginTop: 14,
+    paddingHorizontal: 13,
+    borderRadius: 18,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
 
   saveButtonDisabled: {
@@ -920,27 +1171,17 @@ const styles = StyleSheet.create({
   },
 
   saveButtonMark: {
-    width: 34,
-    height: 34,
-
-    marginRight: 11,
-
+    width: 36,
+    height: 36,
     borderRadius: 11,
-
     backgroundColor: colors.surface,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   saveButtonText: {
-    flex: 1,
-
-    fontSize: 15,
-
+    fontSize: 14,
     fontFamily: fonts.bold,
-
     color: colors.surface,
   },
 
@@ -948,21 +1189,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  bottomHint: {
-    maxWidth: 300,
-
-    marginTop: 12,
-
-    alignSelf: "center",
-
-    textAlign: "center",
-
-    fontSize: 11,
-
-    lineHeight: 17,
-
+  saveButtonHint: {
+    marginTop: 1,
+    fontSize: 10,
     fontFamily: fonts.regular,
+    color: "rgba(255,253,252,0.72)",
+  },
 
-    color: colors.textSecondary,
+  saveButtonHintDisabled: {
+    color: colors.textMuted,
   },
 });

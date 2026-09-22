@@ -186,40 +186,54 @@ export default function ContentsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Conteúdos</Text>
+        <View style={styles.heroPanel}>
+          <View style={styles.heroBubbleOne} />
 
-            <Text style={styles.subtitle}>Tudo que está ganhando forma.</Text>
+          <View style={styles.heroBubbleTwo} />
+
+          <View style={styles.heroHeader}>
+            <View style={styles.heroEyebrow}>
+              <Ionicons name="sparkles" size={13} color={colors.lavender} />
+
+              <Text style={styles.heroEyebrowText}>CENTRAL DE PRODUÇÃO</Text>
+            </View>
+
+            <View style={styles.heroMark}>
+              <Ionicons name="layers" size={21} color={colors.surface} />
+            </View>
           </View>
 
-          <View style={styles.headerMark}>
-            <Ionicons name="layers-outline" size={22} color={colors.lavender} />
+          <Text style={styles.heroTitle}>Conteúdos</Text>
+
+          <Text style={styles.heroSubtitle}>
+            Acompanhe o que está em criação, pronto ou já publicado.
+          </Text>
+
+          <View style={styles.overview}>
+            <OverviewItem
+              value={activeCount}
+              label="Em andamento"
+              icon="flash-outline"
+              background={colors.terracottaLight}
+              color={colors.terracotta}
+            />
+
+            <OverviewItem
+              value={readyCount}
+              label="Prontos"
+              icon="checkmark-circle-outline"
+              background={colors.sageLight}
+              color={colors.sage}
+            />
+
+            <OverviewItem
+              value={publishedCount}
+              label="Publicados"
+              icon="paper-plane-outline"
+              background={colors.blueLight}
+              color={colors.blue}
+            />
           </View>
-        </View>
-
-        <View style={styles.overview}>
-          <OverviewItem
-            value={activeCount}
-            label="em andamento"
-            color={colors.terracotta}
-          />
-
-          <View style={styles.overviewDivider} />
-
-          <OverviewItem
-            value={readyCount}
-            label="prontos"
-            color={colors.sage}
-          />
-
-          <View style={styles.overviewDivider} />
-
-          <OverviewItem
-            value={publishedCount}
-            label="publicados"
-            color={colors.blue}
-          />
         </View>
 
         <ScrollView
@@ -455,23 +469,46 @@ type OverviewItemProps = {
   value: number;
   label: string;
   color: string;
+  background: string;
+  icon: keyof typeof Ionicons.glyphMap;
 };
 
-function OverviewItem({ value, label, color }: OverviewItemProps) {
+function OverviewItem({
+  value,
+  label,
+  color,
+  background,
+  icon,
+}: OverviewItemProps) {
   return (
     <View style={styles.overviewItem}>
-      <Text
+      <View
         style={[
-          styles.overviewValue,
+          styles.overviewIcon,
           {
-            color,
+            backgroundColor: background,
           },
         ]}
       >
-        {value}
-      </Text>
+        <Ionicons name={icon} size={15} color={color} />
+      </View>
 
-      <Text style={styles.overviewLabel}>{label}</Text>
+      <View style={{ flex: 1 }}>
+        <Text
+          style={[
+            styles.overviewValue,
+            {
+              color,
+            },
+          ]}
+        >
+          {value}
+        </Text>
+
+        <Text style={styles.overviewLabel} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -832,24 +869,111 @@ const styles = StyleSheet.create({
     paddingBottom: 140,
   },
 
-  header: {
-    paddingTop: spacing.lg,
+  heroPanel: {
+    position: "relative",
 
-    paddingBottom: 28,
+    overflow: "hidden",
+
+    marginTop: spacing.lg,
+
+    marginBottom: 24,
+
+    padding: 20,
+
+    borderRadius: 28,
+
+    backgroundColor: colors.lavenderLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(142, 127, 194, 0.14)",
+
+    ...shadows.card,
+  },
+
+  heroBubbleOne: {
+    position: "absolute",
+
+    width: 118,
+    height: 118,
+
+    top: -44,
+    right: -32,
+
+    borderRadius: 59,
+
+    backgroundColor: "rgba(225, 116, 85, 0.13)",
+  },
+
+  heroBubbleTwo: {
+    position: "absolute",
+
+    width: 72,
+    height: 72,
+
+    right: 54,
+    bottom: -34,
+
+    borderRadius: 36,
+
+    backgroundColor: "rgba(121, 165, 184, 0.15)",
+  },
+
+  heroHeader: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  heroEyebrow: {
+    minHeight: 30,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.72)",
 
     flexDirection: "row",
 
-    alignItems: "flex-start",
+    alignItems: "center",
 
-    justifyContent: "space-between",
-
-    gap: spacing.md,
+    gap: 6,
   },
 
-  title: {
+  heroEyebrowText: {
+    fontSize: 10,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.lavender,
+  },
+
+  heroMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.lavender,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    ...shadows.soft,
+  },
+
+  heroTitle: {
+    marginTop: 17,
+
     fontSize: 32,
 
-    lineHeight: 40,
+    lineHeight: 39,
 
     letterSpacing: -1,
 
@@ -858,85 +982,83 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  subtitle: {
-    marginTop: 6,
+  heroSubtitle: {
+    maxWidth: 300,
 
-    fontSize: 14,
+    marginTop: 5,
 
-    lineHeight: 21,
+    fontSize: 13,
+
+    lineHeight: 20,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
-  headerMark: {
-    width: 44,
-    height: 44,
+  overview: {
+    marginTop: 20,
 
-    marginTop: 3,
+    flexDirection: "row",
 
-    borderRadius: 14,
+    gap: 8,
+  },
 
-    backgroundColor: colors.lavenderLight,
+  overviewItem: {
+    flex: 1,
+
+    minWidth: 0,
+
+    minHeight: 74,
+
+    paddingHorizontal: 9,
+
+    paddingVertical: 10,
+
+    borderRadius: 17,
+
+    backgroundColor: "rgba(255, 253, 252, 0.88)",
+
+    borderWidth: 1,
+
+    borderColor: "rgba(255, 255, 255, 0.72)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 7,
+  },
+
+  overviewIcon: {
+    width: 31,
+    height: 31,
+
+    borderRadius: 10,
 
     alignItems: "center",
 
     justifyContent: "center",
   },
 
-  overview: {
-    minHeight: 84,
-
-    marginBottom: 26,
-
-    paddingVertical: 16,
-
-    paddingHorizontal: 10,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    borderTopWidth: 1,
-
-    borderBottomWidth: 1,
-
-    borderColor: colors.divider,
-  },
-
-  overviewItem: {
-    flex: 1,
-
-    alignItems: "center",
-  },
-
   overviewValue: {
-    fontSize: 23,
+    fontSize: 20,
 
-    lineHeight: 29,
+    lineHeight: 24,
 
     fontFamily: fonts.bold,
   },
 
   overviewLabel: {
-    marginTop: 3,
+    marginTop: 1,
 
-    fontSize: 11,
+    fontSize: 9,
 
-    lineHeight: 16,
+    lineHeight: 13,
 
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
 
     color: colors.textSecondary,
-  },
-
-  overviewDivider: {
-    width: 1,
-
-    height: 38,
-
-    backgroundColor: colors.divider,
   },
 
   filters: {

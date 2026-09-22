@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   },
 
   overlayShade: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(24, 20, 18, 0.13)",
   },
 

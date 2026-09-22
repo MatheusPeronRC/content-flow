@@ -198,85 +198,114 @@ export default function AdaptarConteudoScreen() {
           <View style={styles.headerSpace} />
         </View>
 
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>TRANSFORMAR REFERÊNCIA</Text>
+        <View style={styles.magicPanel}>
+          <View style={styles.magicBubbleOne} />
+          <View style={styles.magicBubbleTwo} />
+
+          <View style={styles.magicTop}>
+            <View style={styles.magicBadge}>
+              <Ionicons name="sparkles" size={13} color={colors.terracotta} />
+
+              <Text style={styles.magicBadgeText}>TRANSFORMAR REFERÊNCIA</Text>
+            </View>
+
+            <View style={styles.magicMark}>
+              <Ionicons name="color-wand" size={20} color={colors.surface} />
+            </View>
+          </View>
 
           <Text style={styles.title}>
             Só preciso entender{"\n"}o que te chamou atenção.
           </Text>
 
           <Text style={styles.description}>
-            Não precisa escrever um roteiro. Conte do seu jeito o que vale
-            aproveitar dessa referência.
+            Conte do seu jeito o que vale aproveitar. O ContentFlow organiza a
+            estrutura depois.
           </Text>
-        </View>
 
-        <View style={styles.referenceCard}>
-          <InspirationThumbnail
-            thumbnailUrl={inspiration.thumbnailUrl}
-            source={inspiration.source}
-            variant="compact"
-            style={styles.referenceThumbnail}
-          />
+          <View style={styles.referenceSpotlight}>
+            <InspirationThumbnail
+              thumbnailUrl={inspiration.thumbnailUrl}
+              source={inspiration.source}
+              variant="compact"
+              style={styles.referenceThumbnail}
+            />
 
-          <View style={styles.referenceContent}>
-            <View style={styles.referenceMeta}>
-              <View
-                style={[
-                  styles.sourceBadge,
-                  {
-                    backgroundColor: sourceMeta.background,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={sourceMeta.icon}
-                  size={12}
-                  color={sourceMeta.color}
-                />
-
-                <Text
+            <View style={styles.referenceContent}>
+              <View style={styles.referenceMeta}>
+                <View
                   style={[
-                    styles.sourceText,
+                    styles.sourceBadge,
                     {
-                      color: sourceMeta.color,
+                      backgroundColor: sourceMeta.background,
                     },
                   ]}
                 >
-                  {inspiration.source}
-                </Text>
+                  <Ionicons
+                    name={sourceMeta.icon}
+                    size={12}
+                    color={sourceMeta.color}
+                  />
+
+                  <Text
+                    style={[
+                      styles.sourceText,
+                      {
+                        color: sourceMeta.color,
+                      },
+                    ]}
+                  >
+                    {inspiration.source}
+                  </Text>
+                </View>
+
+                {inspiration.category && (
+                  <View style={styles.categoryMiniPill}>
+                    <Text style={styles.referenceCategory}>
+                      {inspiration.category}
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              {inspiration.category && (
-                <Text style={styles.referenceCategory}>
-                  {inspiration.category}
+              <Text style={styles.referenceTitle} numberOfLines={3}>
+                {referenceTitle}
+              </Text>
+
+              {inspiration.authorName ? (
+                <Text style={styles.referenceAuthor} numberOfLines={1}>
+                  {inspiration.authorName}
+                </Text>
+              ) : (
+                <Text style={styles.referenceUrl} numberOfLines={1}>
+                  {cleanUrl(inspiration.url)}
                 </Text>
               )}
             </View>
-
-            <Text style={styles.referenceTitle} numberOfLines={3}>
-              {referenceTitle}
-            </Text>
-
-            {inspiration.authorName ? (
-              <Text style={styles.referenceAuthor} numberOfLines={1}>
-                {inspiration.authorName}
-              </Text>
-            ) : (
-              <Text style={styles.referenceUrl} numberOfLines={1}>
-                {cleanUrl(inspiration.url)}
-              </Text>
-            )}
           </View>
         </View>
 
-        <View style={styles.inputSection}>
-          <View style={styles.fieldHeader}>
-            <Text style={styles.fieldTitle}>
-              O que você quer levar dessa referência?
-            </Text>
+        <View style={styles.inputPanel}>
+          <View style={styles.inputPanelHeader}>
+            <View style={styles.inputPanelMark}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={18}
+                color={colors.lavender}
+              />
+            </View>
 
-            <Text style={styles.optional}>DO SEU JEITO</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputPanelEyebrow}>SUA LEITURA</Text>
+
+              <Text style={styles.fieldTitle}>
+                O que você quer levar dessa referência?
+              </Text>
+            </View>
+
+            <View style={styles.optionalPill}>
+              <Text style={styles.optional}>DO SEU JEITO</Text>
+            </View>
           </View>
 
           <View style={styles.ideaField}>
@@ -311,10 +340,20 @@ export default function AdaptarConteudoScreen() {
           </View>
         </View>
 
-        <View style={styles.formatSection}>
-          <Text style={styles.fieldTitle}>
-            Em que formato você quer transformar?
-          </Text>
+        <View style={styles.formatPanel}>
+          <View style={styles.formatPanelHeader}>
+            <View style={styles.formatPanelMark}>
+              <Ionicons name="apps-outline" size={18} color={colors.blue} />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.formatEyebrow}>FORMATO FINAL</Text>
+
+              <Text style={styles.fieldTitle}>
+                Em que formato você quer transformar?
+              </Text>
+            </View>
+          </View>
 
           <View style={styles.formats}>
             {formats.map((item) => {
@@ -450,216 +489,518 @@ const styles = StyleSheet.create({
     width: 42,
   },
 
-  hero: {
-    paddingTop: 18,
-    paddingBottom: 28,
+  magicPanel: {
+    position: "relative",
+
+    overflow: "hidden",
+
+    marginTop: 16,
+
+    marginBottom: 22,
+
+    padding: 20,
+
+    borderRadius: 28,
+
+    backgroundColor: colors.terracottaLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(225, 116, 85, 0.16)",
+
+    ...shadows.card,
   },
 
-  eyebrow: {
-    marginBottom: 10,
+  magicBubbleOne: {
+    position: "absolute",
+
+    width: 128,
+    height: 128,
+
+    top: -48,
+    right: -38,
+
+    borderRadius: 64,
+
+    backgroundColor: "rgba(142, 127, 194, 0.15)",
+  },
+
+  magicBubbleTwo: {
+    position: "absolute",
+
+    width: 82,
+    height: 82,
+
+    left: -28,
+    bottom: 42,
+
+    borderRadius: 41,
+
+    backgroundColor: "rgba(121, 165, 184, 0.12)",
+  },
+
+  magicTop: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  magicBadge: {
+    minHeight: 30,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.8)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+  },
+
+  magicBadgeText: {
     fontSize: 10,
-    letterSpacing: 1.1,
+
+    letterSpacing: 0.75,
+
     fontFamily: fonts.bold,
+
     color: colors.terracotta,
+  },
+
+  magicMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.terracotta,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    ...shadows.soft,
   },
 
   title: {
     maxWidth: 340,
+
+    marginTop: 17,
+
     fontSize: 31,
+
     lineHeight: 39,
+
     letterSpacing: -0.9,
+
     fontFamily: fonts.bold,
+
     color: colors.text,
   },
 
   description: {
-    maxWidth: 340,
-    marginTop: 12,
+    maxWidth: 330,
+
+    marginTop: 10,
+
     fontSize: 14,
+
     lineHeight: 22,
+
     fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
-  referenceCard: {
-    minHeight: 136,
-    marginBottom: 30,
-    padding: 13,
+  referenceSpotlight: {
+    minHeight: 132,
+
+    marginTop: 19,
+
+    padding: 12,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     borderRadius: 20,
-    backgroundColor: colors.surface,
+
+    backgroundColor: "rgba(255, 253, 252, 0.9)",
+
     borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.soft,
+
+    borderColor: "rgba(255, 255, 255, 0.75)",
   },
 
   referenceThumbnail: {
     width: 84,
     height: 108,
+
     borderRadius: 15,
   },
 
   referenceContent: {
     flex: 1,
+
     minWidth: 0,
+
     marginLeft: 13,
   },
 
   referenceMeta: {
     flexDirection: "row",
+
     flexWrap: "wrap",
+
     alignItems: "center",
-    gap: 7,
+
+    gap: 6,
   },
 
   sourceBadge: {
-    minHeight: 26,
+    minHeight: 25,
+
     paddingHorizontal: 8,
+
     borderRadius: radius.round,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     gap: 5,
   },
 
   sourceText: {
     fontSize: 10,
+
     fontFamily: fonts.semibold,
+  },
+
+  categoryMiniPill: {
+    minHeight: 25,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   referenceCategory: {
     fontSize: 10,
+
     fontFamily: fonts.semibold,
+
     color: colors.textSecondary,
   },
 
   referenceTitle: {
     marginTop: 9,
+
     fontSize: 16,
+
     lineHeight: 22,
+
     fontFamily: fonts.bold,
+
     color: colors.text,
   },
 
   referenceAuthor: {
     marginTop: 6,
+
     fontSize: 11,
+
     lineHeight: 17,
+
     fontFamily: fonts.medium,
+
     color: colors.textSecondary,
   },
 
   referenceUrl: {
     marginTop: 6,
+
     fontSize: 11,
+
     lineHeight: 17,
+
     fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
   inputSection: {
-    marginBottom: 30,
+    display: "none",
+  },
+
+  inputPanel: {
+    marginBottom: 20,
+
+    padding: 16,
+
+    borderRadius: 22,
+
+    backgroundColor: colors.lavenderLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(142, 127, 194, 0.14)",
+  },
+
+  inputPanelHeader: {
+    marginBottom: 13,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 10,
+  },
+
+  inputPanelMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  inputPanelEyebrow: {
+    marginBottom: 2,
+
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.lavender,
   },
 
   fieldHeader: {
     marginBottom: 10,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
+
     gap: 10,
   },
 
   fieldTitle: {
     flex: 1,
+
     fontSize: 16,
+
     lineHeight: 23,
+
     fontFamily: fonts.semibold,
+
     color: colors.text,
   },
 
+  optionalPill: {
+    minHeight: 26,
+
+    paddingHorizontal: 8,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+  },
+
   optional: {
-    fontSize: 10,
-    letterSpacing: 0.7,
+    marginTop: 7,
+
+    fontSize: 9,
+
+    letterSpacing: 0.6,
+
     fontFamily: fonts.bold,
+
     color: colors.textSecondary,
   },
 
   ideaField: {
     minHeight: 160,
+
     padding: 16,
-    borderRadius: 20,
+
+    borderRadius: 18,
+
     backgroundColor: colors.surface,
+
     borderWidth: 1,
-    borderColor: colors.border,
+
+    borderColor: "rgba(142, 127, 194, 0.16)",
   },
 
   ideaInput: {
     minHeight: 114,
+
     padding: 0,
+
     fontSize: 15,
+
     lineHeight: 24,
+
     fontFamily: fonts.regular,
+
     color: colors.text,
   },
 
   characterCount: {
     marginTop: 8,
+
     textAlign: "right",
+
     fontSize: 11,
+
     fontFamily: fonts.medium,
+
     color: colors.textSecondary,
   },
 
   helperRow: {
-    marginTop: 12,
+    marginTop: 11,
+
     flexDirection: "row",
+
     alignItems: "flex-start",
+
     gap: 7,
   },
 
   helperText: {
     flex: 1,
+
     fontSize: 12,
+
     lineHeight: 18,
+
     fontFamily: fonts.regular,
+
     color: colors.textSecondary,
   },
 
   formatSection: {
-    marginBottom: 30,
+    display: "none",
+  },
+
+  formatPanel: {
+    marginBottom: 24,
+
+    padding: 16,
+
+    borderRadius: 22,
+
+    backgroundColor: colors.blueLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(121, 165, 184, 0.15)",
+  },
+
+  formatPanelHeader: {
+    marginBottom: 13,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 10,
+  },
+
+  formatPanelMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  formatEyebrow: {
+    marginBottom: 2,
+
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.blue,
   },
 
   formats: {
-    marginTop: 13,
     flexDirection: "row",
+
     gap: 8,
   },
 
   formatOption: {
     flex: 1,
-    minHeight: 62,
-    paddingHorizontal: 9,
+
+    minHeight: 66,
+
+    paddingHorizontal: 8,
+
     borderRadius: 17,
+
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+
+    borderColor: "rgba(121, 165, 184, 0.14)",
+
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "center",
+
     gap: 7,
   },
 
   formatOptionSelected: {
     backgroundColor: colors.text,
+
     borderColor: colors.text,
   },
 
   formatIcon: {
     width: 30,
     height: 30,
+
     borderRadius: 9,
+
     backgroundColor: colors.surfaceMuted,
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
@@ -669,7 +1010,9 @@ const styles = StyleSheet.create({
 
   formatText: {
     fontSize: 12,
+
     fontFamily: fonts.semibold,
+
     color: colors.textSecondary,
   },
 

@@ -16,6 +16,8 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import InspirationThumbnail from "../../components/InspirationThumbnail";
+
 import { getContentById, updateContent } from "../../services/contentStorage";
 
 import { ContentItem } from "../../types/content";
@@ -239,35 +241,95 @@ export default function RoteiroScreen() {
             <View style={styles.headerSpace} />
           </View>
 
-          <View style={styles.hero}>
-            <Text style={styles.eyebrow}>SEU ROTEIRO</Text>
+          <View style={styles.heroPanel}>
+            <View style={styles.heroBubbleOne} />
 
-            <Text
-              style={[
-                styles.title,
+            <View style={styles.heroBubbleTwo} />
 
-                isLongIdea && styles.titleLong,
+            <View style={styles.heroTop}>
+              <View style={styles.heroBadge}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={13}
+                  color={colors.amber}
+                />
 
-                isVeryLongIdea && styles.titleVeryLong,
-              ]}
-            >
-              {content.idea}
-            </Text>
+                <Text style={styles.heroBadgeText}>EDITOR DE ROTEIRO</Text>
+              </View>
 
-            <View style={styles.heroMeta}>
-              {content.format && (
-                <View style={styles.formatBadge}>
-                  <Text style={styles.formatText}>{content.format}</Text>
+              <View style={styles.heroMark}>
+                <Ionicons name="create" size={20} color={colors.surface} />
+              </View>
+            </View>
+
+            <View style={styles.heroContext}>
+              {content.reference ? (
+                <InspirationThumbnail
+                  thumbnailUrl={content.reference.thumbnailUrl}
+                  source={content.reference.source}
+                  variant="compact"
+                  style={styles.heroThumbnail}
+                />
+              ) : (
+                <View style={styles.heroFallback}>
+                  <Ionicons
+                    name="bulb-outline"
+                    size={22}
+                    color={colors.amber}
+                  />
                 </View>
               )}
 
-              <Text style={styles.flexibilityText}>Monte do seu jeito</Text>
+              <View style={styles.heroContextText}>
+                <Text style={styles.heroContextLabel}>CONTEÚDO</Text>
+
+                <Text
+                  style={[
+                    styles.title,
+
+                    isLongIdea && styles.titleLong,
+
+                    isVeryLongIdea && styles.titleVeryLong,
+                  ]}
+                  numberOfLines={isVeryLongIdea ? 5 : 4}
+                >
+                  {content.idea}
+                </Text>
+
+                <View style={styles.heroMeta}>
+                  {content.format && (
+                    <View style={styles.formatBadge}>
+                      <Text style={styles.formatText}>{content.format}</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.flexibilityBadge}>
+                    <Ionicons
+                      name="options-outline"
+                      size={13}
+                      color={colors.textSecondary}
+                    />
+
+                    <Text style={styles.flexibilityText}>
+                      Monte do seu jeito
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
-            <Text style={styles.description}>
-              Use esta estrutura como apoio, não como regra. Escreva do jeito
-              que você realmente falaria.
-            </Text>
+            <View style={styles.heroTip}>
+              <Ionicons
+                name="sparkles-outline"
+                size={16}
+                color={colors.amber}
+              />
+
+              <Text style={styles.description}>
+                Use esta estrutura como apoio, não como regra. Escreva do jeito
+                que você realmente falaria.
+              </Text>
+            </View>
           </View>
 
           <ScriptEditorCard
@@ -289,7 +351,14 @@ export default function RoteiroScreen() {
             />
           </ScriptEditorCard>
 
-          <View style={styles.developmentSection}>
+          <View
+            style={[
+              styles.developmentSection,
+              {
+                backgroundColor: colors.amberLight,
+              },
+            ]}
+          >
             <View style={styles.developmentTop}>
               <View style={styles.sectionIdentity}>
                 <View
@@ -421,20 +490,41 @@ export default function RoteiroScreen() {
           </ScriptEditorCard>
 
           <View style={styles.optionalNote}>
-            <Ionicons
-              name="information-circle-outline"
-              size={16}
-              color={colors.textMuted}
-            />
+            <View style={styles.optionalNoteMark}>
+              <Ionicons
+                name="sparkles-outline"
+                size={16}
+                color={colors.lavender}
+              />
+            </View>
 
-            <Text style={styles.optionalNoteText}>
-              Hook e CTA são opcionais. Use apenas o que fizer sentido para este
-              conteúdo.
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.optionalNoteTitle}>
+                Seu roteiro não precisa seguir uma fórmula.
+              </Text>
+
+              <Text style={styles.optionalNoteText}>
+                Hook e CTA são opcionais. Use apenas o que fizer sentido para
+                este conteúdo.
+              </Text>
+            </View>
           </View>
 
           {canAdvance ? (
-            <View style={styles.actions}>
+            <View style={styles.actionsPanel}>
+              <View style={styles.actionsHeader}>
+                <View style={styles.actionsBadge}>
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={14}
+                    color={colors.terracotta}
+                  />
+
+                  <Text style={styles.actionsBadgeText}>FINALIZAR</Text>
+                </View>
+
+                <Text style={styles.actionsTitle}>Como deseja continuar?</Text>
+              </View>
               <TouchableOpacity
                 style={styles.secondaryButton}
                 activeOpacity={0.8}
@@ -444,7 +534,7 @@ export default function RoteiroScreen() {
                 <Ionicons
                   name="bookmark-outline"
                   size={17}
-                  color={colors.text}
+                  color={colors.surface}
                 />
 
                 <Text style={styles.secondaryButtonText}>
@@ -489,7 +579,20 @@ export default function RoteiroScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.actions}>
+            <View style={styles.actionsPanel}>
+              <View style={styles.actionsHeader}>
+                <View style={styles.actionsBadge}>
+                  <Ionicons
+                    name="save-outline"
+                    size={14}
+                    color={colors.terracotta}
+                  />
+
+                  <Text style={styles.actionsBadgeText}>ALTERAÇÕES</Text>
+                </View>
+
+                <Text style={styles.actionsTitle}>Salve sua nova versão.</Text>
+              </View>
               <TouchableOpacity
                 style={styles.primaryButton}
                 activeOpacity={0.86}
@@ -539,13 +642,20 @@ function ScriptEditorCard({
   children,
 }: ScriptEditorCardProps) {
   return (
-    <View style={styles.scriptCard}>
+    <View
+      style={[
+        styles.scriptCard,
+        {
+          backgroundColor: background,
+        },
+      ]}
+    >
       <View style={styles.sectionIdentity}>
         <View
           style={[
             styles.sectionMark,
             {
-              backgroundColor: background,
+              backgroundColor: colors.surface,
             },
           ]}
         >
@@ -629,32 +739,175 @@ const styles = StyleSheet.create({
     width: 40,
   },
 
-  hero: {
-    paddingTop: 20,
+  heroPanel: {
+    position: "relative",
 
-    paddingBottom: 28,
+    overflow: "hidden",
+
+    marginTop: 14,
+
+    marginBottom: 18,
+
+    padding: 18,
+
+    borderRadius: 28,
+
+    backgroundColor: colors.amberLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(201, 154, 69, 0.16)",
+
+    ...shadows.card,
   },
 
-  eyebrow: {
-    marginBottom: 10,
+  heroBubbleOne: {
+    position: "absolute",
 
+    width: 126,
+    height: 126,
+
+    top: -46,
+    right: -36,
+
+    borderRadius: 63,
+
+    backgroundColor: "rgba(225, 116, 85, 0.12)",
+  },
+
+  heroBubbleTwo: {
+    position: "absolute",
+
+    width: 84,
+    height: 84,
+
+    left: -28,
+    bottom: 24,
+
+    borderRadius: 42,
+
+    backgroundColor: "rgba(142, 127, 194, 0.12)",
+  },
+
+  heroTop: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  heroBadge: {
+    minHeight: 30,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.78)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+  },
+
+  heroBadgeText: {
     fontSize: 10,
 
-    letterSpacing: 1.1,
+    letterSpacing: 0.8,
 
     fontFamily: fonts.bold,
 
     color: colors.amber,
   },
 
+  heroMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.amber,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    ...shadows.soft,
+  },
+
+  heroContext: {
+    marginTop: 17,
+
+    padding: 12,
+
+    borderRadius: 20,
+
+    backgroundColor: "rgba(255, 253, 252, 0.86)",
+
+    borderWidth: 1,
+
+    borderColor: "rgba(255, 255, 255, 0.72)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  heroThumbnail: {
+    width: 66,
+    height: 82,
+
+    borderRadius: 14,
+  },
+
+  heroFallback: {
+    width: 66,
+    height: 66,
+
+    borderRadius: 17,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  heroContextText: {
+    flex: 1,
+
+    minWidth: 0,
+
+    marginLeft: 12,
+  },
+
+  heroContextLabel: {
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.amber,
+  },
+
+  eyebrow: {
+    display: "none",
+  },
+
   title: {
-    maxWidth: 340,
+    maxWidth: "100%",
 
-    fontSize: 30,
+    marginTop: 5,
 
-    lineHeight: 37,
+    fontSize: 22,
 
-    letterSpacing: -0.9,
+    lineHeight: 30,
+
+    letterSpacing: -0.4,
 
     fontFamily: fonts.bold,
 
@@ -662,19 +915,19 @@ const styles = StyleSheet.create({
   },
 
   titleLong: {
-    fontSize: 22,
+    fontSize: 18,
 
-    lineHeight: 32,
+    lineHeight: 27,
 
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
 
     fontFamily: fonts.semibold,
   },
 
   titleVeryLong: {
-    fontSize: 18,
+    fontSize: 16,
 
-    lineHeight: 29,
+    lineHeight: 24,
 
     letterSpacing: 0,
 
@@ -682,49 +935,81 @@ const styles = StyleSheet.create({
   },
 
   heroMeta: {
-    marginTop: 12,
+    marginTop: 9,
 
     flexDirection: "row",
 
+    flexWrap: "wrap",
+
     alignItems: "center",
 
-    gap: 9,
+    gap: 7,
   },
 
   formatBadge: {
-    paddingHorizontal: 10,
+    minHeight: 28,
 
-    paddingVertical: 6,
+    paddingHorizontal: 9,
 
     borderRadius: radius.round,
 
     backgroundColor: colors.amberLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   formatText: {
-    fontSize: 11,
+    fontSize: 10,
 
     fontFamily: fonts.semibold,
 
     color: colors.amber,
   },
 
+  flexibilityBadge: {
+    minHeight: 28,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceMuted,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
   flexibilityText: {
-    fontSize: 12,
+    fontSize: 10,
 
     fontFamily: fonts.medium,
 
     color: colors.textSecondary,
   },
 
+  heroTip: {
+    marginTop: 12,
+
+    paddingHorizontal: 3,
+
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: 7,
+  },
+
   description: {
-    maxWidth: 340,
+    flex: 1,
 
-    marginTop: 14,
+    fontSize: 12,
 
-    fontSize: 14,
-
-    lineHeight: 22,
+    lineHeight: 19,
 
     fontFamily: fonts.regular,
 
@@ -732,17 +1017,15 @@ const styles = StyleSheet.create({
   },
 
   scriptCard: {
-    marginBottom: 16,
+    marginBottom: 14,
 
-    padding: 20,
+    padding: 18,
 
     borderRadius: 22,
 
-    backgroundColor: colors.surface,
-
     borderWidth: 1,
 
-    borderColor: colors.border,
+    borderColor: "rgba(255, 255, 255, 0.72)",
 
     ...shadows.soft,
   },
@@ -754,20 +1037,22 @@ const styles = StyleSheet.create({
   },
 
   sectionMark: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
 
     marginRight: 11,
 
-    borderRadius: 12,
+    borderRadius: 13,
 
     alignItems: "center",
 
     justifyContent: "center",
+
+    ...shadows.soft,
   },
 
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 10,
 
     letterSpacing: 0.9,
 
@@ -787,13 +1072,17 @@ const styles = StyleSheet.create({
   largeInput: {
     minHeight: 145,
 
-    marginTop: 17,
+    marginTop: 16,
 
     padding: 17,
 
     borderRadius: 18,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(225, 116, 85, 0.12)",
 
     fontSize: 17,
 
@@ -807,13 +1096,17 @@ const styles = StyleSheet.create({
   mediumInput: {
     minHeight: 125,
 
-    marginTop: 17,
+    marginTop: 16,
 
     padding: 17,
 
     borderRadius: 18,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(123, 158, 136, 0.12)",
 
     fontSize: 16,
 
@@ -825,17 +1118,15 @@ const styles = StyleSheet.create({
   },
 
   developmentSection: {
-    marginBottom: 16,
+    marginBottom: 14,
 
-    padding: 20,
+    padding: 18,
 
     borderRadius: 22,
 
-    backgroundColor: colors.surface,
-
     borderWidth: 1,
 
-    borderColor: colors.border,
+    borderColor: "rgba(201, 154, 69, 0.15)",
 
     ...shadows.soft,
   },
@@ -851,13 +1142,17 @@ const styles = StyleSheet.create({
   },
 
   stepsCount: {
-    paddingHorizontal: 9,
+    minHeight: 29,
 
-    paddingVertical: 5,
+    paddingHorizontal: 9,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.amberLight,
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   stepsCountText: {
@@ -869,13 +1164,13 @@ const styles = StyleSheet.create({
   },
 
   developmentDescription: {
-    marginTop: 15,
+    marginTop: 14,
 
-    marginBottom: 16,
+    marginBottom: 15,
 
-    fontSize: 13,
+    fontSize: 12,
 
-    lineHeight: 20,
+    lineHeight: 19,
 
     fontFamily: fonts.regular,
 
@@ -883,19 +1178,21 @@ const styles = StyleSheet.create({
   },
 
   points: {
-    gap: 12,
+    gap: 10,
   },
 
   pointCard: {
-    padding: 15,
+    padding: 14,
 
     borderRadius: 18,
 
-    backgroundColor: colors.surfaceSoft,
+    backgroundColor: colors.surface,
 
     borderWidth: 1,
 
-    borderColor: colors.divider,
+    borderColor: "rgba(201, 154, 69, 0.12)",
+
+    ...shadows.soft,
   },
 
   pointHeader: {
@@ -915,8 +1212,8 @@ const styles = StyleSheet.create({
   },
 
   pointNumber: {
-    width: 30,
-    height: 30,
+    width: 31,
+    height: 31,
 
     borderRadius: radius.round,
 
@@ -947,9 +1244,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
 
-    borderRadius: radius.round,
+    borderRadius: 10,
 
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceMuted,
 
     alignItems: "center",
 
@@ -957,9 +1254,9 @@ const styles = StyleSheet.create({
   },
 
   pointInput: {
-    minHeight: 104,
+    minHeight: 100,
 
-    marginTop: 12,
+    marginTop: 11,
 
     padding: 0,
 
@@ -973,9 +1270,9 @@ const styles = StyleSheet.create({
   },
 
   addPointButton: {
-    minHeight: 70,
+    minHeight: 68,
 
-    marginTop: 12,
+    marginTop: 11,
 
     paddingHorizontal: 12,
 
@@ -983,9 +1280,9 @@ const styles = StyleSheet.create({
 
     borderWidth: 1,
 
-    borderStyle: "dashed",
+    borderColor: "rgba(201, 154, 69, 0.26)",
 
-    borderColor: colors.border,
+    backgroundColor: "rgba(255, 253, 252, 0.55)",
 
     flexDirection: "row",
 
@@ -993,14 +1290,14 @@ const styles = StyleSheet.create({
   },
 
   addPointMark: {
-    width: 34,
-    height: 34,
+    width: 36,
+    height: 36,
 
     marginRight: 10,
 
     borderRadius: 11,
 
-    backgroundColor: colors.amberLight,
+    backgroundColor: colors.surface,
 
     alignItems: "center",
 
@@ -1026,25 +1323,56 @@ const styles = StyleSheet.create({
   },
 
   optionalNote: {
-    marginTop: 2,
+    marginTop: 3,
 
-    marginBottom: 22,
+    marginBottom: 20,
 
-    paddingHorizontal: 4,
+    padding: 14,
+
+    borderRadius: 18,
+
+    backgroundColor: colors.lavenderLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(142, 127, 194, 0.13)",
 
     flexDirection: "row",
 
     alignItems: "flex-start",
 
-    gap: 7,
+    gap: 10,
+  },
+
+  optionalNoteMark: {
+    width: 34,
+    height: 34,
+
+    borderRadius: 11,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  optionalNoteTitle: {
+    fontSize: 13,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
   },
 
   optionalNoteText: {
-    flex: 1,
+    marginTop: 3,
 
-    fontSize: 12,
+    fontSize: 11,
 
-    lineHeight: 18,
+    lineHeight: 17,
 
     fontFamily: fonts.regular,
 
@@ -1052,21 +1380,77 @@ const styles = StyleSheet.create({
   },
 
   actions: {
-    marginTop: 2,
+    display: "none",
+  },
+
+  actionsPanel: {
+    marginTop: 4,
+
+    padding: 16,
+
+    borderRadius: 22,
+
+    backgroundColor: colors.primary,
+
+    ...shadows.hero,
+  },
+
+  actionsHeader: {
+    marginBottom: 13,
+  },
+
+  actionsBadge: {
+    alignSelf: "flex-start",
+
+    minHeight: 28,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.1)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  actionsBadgeText: {
+    fontSize: 9,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.terracotta,
+  },
+
+  actionsTitle: {
+    marginTop: 10,
+
+    fontSize: 18,
+
+    lineHeight: 24,
+
+    fontFamily: fonts.bold,
+
+    color: colors.surface,
   },
 
   secondaryButton: {
-    minHeight: 52,
+    minHeight: 50,
 
     marginBottom: 9,
 
-    borderRadius: 16,
+    borderRadius: 15,
 
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255, 253, 252, 0.1)",
 
     borderWidth: 1,
 
-    borderColor: colors.border,
+    borderColor: "rgba(255, 253, 252, 0.12)",
 
     flexDirection: "row",
 
@@ -1082,7 +1466,7 @@ const styles = StyleSheet.create({
 
     fontFamily: fonts.semibold,
 
-    color: colors.text,
+    color: colors.surface,
   },
 
   primaryButton: {

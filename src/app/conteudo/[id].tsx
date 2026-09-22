@@ -453,7 +453,18 @@ export default function ContentDetailsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.hero}>
+        <View
+          style={[
+            styles.heroPanel,
+            {
+              backgroundColor: status.background,
+            },
+          ]}
+        >
+          <View style={styles.heroBubbleOne} />
+
+          <View style={styles.heroBubbleTwo} />
+
           <View style={styles.heroTop}>
             <View
               style={[
@@ -497,6 +508,49 @@ export default function ContentDetailsScreen() {
               </View>
             )}
           </View>
+
+          {!editing && (
+            <View style={styles.heroIdentity}>
+              {content.reference ? (
+                <InspirationThumbnail
+                  thumbnailUrl={content.reference.thumbnailUrl}
+                  source={content.reference.source}
+                  variant="compact"
+                  style={styles.heroThumbnail}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.heroFallbackMark,
+                    {
+                      backgroundColor: status.foreground,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={status.icon}
+                    size={22}
+                    color={colors.surface}
+                  />
+                </View>
+              )}
+
+              <View style={styles.heroIdentityText}>
+                <Text style={styles.heroEyebrow}>
+                  {content.reference
+                    ? "CRIADO A PARTIR DE UMA REFERÊNCIA"
+                    : "CONTEÚDO ORIGINAL"}
+                </Text>
+
+                <Text style={styles.heroIdentityHint} numberOfLines={1}>
+                  {content.reference
+                    ? content.reference.mediaTitle?.trim() ||
+                      content.reference.source
+                    : content.format || "Seu conteúdo em produção"}
+                </Text>
+              </View>
+            </View>
+          )}
 
           {editing ? (
             <TextInput
@@ -633,12 +687,26 @@ export default function ContentDetailsScreen() {
         ) : (
           <>
             <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>Roteiro</Text>
+              <View style={styles.sectionHeadingRow}>
+                <View style={styles.scriptSectionMark}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={19}
+                    color={colors.amber}
+                  />
+                </View>
 
-                <Text style={styles.sectionSubtitle}>
-                  Sua estrutura para criar este conteúdo.
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sectionEyebrow}>
+                    ESTRUTURA DO CONTEÚDO
+                  </Text>
+
+                  <Text style={styles.sectionTitle}>Roteiro</Text>
+
+                  <Text style={styles.sectionSubtitle}>
+                    Sua estrutura para criar este conteúdo.
+                  </Text>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -683,9 +751,9 @@ export default function ContentDetailsScreen() {
                 <Ionicons name="arrow-forward" size={17} color={colors.amber} />
               </TouchableOpacity>
             ) : (
-              <View style={styles.scriptSurface}>
+              <View style={styles.scriptStack}>
                 {content.script.hook.trim() && (
-                  <View style={styles.scriptSection}>
+                  <View style={[styles.scriptSectionCard, styles.hookCard]}>
                     <ScriptHeader
                       icon="flash-outline"
                       label="HOOK"
@@ -698,13 +766,10 @@ export default function ContentDetailsScreen() {
                   </View>
                 )}
 
-                {content.script.hook.trim() &&
-                  content.script.points.some((point) => point.trim()) && (
-                    <View style={styles.scriptDivider} />
-                  )}
-
                 {content.script.points.some((point) => point.trim()) && (
-                  <View style={styles.scriptSection}>
+                  <View
+                    style={[styles.scriptSectionCard, styles.developmentCard]}
+                  >
                     <ScriptHeader
                       icon="list-outline"
                       label="DESENVOLVIMENTO"
@@ -742,14 +807,8 @@ export default function ContentDetailsScreen() {
                   </View>
                 )}
 
-                {content.script.cta.trim() &&
-                  (content.script.hook.trim() ||
-                    content.script.points.some((point) => point.trim())) && (
-                    <View style={styles.scriptDivider} />
-                  )}
-
                 {content.script.cta.trim() && (
-                  <View style={styles.scriptSection}>
+                  <View style={[styles.scriptSectionCard, styles.ctaCard]}>
                     <ScriptHeader
                       icon="megaphone-outline"
                       label="CTA"
@@ -767,12 +826,26 @@ export default function ContentDetailsScreen() {
             {content.reference && (
               <>
                 <View style={styles.referenceHeader}>
-                  <View>
-                    <Text style={styles.sectionTitle}>Referência</Text>
+                  <View style={styles.sectionHeadingRow}>
+                    <View style={styles.referenceSectionMark}>
+                      <Ionicons
+                        name="images-outline"
+                        size={19}
+                        color={colors.rose}
+                      />
+                    </View>
 
-                    <Text style={styles.sectionSubtitle}>
-                      O conteúdo que deu origem a esta ideia.
-                    </Text>
+                    <View>
+                      <Text style={styles.sectionEyebrowRose}>
+                        ORIGEM DA IDEIA
+                      </Text>
+
+                      <Text style={styles.sectionTitle}>Referência</Text>
+
+                      <Text style={styles.sectionSubtitle}>
+                        O conteúdo que deu origem a esta ideia.
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
@@ -879,11 +952,29 @@ export default function ContentDetailsScreen() {
               </>
             )}
 
-            <View style={styles.flowSection}>
-              <Text style={styles.sectionTitle}>Próxima etapa</Text>
+            <View style={styles.flowPanel}>
+              <View style={styles.flowBubble} />
 
-              <Text style={styles.sectionSubtitle}>
-                Mova o conteúdo pelo seu fluxo quando fizer sentido.
+              <View style={styles.flowHeader}>
+                <View style={styles.flowBadge}>
+                  <Ionicons
+                    name="git-branch-outline"
+                    size={14}
+                    color={colors.terracotta}
+                  />
+
+                  <Text style={styles.flowBadgeText}>SEU FLUXO</Text>
+                </View>
+
+                <View style={styles.flowStage}>
+                  <Text style={styles.flowStageText}>{status.label}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.flowTitle}>Próxima etapa</Text>
+
+              <Text style={styles.flowDescription}>
+                Mova o conteúdo quando fizer sentido para sua produção.
               </Text>
 
               {nextStatus && nextMeta ? (
@@ -932,11 +1023,13 @@ export default function ContentDetailsScreen() {
                     </View>
                   </View>
 
-                  <Ionicons
-                    name="arrow-forward"
-                    size={18}
-                    color={nextMeta.foreground}
-                  />
+                  <View style={styles.advanceArrow}>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={17}
+                      color={nextMeta.foreground}
+                    />
+                  </View>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.completedFlow}>
@@ -1181,10 +1274,52 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  hero: {
-    paddingTop: 22,
+  heroPanel: {
+    position: "relative",
 
-    paddingBottom: 30,
+    overflow: "hidden",
+
+    marginTop: 14,
+
+    marginBottom: 26,
+
+    padding: 18,
+
+    borderRadius: 28,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(255, 255, 255, 0.72)",
+
+    ...shadows.card,
+  },
+
+  heroBubbleOne: {
+    position: "absolute",
+
+    width: 128,
+    height: 128,
+
+    top: -50,
+    right: -36,
+
+    borderRadius: 64,
+
+    backgroundColor: "rgba(142, 127, 194, 0.13)",
+  },
+
+  heroBubbleTwo: {
+    position: "absolute",
+
+    width: 82,
+    height: 82,
+
+    left: -28,
+    bottom: -26,
+
+    borderRadius: 41,
+
+    backgroundColor: "rgba(121, 165, 184, 0.12)",
   },
 
   heroTop: {
@@ -1202,6 +1337,8 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
+
     flexDirection: "row",
 
     alignItems: "center",
@@ -1210,7 +1347,7 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
 
     letterSpacing: 0.7,
 
@@ -1224,7 +1361,7 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.blueLight,
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
 
     flexDirection: "row",
 
@@ -1234,11 +1371,75 @@ const styles = StyleSheet.create({
   },
 
   dateText: {
-    fontSize: 11,
+    fontSize: 10,
 
     fontFamily: fonts.semibold,
 
     color: colors.blue,
+  },
+
+  heroIdentity: {
+    minHeight: 76,
+
+    marginTop: 16,
+
+    padding: 10,
+
+    borderRadius: 17,
+
+    backgroundColor: "rgba(255, 253, 252, 0.68)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  heroThumbnail: {
+    width: 54,
+    height: 64,
+
+    borderRadius: 12,
+  },
+
+  heroFallbackMark: {
+    width: 54,
+    height: 54,
+
+    borderRadius: 15,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  heroIdentityText: {
+    flex: 1,
+
+    minWidth: 0,
+
+    marginLeft: 11,
+  },
+
+  heroEyebrow: {
+    fontSize: 9,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.textSecondary,
+  },
+
+  heroIdentityHint: {
+    marginTop: 5,
+
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.semibold,
+
+    color: colors.text,
   },
 
   title: {
@@ -1260,21 +1461,21 @@ const styles = StyleSheet.create({
   longIdeaSurface: {
     marginTop: 16,
 
-    padding: 17,
+    padding: 15,
 
-    borderRadius: 20,
+    borderRadius: 18,
 
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255, 253, 252, 0.78)",
 
     borderWidth: 1,
 
-    borderColor: colors.border,
+    borderColor: "rgba(255, 255, 255, 0.72)",
   },
 
   longIdeaLabel: {
-    marginBottom: 10,
+    marginBottom: 9,
 
-    fontSize: 11,
+    fontSize: 10,
 
     letterSpacing: 0.9,
 
@@ -1348,7 +1549,7 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: "rgba(255, 253, 252, 0.78)",
 
     flexDirection: "row",
 
@@ -1358,7 +1559,7 @@ const styles = StyleSheet.create({
   },
 
   metaItemText: {
-    fontSize: 12,
+    fontSize: 11,
 
     fontFamily: fonts.medium,
 
@@ -1547,17 +1748,77 @@ const styles = StyleSheet.create({
 
     flexDirection: "row",
 
-    alignItems: "flex-end",
+    alignItems: "center",
 
     justifyContent: "space-between",
 
     gap: 12,
   },
 
-  sectionTitle: {
-    fontSize: 24,
+  sectionHeadingRow: {
+    flex: 1,
 
-    lineHeight: 31,
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 10,
+  },
+
+  scriptSectionMark: {
+    width: 44,
+    height: 44,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.amberLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  referenceSectionMark: {
+    width: 44,
+    height: 44,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.roseLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  sectionEyebrow: {
+    marginBottom: 1,
+
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.amber,
+  },
+
+  sectionEyebrowRose: {
+    marginBottom: 1,
+
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.rose,
+  },
+
+  sectionTitle: {
+    fontSize: 23,
+
+    lineHeight: 29,
 
     letterSpacing: -0.5,
 
@@ -1567,13 +1828,13 @@ const styles = StyleSheet.create({
   },
 
   sectionSubtitle: {
-    maxWidth: 295,
+    maxWidth: 285,
 
-    marginTop: 5,
+    marginTop: 2,
 
-    fontSize: 14,
+    fontSize: 12,
 
-    lineHeight: 21,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -1605,19 +1866,25 @@ const styles = StyleSheet.create({
   },
 
   emptyScript: {
-    minHeight: 82,
+    minHeight: 88,
 
     marginBottom: 30,
 
     padding: 14,
 
-    borderRadius: 19,
+    borderRadius: 20,
 
     backgroundColor: colors.amberLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(201, 154, 69, 0.15)",
 
     flexDirection: "row",
 
     alignItems: "center",
+
+    ...shadows.soft,
   },
 
   emptyScriptMark: {
@@ -1657,24 +1924,46 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
+  scriptStack: {
+    marginBottom: 34,
+
+    gap: 11,
+  },
+
   scriptSurface: {
-    marginBottom: 32,
+    display: "none",
+  },
 
-    overflow: "hidden",
+  scriptSectionCard: {
+    padding: 18,
 
-    borderRadius: 22,
-
-    backgroundColor: colors.surface,
+    borderRadius: 21,
 
     borderWidth: 1,
-
-    borderColor: colors.border,
 
     ...shadows.soft,
   },
 
+  hookCard: {
+    backgroundColor: colors.terracottaLight,
+
+    borderColor: "rgba(225, 116, 85, 0.15)",
+  },
+
+  developmentCard: {
+    backgroundColor: colors.amberLight,
+
+    borderColor: "rgba(201, 154, 69, 0.15)",
+  },
+
+  ctaCard: {
+    backgroundColor: colors.sageLight,
+
+    borderColor: "rgba(123, 158, 136, 0.15)",
+  },
+
   scriptSection: {
-    padding: 20,
+    display: "none",
   },
 
   scriptHeaderRow: {
@@ -1693,13 +1982,15 @@ const styles = StyleSheet.create({
 
     borderRadius: 11,
 
+    backgroundColor: colors.surface,
+
     alignItems: "center",
 
     justifyContent: "center",
   },
 
   scriptLabel: {
-    fontSize: 11,
+    fontSize: 10,
 
     letterSpacing: 0.9,
 
@@ -1709,7 +2000,7 @@ const styles = StyleSheet.create({
   scriptHint: {
     marginTop: 2,
 
-    fontSize: 12,
+    fontSize: 11,
 
     fontFamily: fonts.regular,
 
@@ -1717,11 +2008,11 @@ const styles = StyleSheet.create({
   },
 
   hookText: {
-    fontSize: 19,
+    fontSize: 18,
 
-    lineHeight: 29,
+    lineHeight: 28,
 
-    letterSpacing: -0.2,
+    letterSpacing: -0.15,
 
     fontFamily: fonts.semibold,
 
@@ -1729,9 +2020,9 @@ const styles = StyleSheet.create({
   },
 
   ctaText: {
-    fontSize: 17,
+    fontSize: 16,
 
-    lineHeight: 26,
+    lineHeight: 25,
 
     fontFamily: fonts.medium,
 
@@ -1739,15 +2030,11 @@ const styles = StyleSheet.create({
   },
 
   scriptDivider: {
-    height: 1,
-
-    marginHorizontal: 18,
-
-    backgroundColor: colors.divider,
+    display: "none",
   },
 
   points: {
-    gap: 15,
+    gap: 14,
   },
 
   pointRow: {
@@ -1764,7 +2051,7 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.amberLight,
+    backgroundColor: colors.surface,
 
     alignItems: "center",
 
@@ -1784,9 +2071,9 @@ const styles = StyleSheet.create({
 
     paddingTop: 2,
 
-    fontSize: 16,
+    fontSize: 15,
 
-    lineHeight: 25,
+    lineHeight: 24,
 
     fontFamily: fonts.regular,
 
@@ -1798,13 +2085,23 @@ const styles = StyleSheet.create({
   },
 
   referenceCard: {
+    position: "relative",
+
+    overflow: "hidden",
+
     marginBottom: 32,
 
-    padding: 14,
+    padding: 15,
 
-    borderRadius: 20,
+    borderRadius: 22,
 
     backgroundColor: colors.roseLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(207, 130, 149, 0.15)",
+
+    ...shadows.soft,
   },
 
   referenceVisualRow: {
@@ -1814,10 +2111,10 @@ const styles = StyleSheet.create({
   },
 
   referenceThumbnail: {
-    width: 80,
-    height: 100,
+    width: 86,
+    height: 108,
 
-    borderRadius: 15,
+    borderRadius: 16,
   },
 
   referenceMain: {
@@ -1837,7 +2134,7 @@ const styles = StyleSheet.create({
   },
 
   referenceSource: {
-    fontSize: 12,
+    fontSize: 11,
 
     fontFamily: fonts.semibold,
 
@@ -1858,7 +2155,7 @@ const styles = StyleSheet.create({
   referenceCategory: {
     flexShrink: 1,
 
-    fontSize: 11,
+    fontSize: 10,
 
     fontFamily: fonts.medium,
 
@@ -1907,7 +2204,7 @@ const styles = StyleSheet.create({
 
     marginLeft: 8,
 
-    borderRadius: radius.round,
+    borderRadius: 11,
 
     backgroundColor: colors.surface,
 
@@ -1919,11 +2216,11 @@ const styles = StyleSheet.create({
   referenceNoteArea: {
     marginTop: 14,
 
-    paddingTop: 13,
+    padding: 13,
 
-    borderTopWidth: 1,
+    borderRadius: 15,
 
-    borderTopColor: "rgba(207,130,149,0.22)",
+    backgroundColor: "rgba(255, 253, 252, 0.72)",
   },
 
   referenceNoteLabel: {
@@ -1933,15 +2230,15 @@ const styles = StyleSheet.create({
 
     fontFamily: fonts.bold,
 
-    color: colors.textSecondary,
+    color: colors.rose,
   },
 
   referenceNote: {
     marginTop: 6,
 
-    fontSize: 14,
+    fontSize: 13,
 
-    lineHeight: 22,
+    lineHeight: 21,
 
     fontFamily: fonts.medium,
 
@@ -1949,17 +2246,13 @@ const styles = StyleSheet.create({
   },
 
   referenceActions: {
-    minHeight: 46,
+    minHeight: 44,
 
-    marginTop: 13,
-
-    borderTopWidth: 1,
-
-    borderTopColor: "rgba(207,130,149,0.22)",
+    marginTop: 10,
 
     flexDirection: "row",
 
-    alignItems: "flex-end",
+    alignItems: "center",
 
     justifyContent: "space-between",
 
@@ -1967,6 +2260,14 @@ const styles = StyleSheet.create({
   },
 
   openReferenceAction: {
+    minHeight: 36,
+
+    paddingHorizontal: 10,
+
+    borderRadius: 12,
+
+    backgroundColor: colors.surface,
+
     flexDirection: "row",
 
     alignItems: "center",
@@ -1975,7 +2276,7 @@ const styles = StyleSheet.create({
   },
 
   openReferenceText: {
-    fontSize: 13,
+    fontSize: 12,
 
     fontFamily: fonts.semibold,
 
@@ -1983,11 +2284,13 @@ const styles = StyleSheet.create({
   },
 
   savedInspirationAction: {
-    paddingVertical: 4,
+    paddingVertical: 5,
+
+    paddingHorizontal: 4,
   },
 
   savedInspirationText: {
-    fontSize: 12,
+    fontSize: 11,
 
     fontFamily: fonts.medium,
 
@@ -1995,17 +2298,133 @@ const styles = StyleSheet.create({
   },
 
   flowSection: {
+    display: "none",
+  },
+
+  flowPanel: {
+    position: "relative",
+
+    overflow: "hidden",
+
     marginTop: 2,
+
+    padding: 18,
+
+    borderRadius: 24,
+
+    backgroundColor: colors.primary,
+
+    ...shadows.hero,
+  },
+
+  flowBubble: {
+    position: "absolute",
+
+    width: 116,
+    height: 116,
+
+    top: -48,
+    right: -30,
+
+    borderRadius: 58,
+
+    backgroundColor: "rgba(225, 116, 85, 0.18)",
+  },
+
+  flowHeader: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  flowBadge: {
+    minHeight: 29,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.1)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
+  flowBadgeText: {
+    fontSize: 9,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.terracotta,
+  },
+
+  flowStage: {
+    minHeight: 28,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.11)",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  flowStageText: {
+    fontSize: 9,
+
+    letterSpacing: 0.6,
+
+    fontFamily: fonts.bold,
+
+    color: colors.surface,
+  },
+
+  flowTitle: {
+    marginTop: 16,
+
+    fontSize: 23,
+
+    lineHeight: 29,
+
+    letterSpacing: -0.5,
+
+    fontFamily: fonts.bold,
+
+    color: colors.surface,
+  },
+
+  flowDescription: {
+    maxWidth: 290,
+
+    marginTop: 4,
+
+    fontSize: 12,
+
+    lineHeight: 18,
+
+    fontFamily: fonts.regular,
+
+    color: "rgba(255, 253, 252, 0.7)",
   },
 
   advanceButton: {
     minHeight: 68,
 
-    marginTop: 13,
+    marginTop: 15,
 
-    paddingHorizontal: 13,
+    paddingHorizontal: 12,
 
-    borderRadius: 19,
+    borderRadius: 18,
 
     flexDirection: "row",
 
@@ -2034,7 +2453,7 @@ const styles = StyleSheet.create({
   },
 
   advanceEyebrow: {
-    fontSize: 10,
+    fontSize: 9,
 
     letterSpacing: 0.8,
 
@@ -2051,14 +2470,27 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
   },
 
+  advanceArrow: {
+    width: 34,
+    height: 34,
+
+    borderRadius: 11,
+
+    backgroundColor: "rgba(255, 253, 252, 0.58)",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
   completedFlow: {
     minHeight: 68,
 
-    marginTop: 13,
+    marginTop: 15,
 
     paddingHorizontal: 13,
 
-    borderRadius: 19,
+    borderRadius: 18,
 
     backgroundColor: colors.sageLight,
 

@@ -167,13 +167,28 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.profileButton}
             activeOpacity={0.8}
-            onPress={() => router.push("/perfil")}
+            onPress={() => router.push("/onboarding")}
           >
             <Ionicons name="person-outline" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.hero}>
+        <View style={styles.heroPanel}>
+          <View style={styles.heroBubbleOne} />
+          <View style={styles.heroBubbleTwo} />
+
+          <View style={styles.heroTop}>
+            <View style={styles.heroBadge}>
+              <Ionicons name="sparkles" size={13} color={colors.terracotta} />
+
+              <Text style={styles.heroBadgeText}>SEU ESPAÇO CRIATIVO</Text>
+            </View>
+
+            <View style={styles.heroMark}>
+              <Ionicons name="flash" size={20} color={colors.surface} />
+            </View>
+          </View>
+
           <Text style={styles.greeting}>{getGreeting()} 👋</Text>
 
           <Text style={styles.heroTitle}>
@@ -182,9 +197,55 @@ export default function HomeScreen() {
           </Text>
 
           <Text style={styles.heroText}>
-            Suas ideias, referências e próximos conteúdos estão organizados por
-            aqui.
+            Organize o que merece sua atenção e mantenha seu conteúdo em
+            movimento.
           </Text>
+
+          <View style={styles.heroStats}>
+            <View style={styles.heroStat}>
+              <View
+                style={[
+                  styles.heroStatIcon,
+                  {
+                    backgroundColor: colors.terracottaLight,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="videocam-outline"
+                  size={16}
+                  color={colors.terracotta}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.heroStatValue}>{todayContents.length}</Text>
+
+                <Text style={styles.heroStatLabel}>para hoje</Text>
+              </View>
+            </View>
+
+            <View style={styles.heroStatDivider} />
+
+            <View style={styles.heroStat}>
+              <View
+                style={[
+                  styles.heroStatIcon,
+                  {
+                    backgroundColor: colors.roseLight,
+                  },
+                ]}
+              >
+                <Ionicons name="bulb-outline" size={16} color={colors.rose} />
+              </View>
+
+              <View>
+                <Text style={styles.heroStatValue}>{inspirationCount}</Text>
+
+                <Text style={styles.heroStatLabel}>inspirações</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -224,13 +285,19 @@ export default function HomeScreen() {
             <Text style={styles.goalHint}>
               {weeklyTarget === 0
                 ? "Escolha sua frequência no perfil"
-                : remainingToPlan > 0
-                  ? `Falta${
-                      remainingToPlan === 1 ? "" : "m"
-                    } ${remainingToPlan} ${
-                      remainingToPlan === 1 ? "conteúdo" : "conteúdos"
-                    } para planejar`
-                  : "Semana planejada ✓"}
+                : plannedThisWeek > weeklyTarget
+                  ? `Meta superada em ${plannedThisWeek - weeklyTarget} ${
+                      plannedThisWeek - weeklyTarget === 1
+                        ? "conteúdo"
+                        : "conteúdos"
+                    }`
+                  : remainingToPlan > 0
+                    ? `Falta${
+                        remainingToPlan === 1 ? "" : "m"
+                      } ${remainingToPlan} ${
+                        remainingToPlan === 1 ? "conteúdo" : "conteúdos"
+                      } para planejar`
+                    : "Semana planejada ✓"}
             </Text>
 
             {completedThisWeek > 0 && (
@@ -243,20 +310,39 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Hoje</Text>
+          <View style={styles.sectionHeadingRow}>
+            <View style={styles.todaySectionMark}>
+              <Ionicons
+                name="today-outline"
+                size={18}
+                color={colors.terracotta}
+              />
+            </View>
 
-            <Text style={styles.sectionSubtitle}>
-              {todayContents.length === 0
-                ? "Sua agenda está livre."
-                : todayContents.length === 1
-                  ? "1 conteúdo para continuar."
-                  : `${todayContents.length} conteúdos para continuar.`}
-            </Text>
+            <View>
+              <Text style={styles.sectionTitle}>Hoje</Text>
+
+              <Text style={styles.sectionSubtitle}>
+                {todayContents.length === 0
+                  ? "Sua agenda está livre."
+                  : todayContents.length === 1
+                    ? "1 conteúdo para continuar."
+                    : `${todayContents.length} conteúdos para continuar.`}
+              </Text>
+            </View>
           </View>
 
-          <TouchableOpacity onPress={() => router.push("/planejar")}>
+          <TouchableOpacity
+            style={styles.sectionAction}
+            onPress={() => router.push("/planejar")}
+          >
             <Text style={styles.textAction}>Ver semana</Text>
+
+            <Ionicons
+              name="arrow-forward"
+              size={14}
+              color={colors.terracotta}
+            />
           </TouchableOpacity>
         </View>
 
@@ -289,21 +375,35 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={[styles.sectionHeader, styles.weekSectionHeader]}>
-          <View>
-            <Text style={styles.sectionTitle}>Sua semana</Text>
-
-            <Text style={styles.sectionSubtitle}>
-              {plannedThisWeek === 0
-                ? "Nada planejado ainda."
-                : plannedThisWeek === 1
-                  ? "1 conteúdo planejado."
-                  : `${plannedThisWeek} conteúdos planejados.`}
-            </Text>
-          </View>
-        </View>
-
         <View style={styles.weekSurface}>
+          <View style={styles.weekSurfaceHeader}>
+            <View style={styles.sectionHeadingRow}>
+              <View style={styles.weekSectionMark}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={colors.blue}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.sectionTitle}>Sua semana</Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  {plannedThisWeek === 0
+                    ? "Nada planejado ainda."
+                    : plannedThisWeek === 1
+                      ? "1 conteúdo planejado."
+                      : `${plannedThisWeek} conteúdos planejados.`}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.weekCountPill}>
+              <Text style={styles.weekCountText}>{plannedThisWeek}</Text>
+            </View>
+          </View>
+
           <View style={styles.weekDays}>
             {weekDays.map((day) => (
               <View key={day.key} style={styles.day}>
@@ -364,11 +464,15 @@ export default function HomeScreen() {
           activeOpacity={0.85}
           onPress={() => router.push("/inspiracoes")}
         >
+          <View style={styles.inspirationBubble} />
+
           <View style={styles.inspirationMark}>
-            <Ionicons name="bulb-outline" size={21} color={colors.rose} />
+            <Ionicons name="bulb" size={21} color={colors.rose} />
           </View>
 
           <View style={{ flex: 1 }}>
+            <Text style={styles.inspirationEyebrow}>SEU ACERVO</Text>
+
             <Text style={styles.inspirationTitle}>Suas inspirações</Text>
 
             <Text style={styles.inspirationText}>
@@ -380,7 +484,13 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <Ionicons name="arrow-forward" size={18} color={colors.rose} />
+          <View style={styles.inspirationCount}>
+            <Text style={styles.inspirationCountText}>{inspirationCount}</Text>
+          </View>
+
+          <View style={styles.inspirationArrow}>
+            <Ionicons name="arrow-forward" size={17} color={colors.rose} />
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -621,16 +731,111 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  hero: {
-    paddingTop: spacing.lg,
+  heroPanel: {
+    position: "relative",
 
-    paddingBottom: spacing.xl,
+    overflow: "hidden",
+
+    marginTop: 12,
+
+    marginBottom: 18,
+
+    padding: 20,
+
+    borderRadius: 28,
+
+    backgroundColor: colors.terracottaLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(225, 116, 85, 0.16)",
+
+    ...shadows.card,
+  },
+
+  heroBubbleOne: {
+    position: "absolute",
+
+    width: 130,
+    height: 130,
+
+    top: -48,
+    right: -35,
+
+    borderRadius: 65,
+
+    backgroundColor: "rgba(142, 127, 194, 0.14)",
+  },
+
+  heroBubbleTwo: {
+    position: "absolute",
+
+    width: 92,
+    height: 92,
+
+    left: -30,
+    bottom: -24,
+
+    borderRadius: 46,
+
+    backgroundColor: "rgba(121, 165, 184, 0.12)",
+  },
+
+  heroTop: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+  },
+
+  heroBadge: {
+    minHeight: 30,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.78)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+  },
+
+  heroBadgeText: {
+    fontSize: 10,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.terracotta,
+  },
+
+  heroMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.terracotta,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    ...shadows.soft,
   },
 
   greeting: {
-    marginBottom: spacing.sm,
+    marginTop: 16,
 
-    fontSize: 15,
+    marginBottom: 7,
+
+    fontSize: 14,
 
     fontFamily: fonts.semibold,
 
@@ -650,17 +855,85 @@ const styles = StyleSheet.create({
   },
 
   heroText: {
-    maxWidth: 325,
+    maxWidth: 315,
 
-    marginTop: 12,
+    marginTop: 10,
 
-    fontSize: 15,
+    fontSize: 14,
 
-    lineHeight: 23,
+    lineHeight: 21,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
+  },
+
+  heroStats: {
+    minHeight: 64,
+
+    marginTop: 18,
+
+    paddingHorizontal: 12,
+
+    borderRadius: 18,
+
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+  },
+
+  heroStat: {
+    flex: 1,
+
+    minWidth: 0,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 8,
+  },
+
+  heroStatIcon: {
+    width: 34,
+    height: 34,
+
+    borderRadius: 11,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  heroStatValue: {
+    fontSize: 16,
+
+    lineHeight: 19,
+
+    fontFamily: fonts.bold,
+
+    color: colors.text,
+  },
+
+  heroStatLabel: {
+    marginTop: 1,
+
+    fontSize: 10,
+
+    fontFamily: fonts.medium,
+
+    color: colors.textSecondary,
+  },
+
+  heroStatDivider: {
+    width: 1,
+    height: 32,
+
+    marginHorizontal: 10,
+
+    backgroundColor: colors.divider,
   },
 
   weekGoal: {
@@ -775,19 +1048,42 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
 
-    alignItems: "flex-end",
+    alignItems: "center",
 
     justifyContent: "space-between",
 
-    marginBottom: 18,
+    marginTop: 10,
+
+    marginBottom: 15,
+  },
+
+  sectionHeadingRow: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 10,
+  },
+
+  todaySectionMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.terracottaLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 22,
 
-    lineHeight: 31,
+    lineHeight: 28,
 
-    letterSpacing: -0.6,
+    letterSpacing: -0.5,
 
     fontFamily: fonts.bold,
 
@@ -795,23 +1091,39 @@ const styles = StyleSheet.create({
   },
 
   sectionSubtitle: {
-    marginTop: 4,
+    marginTop: 2,
 
-    fontSize: 13,
+    fontSize: 12,
 
-    lineHeight: 19,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
+  sectionAction: {
+    minHeight: 36,
+
+    paddingHorizontal: 10,
+
+    borderRadius: 12,
+
+    backgroundColor: colors.terracottaLight,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 5,
+  },
+
   textAction: {
-    fontSize: 13,
+    fontSize: 11,
 
     fontFamily: fonts.bold,
 
-    color: colors.primary,
+    color: colors.terracotta,
   },
 
   emptyToday: {
@@ -1021,18 +1333,78 @@ const styles = StyleSheet.create({
   },
 
   weekSurface: {
-    padding: spacing.md,
+    marginTop: 30,
 
-    borderRadius: radius.xl,
+    padding: 15,
 
-    backgroundColor: colors.surface,
+    borderRadius: 24,
+
+    backgroundColor: colors.blueLight,
 
     borderWidth: 1,
 
-    borderColor: colors.border,
+    borderColor: "rgba(121, 165, 184, 0.17)",
+
+    ...shadows.soft,
+  },
+
+  weekSurfaceHeader: {
+    marginBottom: 16,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    gap: 10,
+  },
+
+  weekSectionMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  weekCountPill: {
+    minWidth: 36,
+    height: 36,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  weekCountText: {
+    fontSize: 12,
+
+    fontFamily: fonts.bold,
+
+    color: colors.blue,
   },
 
   weekDays: {
+    paddingVertical: 10,
+
+    paddingHorizontal: 7,
+
+    borderRadius: 18,
+
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
+
     flexDirection: "row",
 
     justifyContent: "space-between",
@@ -1129,17 +1501,17 @@ const styles = StyleSheet.create({
   weekAction: {
     minHeight: 44,
 
-    marginTop: spacing.md,
+    marginTop: 12,
 
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
 
-    borderTopWidth: 1,
+    borderRadius: 14,
 
-    borderTopColor: colors.divider,
+    backgroundColor: "rgba(255, 253, 252, 0.82)",
 
     flexDirection: "row",
 
-    alignItems: "flex-end",
+    alignItems: "center",
 
     justifyContent: "space-between",
   },
@@ -1153,26 +1525,50 @@ const styles = StyleSheet.create({
   },
 
   inspirationCard: {
-    minHeight: 82,
+    minHeight: 104,
+
+    position: "relative",
+
+    overflow: "hidden",
 
     marginTop: spacing.xl,
 
-    padding: spacing.md,
+    padding: 16,
 
     flexDirection: "row",
 
     alignItems: "center",
 
-    borderRadius: radius.xl,
+    borderRadius: 23,
 
     backgroundColor: colors.roseLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(207, 130, 149, 0.16)",
+
+    ...shadows.soft,
+  },
+
+  inspirationBubble: {
+    position: "absolute",
+
+    width: 92,
+    height: 92,
+
+    right: -36,
+    top: -30,
+
+    borderRadius: 46,
+
+    backgroundColor: "rgba(225, 116, 85, 0.13)",
   },
 
   inspirationMark: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
 
-    marginRight: spacing.md,
+    marginRight: 13,
 
     borderRadius: 15,
 
@@ -1183,8 +1579,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  inspirationEyebrow: {
+    marginBottom: 2,
+
+    fontSize: 9,
+
+    letterSpacing: 0.8,
+
+    fontFamily: fonts.bold,
+
+    color: colors.rose,
+  },
+
   inspirationTitle: {
-    fontSize: 16,
+    fontSize: 17,
 
     lineHeight: 22,
 
@@ -1194,16 +1602,56 @@ const styles = StyleSheet.create({
   },
 
   inspirationText: {
-    marginTop: 4,
+    marginTop: 3,
 
     paddingRight: spacing.sm,
 
-    fontSize: 13,
+    fontSize: 12,
 
-    lineHeight: 19,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
+  },
+
+  inspirationCount: {
+    minWidth: 34,
+    height: 34,
+
+    paddingHorizontal: 8,
+
+    marginLeft: 5,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  inspirationCountText: {
+    fontSize: 11,
+
+    fontFamily: fonts.bold,
+
+    color: colors.rose,
+  },
+
+  inspirationArrow: {
+    width: 34,
+    height: 34,
+
+    marginLeft: 7,
+
+    borderRadius: 11,
+
+    backgroundColor: "rgba(255, 253, 252, 0.7)",
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 });

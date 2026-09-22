@@ -437,10 +437,25 @@ function ProfessionStep({
         eyebrow="SOBRE VOCÊ"
         title={"Com o que você\ntrabalha?"}
         description="Isso ajuda o ContentFlow a organizar uma experiência mais próxima da sua rotina de criação."
+        icon="briefcase-outline"
+        background={colors.terracottaLight}
+        accent={colors.terracotta}
       />
 
       <View style={styles.inputSection}>
-        <Text style={styles.fieldLabel}>PROFISSÃO OU NICHO</Text>
+        <View style={styles.sectionMiniHeader}>
+          <View style={styles.sectionMiniMark}>
+            <Ionicons name="person-outline" size={18} color={colors.rose} />
+          </View>
+
+          <View>
+            <Text style={styles.fieldLabel}>PROFISSÃO OU NICHO</Text>
+
+            <Text style={styles.fieldHint}>
+              Pode ser sua profissão, especialidade ou nicho.
+            </Text>
+          </View>
+        </View>
 
         <View
           style={[
@@ -524,54 +539,83 @@ function ObjectiveStep({ objective, onSelect }: ObjectiveStepProps) {
         eyebrow="SEU OBJETIVO"
         title={"O que você quer\nconquistar com conteúdo?"}
         description="Não precisa ser definitivo. Você poderá mudar essa escolha depois."
+        icon="flag-outline"
+        background={colors.lavenderLight}
+        accent={colors.lavender}
       />
 
-      <View style={styles.optionList}>
-        {objectiveOptions.map((item) => {
-          const selected = objective === item.value;
+      <View style={styles.objectivePanel}>
+        <View style={styles.objectivePanelHeader}>
+          <View style={styles.objectivePanelMark}>
+            <Ionicons
+              name="compass-outline"
+              size={18}
+              color={colors.lavender}
+            />
+          </View>
 
-          return (
-            <TouchableOpacity
-              key={item.value}
-              style={[
-                styles.largeOption,
-                selected && styles.largeOptionSelected,
-              ]}
-              activeOpacity={0.85}
-              onPress={() => onSelect(item.value)}
-            >
-              <View
+          <View>
+            <Text style={styles.objectivePanelEyebrow}>
+              ESCOLHA UMA DIREÇÃO
+            </Text>
+
+            <Text style={styles.objectivePanelTitle}>
+              Qual resultado importa mais agora?
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.optionList}>
+          {objectiveOptions.map((item) => {
+            const selected = objective === item.value;
+
+            return (
+              <TouchableOpacity
+                key={item.value}
                 style={[
-                  styles.largeOptionMark,
-                  {
-                    backgroundColor: item.background,
-                  },
+                  styles.largeOption,
+                  selected && styles.largeOptionSelected,
                 ]}
+                activeOpacity={0.85}
+                onPress={() => onSelect(item.value)}
               >
-                <Ionicons name={item.icon} size={22} color={item.color} />
-              </View>
+                <View
+                  style={[
+                    styles.largeOptionMark,
+                    {
+                      backgroundColor: item.background,
+                    },
+                  ]}
+                >
+                  <Ionicons name={item.icon} size={22} color={item.color} />
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.largeOptionTitle}>{item.title}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.largeOptionTitle}>{item.title}</Text>
 
-                <Text style={styles.largeOptionDescription}>
-                  {item.description}
-                </Text>
-              </View>
+                  <Text style={styles.largeOptionDescription}>
+                    {item.description}
+                  </Text>
+                </View>
 
-              <View
-                style={[
-                  styles.selectionCircle,
-                  selected && styles.selectionCircleSelected,
-                ]}
-              >
-                {selected && (
-                  <Ionicons name="checkmark" size={14} color={colors.surface} />
-                )}
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+                <View
+                  style={[
+                    styles.selectionCircle,
+                    selected && styles.selectionCircleSelected,
+                  ]}
+                >
+                  {selected && (
+                    <Ionicons
+                      name="checkmark"
+                      size={14}
+                      color={colors.surface}
+                    />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </>
   );
@@ -589,60 +633,95 @@ function FrequencyStep({ value, onSelect }: FrequencyStepProps) {
         eyebrow="SEU RITMO"
         title={"Quantos conteúdos\ncabem na sua semana?"}
         description="Vamos usar isso como uma meta de planejamento — sem cobrança e sem transformar conteúdo em obrigação."
+        icon="calendar-outline"
+        background={colors.blueLight}
+        accent={colors.blue}
       />
 
-      <View style={styles.frequencyList}>
-        {frequencyOptions.map((item) => {
-          const selected = value === item.value;
+      <View style={styles.frequencyPanel}>
+        <View style={styles.frequencyPanelHeader}>
+          <View style={styles.frequencyPanelMark}>
+            <Ionicons
+              name="speedometer-outline"
+              size={18}
+              color={colors.blue}
+            />
+          </View>
 
-          return (
-            <TouchableOpacity
-              key={item.value}
-              style={[
-                styles.frequencyOption,
-                selected && styles.frequencyOptionSelected,
-              ]}
-              activeOpacity={0.85}
-              onPress={() => onSelect(item.value)}
-            >
-              <View
+          <View>
+            <Text style={styles.frequencyPanelEyebrow}>SEU RITMO IDEAL</Text>
+
+            <Text style={styles.frequencyPanelTitle}>
+              Escolha uma frequência confortável.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.frequencyList}>
+          {frequencyOptions.map((item) => {
+            const selected = value === item.value;
+
+            return (
+              <TouchableOpacity
+                key={item.value}
                 style={[
-                  styles.frequencyNumber,
-                  selected && styles.frequencyNumberSelected,
+                  styles.frequencyOption,
+                  selected && styles.frequencyOptionSelected,
                 ]}
+                activeOpacity={0.85}
+                onPress={() => onSelect(item.value)}
               >
-                <Text
+                <View
                   style={[
-                    styles.frequencyNumberText,
-                    selected && styles.frequencyNumberTextSelected,
+                    styles.frequencyNumber,
+                    selected && styles.frequencyNumberSelected,
                   ]}
                 >
-                  {item.value}
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      styles.frequencyNumberText,
+                      selected && styles.frequencyNumberTextSelected,
+                    ]}
+                  >
+                    {item.value}
+                  </Text>
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.frequencyTitle}>{item.label}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.frequencyTitle}>{item.label}</Text>
 
-                <Text style={styles.frequencyDescription}>
-                  {item.description}
-                </Text>
-              </View>
+                  <Text style={styles.frequencyDescription}>
+                    {item.description}
+                  </Text>
+                </View>
 
-              {selected && (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={24}
-                  color={colors.blue}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
+                {selected && (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={colors.blue}
+                  />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.weekPreview}>
-        <Text style={styles.weekPreviewLabel}>SUA FUTURA META</Text>
+        <View style={styles.weekPreviewBubble} />
+
+        <View style={styles.weekPreviewTop}>
+          <View style={styles.weekPreviewBadge}>
+            <Ionicons name="flag-outline" size={13} color={colors.terracotta} />
+
+            <Text style={styles.weekPreviewLabel}>SUA FUTURA META</Text>
+          </View>
+
+          <View style={styles.weekPreviewMark}>
+            <Ionicons name="calendar" size={18} color={colors.surface} />
+          </View>
+        </View>
 
         <Text style={styles.weekPreviewTitle}>
           {value
@@ -670,66 +749,94 @@ function FormatsStep({ formats, onToggle }: FormatsStepProps) {
         eyebrow="SEUS FORMATOS"
         title={"O que você costuma\ncriar?"}
         description="Escolha todos que fizerem sentido. O ContentFlow continua flexível para outros formatos depois."
+        icon="apps-outline"
+        background={colors.amberLight}
+        accent={colors.amber}
       />
 
-      <View style={styles.formatGrid}>
-        {formatOptions.map((item) => {
-          const selected = formats.includes(item.value);
+      <View style={styles.formatsPanel}>
+        <View style={styles.formatsPanelHeader}>
+          <View style={styles.formatsPanelMark}>
+            <Ionicons name="grid-outline" size={18} color={colors.amber} />
+          </View>
 
-          return (
-            <TouchableOpacity
-              key={item.value}
-              style={[styles.formatCard, selected && styles.formatCardSelected]}
-              activeOpacity={0.85}
-              onPress={() => onToggle(item.value)}
-            >
-              <View style={styles.formatCardTop}>
-                <View
-                  style={[
-                    styles.formatMark,
-                    {
-                      backgroundColor: item.background,
-                    },
-                  ]}
-                >
-                  <Ionicons name={item.icon} size={22} color={item.color} />
+          <View>
+            <Text style={styles.formatsPanelEyebrow}>SUA ROTINA</Text>
+
+            <Text style={styles.formatsPanelTitle}>
+              Selecione um ou mais formatos.
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.formatGrid}>
+          {formatOptions.map((item) => {
+            const selected = formats.includes(item.value);
+
+            return (
+              <TouchableOpacity
+                key={item.value}
+                style={[
+                  styles.formatCard,
+                  selected && styles.formatCardSelected,
+                ]}
+                activeOpacity={0.85}
+                onPress={() => onToggle(item.value)}
+              >
+                <View style={styles.formatCardTop}>
+                  <View
+                    style={[
+                      styles.formatMark,
+                      {
+                        backgroundColor: item.background,
+                      },
+                    ]}
+                  >
+                    <Ionicons name={item.icon} size={22} color={item.color} />
+                  </View>
+
+                  <View
+                    style={[
+                      styles.selectionCircle,
+                      selected && styles.selectionCircleSelected,
+                    ]}
+                  >
+                    {selected && (
+                      <Ionicons
+                        name="checkmark"
+                        size={14}
+                        color={colors.surface}
+                      />
+                    )}
+                  </View>
                 </View>
 
-                <View
-                  style={[
-                    styles.selectionCircle,
-                    selected && styles.selectionCircleSelected,
-                  ]}
-                >
-                  {selected && (
-                    <Ionicons
-                      name="checkmark"
-                      size={14}
-                      color={colors.surface}
-                    />
-                  )}
-                </View>
-              </View>
+                <Text style={styles.formatTitle}>{item.value}</Text>
 
-              <Text style={styles.formatTitle}>{item.value}</Text>
-
-              <Text style={styles.formatDescription}>{item.description}</Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text style={styles.formatDescription}>{item.description}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.finishMessage}>
+        <View style={styles.finishBubble} />
+
         <View style={styles.finishMessageMark}>
           <Ionicons name="sparkles" size={18} color={colors.terracotta} />
         </View>
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.finishMessageTitle}>Pronto para começar.</Text>
+          <Text style={styles.finishMessageEyebrow}>TUDO PRONTO</Text>
+
+          <Text style={styles.finishMessageTitle}>
+            Seu espaço vai começar com a sua cara.
+          </Text>
 
           <Text style={styles.finishMessageText}>
-            Essas escolhas servem para adaptar o espaço à sua rotina, não para
-            limitar o que você pode criar.
+            Essas escolhas adaptam a experiência à sua rotina, mas não limitam o
+            que você pode criar.
           </Text>
         </View>
       </View>
@@ -741,12 +848,49 @@ type StepIntroProps = {
   eyebrow: string;
   title: string;
   description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  background: string;
+  accent: string;
 };
 
-function StepIntro({ eyebrow, title, description }: StepIntroProps) {
+function StepIntro({
+  eyebrow,
+  title,
+  description,
+  icon,
+  background,
+  accent,
+}: StepIntroProps) {
   return (
-    <View style={styles.stepIntro}>
-      <Text style={styles.eyebrow}>{eyebrow}</Text>
+    <View
+      style={[
+        styles.stepIntro,
+        {
+          backgroundColor: background,
+        },
+      ]}
+    >
+      <View style={styles.stepBubbleOne} />
+      <View style={styles.stepBubbleTwo} />
+
+      <View style={styles.stepIntroTop}>
+        <View style={styles.stepIntroBadge}>
+          <Ionicons name="sparkles" size={13} color={accent} />
+
+          <Text style={[styles.eyebrow, { color: accent }]}>{eyebrow}</Text>
+        </View>
+
+        <View
+          style={[
+            styles.stepIntroMark,
+            {
+              backgroundColor: accent,
+            },
+          ]}
+        >
+          <Ionicons name={icon} size={20} color={colors.surface} />
+        </View>
+      </View>
 
       <Text style={styles.title}>{title}</Text>
 
@@ -825,9 +969,14 @@ const styles = StyleSheet.create({
   },
 
   progressArea: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: 6,
-    paddingBottom: 5,
+    marginHorizontal: spacing.lg,
+    marginTop: 4,
+    padding: 12,
+    borderRadius: 17,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
 
   progressHeader: {
@@ -845,20 +994,26 @@ const styles = StyleSheet.create({
   },
 
   progressPercent: {
-    fontSize: 11,
-    fontFamily: fonts.semibold,
+    minWidth: 42,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: radius.round,
+    backgroundColor: colors.terracottaLight,
+    fontSize: 10,
+    fontFamily: fonts.bold,
     color: colors.terracotta,
+    textAlign: "center",
   },
 
   progressTrack: {
-    height: 5,
+    height: 6,
     flexDirection: "row",
     gap: 6,
   },
 
   progressSegment: {
     flex: 1,
-    height: 5,
+    height: 6,
     borderRadius: radius.round,
     backgroundColor: colors.surfaceMuted,
   },
@@ -869,59 +1024,138 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 130,
+    paddingBottom: 136,
   },
 
   stepIntro: {
-    paddingTop: 36,
-    paddingBottom: 30,
+    position: "relative",
+    overflow: "hidden",
+    marginTop: 16,
+    marginBottom: 16,
+    padding: 18,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.68)",
+    ...shadows.card,
+  },
+
+  stepBubbleOne: {
+    position: "absolute",
+    width: 126,
+    height: 126,
+    top: -48,
+    right: -36,
+    borderRadius: 63,
+    backgroundColor: "rgba(225,116,85,0.12)",
+  },
+
+  stepBubbleTwo: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    left: -28,
+    bottom: -24,
+    borderRadius: 40,
+    backgroundColor: "rgba(142,127,194,0.10)",
+  },
+
+  stepIntroTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  stepIntroBadge: {
+    minHeight: 30,
+    paddingHorizontal: 10,
+    borderRadius: radius.round,
+    backgroundColor: "rgba(255,253,252,0.78)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  stepIntroMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.soft,
   },
 
   eyebrow: {
-    marginBottom: 10,
     fontSize: 10,
-    letterSpacing: 1,
+    letterSpacing: 0.85,
     fontFamily: fonts.bold,
-    color: colors.terracotta,
   },
 
   title: {
-    maxWidth: 345,
-    fontSize: 32,
-    lineHeight: 40,
-    letterSpacing: -1,
+    maxWidth: 340,
+    marginTop: 16,
+    fontSize: 30,
+    lineHeight: 37,
+    letterSpacing: -0.9,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   description: {
-    maxWidth: 345,
-    marginTop: 13,
-    fontSize: 14,
-    lineHeight: 22,
+    maxWidth: 330,
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   inputSection: {
-    paddingBottom: 10,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.roseLight,
+    borderWidth: 1,
+    borderColor: "rgba(207,130,149,0.14)",
+    ...shadows.soft,
+  },
+
+  sectionMiniHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  sectionMiniMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   fieldLabel: {
-    marginBottom: 10,
     fontSize: 10,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
+    color: colors.rose,
+  },
+
+  fieldHint: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   professionInputWrap: {
     minHeight: 66,
     paddingHorizontal: 13,
-    borderRadius: 19,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(255,255,255,0.72)",
     flexDirection: "row",
     alignItems: "center",
   },
@@ -952,8 +1186,8 @@ const styles = StyleSheet.create({
   },
 
   suggestionsLabel: {
-    marginTop: 24,
-    marginBottom: 11,
+    marginTop: 21,
+    marginBottom: 10,
     fontSize: 10,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
@@ -963,16 +1197,16 @@ const styles = StyleSheet.create({
   suggestions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 9,
+    gap: 8,
   },
 
   suggestionChip: {
-    minHeight: 42,
-    paddingHorizontal: 15,
+    minHeight: 40,
+    paddingHorizontal: 14,
     borderRadius: radius.round,
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255,253,252,0.78)",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(255,255,255,0.72)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -993,7 +1227,10 @@ const styles = StyleSheet.create({
   },
 
   helper: {
-    marginTop: 18,
+    marginTop: 15,
+    padding: 11,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,253,252,0.62)",
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 7,
@@ -1001,62 +1238,101 @@ const styles = StyleSheet.create({
 
   helperText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  optionList: {
-    gap: 11,
-  },
-
-  largeOption: {
-    minHeight: 92,
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
+  objectivePanel: {
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.lavenderLight,
     borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    alignItems: "center",
+    borderColor: "rgba(142,127,194,0.14)",
     ...shadows.soft,
   },
 
+  objectivePanelHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  objectivePanelMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  objectivePanelEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.lavender,
+  },
+
+  objectivePanelTitle: {
+    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  optionList: {
+    gap: 9,
+  },
+
+  largeOption: {
+    minHeight: 88,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,253,252,0.8)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   largeOptionSelected: {
-    borderColor: colors.terracotta,
-    backgroundColor: colors.surfaceSoft,
+    borderColor: colors.lavender,
+    backgroundColor: colors.surface,
   },
 
   largeOptionMark: {
-    width: 48,
-    height: 48,
-    marginRight: 13,
-    borderRadius: 15,
+    width: 46,
+    height: 46,
+    marginRight: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
 
   largeOptionTitle: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   largeOptionDescription: {
-    maxWidth: 245,
-    marginTop: 4,
+    maxWidth: 240,
+    marginTop: 3,
     paddingRight: 8,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   selectionCircle: {
-    width: 26,
-    height: 26,
+    width: 25,
+    height: 25,
     borderRadius: radius.round,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -1070,32 +1346,72 @@ const styles = StyleSheet.create({
     backgroundColor: colors.terracotta,
   },
 
-  frequencyList: {
+  frequencyPanel: {
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.blueLight,
+    borderWidth: 1,
+    borderColor: "rgba(121,165,184,0.14)",
+    ...shadows.soft,
+  },
+
+  frequencyPanelHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
 
-  frequencyOption: {
-    minHeight: 78,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 19,
+  frequencyPanelMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  frequencyPanelEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.blue,
+  },
+
+  frequencyPanelTitle: {
+    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  frequencyList: {
+    gap: 8,
+  },
+
+  frequencyOption: {
+    minHeight: 74,
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,253,252,0.8)",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(255,255,255,0.72)",
     flexDirection: "row",
     alignItems: "center",
   },
 
   frequencyOptionSelected: {
     borderColor: colors.blue,
-    backgroundColor: colors.blueLight,
+    backgroundColor: colors.surface,
   },
 
   frequencyNumber: {
-    width: 46,
-    height: 46,
-    marginRight: 13,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    marginRight: 12,
+    borderRadius: 13,
     backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
@@ -1106,7 +1422,7 @@ const styles = StyleSheet.create({
   },
 
   frequencyNumberText: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: fonts.bold,
     color: colors.text,
   },
@@ -1116,70 +1432,148 @@ const styles = StyleSheet.create({
   },
 
   frequencyTitle: {
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 20,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   frequencyDescription: {
-    marginTop: 3,
+    marginTop: 2,
     paddingRight: 8,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   weekPreview: {
-    marginTop: 18,
+    position: "relative",
+    overflow: "hidden",
+    marginTop: 14,
     padding: 16,
-    borderRadius: 19,
-    backgroundColor: colors.terracottaLight,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    ...shadows.hero,
+  },
+
+  weekPreviewBubble: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    top: -38,
+    right: -28,
+    borderRadius: 50,
+    backgroundColor: "rgba(225,116,85,0.18)",
+  },
+
+  weekPreviewTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  weekPreviewBadge: {
+    minHeight: 28,
+    paddingHorizontal: 9,
+    borderRadius: radius.round,
+    backgroundColor: "rgba(255,253,252,0.1)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  weekPreviewMark: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,253,252,0.11)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   weekPreviewLabel: {
     fontSize: 10,
-    letterSpacing: 0.8,
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
     color: colors.terracotta,
   },
 
   weekPreviewTitle: {
-    marginTop: 5,
-    fontSize: 18,
-    lineHeight: 25,
+    marginTop: 12,
+    fontSize: 20,
+    lineHeight: 27,
     fontFamily: fonts.bold,
-    color: colors.text,
+    color: colors.surface,
   },
 
   weekPreviewText: {
     marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-    color: colors.textSecondary,
+    color: "rgba(255,253,252,0.68)",
+  },
+
+  formatsPanel: {
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.amberLight,
+    borderWidth: 1,
+    borderColor: "rgba(201,154,69,0.14)",
+    ...shadows.soft,
+  },
+
+  formatsPanelHeader: {
+    marginBottom: 13,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  formatsPanelMark: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  formatsPanelEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.amber,
+  },
+
+  formatsPanelTitle: {
+    marginTop: 2,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: fonts.semibold,
+    color: colors.text,
   },
 
   formatGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 9,
   },
 
   formatCard: {
     width: "48.5%",
-    minHeight: 148,
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
+    minHeight: 138,
+    padding: 13,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,253,252,0.8)",
     borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.soft,
+    borderColor: "rgba(255,255,255,0.72)",
   },
 
   formatCardSelected: {
-    borderColor: colors.terracotta,
+    borderColor: colors.amber,
+    backgroundColor: colors.surface,
   },
 
   formatCardTop: {
@@ -1189,61 +1583,83 @@ const styles = StyleSheet.create({
   },
 
   formatMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
   },
 
   formatTitle: {
-    marginTop: 16,
-    fontSize: 16,
-    lineHeight: 22,
+    marginTop: 14,
+    fontSize: 15,
+    lineHeight: 21,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   formatDescription: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   finishMessage: {
-    marginTop: 18,
-    padding: 15,
-    borderRadius: 19,
-    backgroundColor: colors.terracottaLight,
+    position: "relative",
+    overflow: "hidden",
+    marginTop: 14,
+    padding: 16,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
     flexDirection: "row",
     alignItems: "flex-start",
+    ...shadows.hero,
+  },
+
+  finishBubble: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    top: -38,
+    right: -28,
+    borderRadius: 50,
+    backgroundColor: "rgba(225,116,85,0.18)",
   },
 
   finishMessageMark: {
-    width: 36,
-    height: 36,
+    width: 38,
+    height: 38,
     marginRight: 11,
     borderRadius: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255,253,252,0.11)",
     alignItems: "center",
     justifyContent: "center",
   },
 
-  finishMessageTitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  finishMessageEyebrow: {
+    fontSize: 10,
+    letterSpacing: 0.8,
     fontFamily: fonts.bold,
-    color: colors.text,
+    color: colors.terracotta,
+  },
+
+  finishMessageTitle: {
+    marginTop: 3,
+    fontSize: 15,
+    lineHeight: 21,
+    fontFamily: fonts.bold,
+    color: colors.surface,
   },
 
   finishMessageText: {
     marginTop: 3,
-    fontSize: 12,
-    lineHeight: 18,
+    paddingRight: 6,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-    color: colors.textSecondary,
+    color: "rgba(255,253,252,0.68)",
   },
 
   footer: {
@@ -1268,6 +1684,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    ...shadows.soft,
   },
 
   continueButtonDisabled: {

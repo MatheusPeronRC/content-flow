@@ -191,182 +191,205 @@ export default function PlanejarScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Planejar</Text>
+        <View style={styles.planningHero}>
+          <View style={styles.heroBubbleOne} />
 
-            <Text style={styles.subtitle}>Organize sua semana criativa.</Text>
+          <View style={styles.heroBubbleTwo} />
+
+          <View style={styles.heroTop}>
+            <View style={styles.heroEyebrow}>
+              <Ionicons name="sparkles" size={13} color={colors.blue} />
+
+              <Text style={styles.heroEyebrowText}>PLANEJAMENTO CRIATIVO</Text>
+            </View>
+
+            <View style={styles.heroMark}>
+              <Ionicons name="calendar" size={21} color={colors.surface} />
+            </View>
           </View>
 
-          <View style={styles.headerMark}>
-            <Ionicons name="calendar-outline" size={22} color={colors.blue} />
+          <Text style={styles.heroTitle}>Planejar</Text>
+
+          <Text style={styles.heroSubtitle}>
+            Distribua suas ideias pela semana e transforme intenção em ritmo.
+          </Text>
+
+          <View style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.goalEyebrow}>META DA SEMANA</Text>
+
+                <Text style={styles.goalTitle}>
+                  {weeklyTarget === 0
+                    ? "Meta não definida"
+                    : `${plannedCount} de ${weeklyTarget} planejados`}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.goalStatus,
+
+                  remaining === 0 && weeklyTarget > 0 && styles.goalStatusDone,
+                ]}
+              >
+                <Ionicons
+                  name={
+                    remaining === 0 && weeklyTarget > 0
+                      ? "checkmark"
+                      : "flag-outline"
+                  }
+                  size={19}
+                  color={
+                    remaining === 0 && weeklyTarget > 0
+                      ? colors.sage
+                      : colors.terracotta
+                  }
+                />
+              </View>
+            </View>
+
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${progress}%` as `${number}%`,
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={styles.goalFooter}>
+              <Text style={styles.goalHint}>
+                {weeklyTarget === 0
+                  ? "Defina sua frequência no perfil."
+                  : exceeded > 0
+                    ? `Meta superada em ${exceeded} ${
+                        exceeded === 1 ? "conteúdo" : "conteúdos"
+                      }.`
+                    : remaining > 0
+                      ? `Falta${remaining === 1 ? "" : "m"} ${remaining} ${
+                          remaining === 1 ? "conteúdo" : "conteúdos"
+                        } para completar sua semana.`
+                      : "Semana planejada ✓"}
+              </Text>
+
+              {weeklyTarget > 0 && (
+                <View style={styles.goalPercent}>
+                  <Text style={styles.goalPercentText}>
+                    {Math.round(progress)}%
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        <View style={styles.goal}>
-          <View style={styles.goalHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.goalEyebrow}>META SEMANAL</Text>
+        <View style={styles.weekPanel}>
+          <View style={styles.weekNav}>
+            <TouchableOpacity
+              style={styles.weekArrow}
+              activeOpacity={0.8}
+              onPress={() => setWeekOffset((current) => current - 1)}
+            >
+              <Ionicons name="chevron-back" size={18} color={colors.blue} />
+            </TouchableOpacity>
 
-              <Text style={styles.goalTitle}>
-                {weeklyTarget === 0
-                  ? "Meta não definida"
-                  : `${plannedCount} de ${weeklyTarget} planejados`}
+            <View style={styles.weekNavCenter}>
+              <Text style={styles.weekNavLabel}>
+                {weekOffset === 0
+                  ? "ESTA SEMANA"
+                  : weekOffset === 1
+                    ? "PRÓXIMA SEMANA"
+                    : weekOffset === -1
+                      ? "SEMANA ANTERIOR"
+                      : "SEMANA"}
+              </Text>
+
+              <Text style={styles.weekRange}>
+                {formatWeekRange(weekDays[0].date, weekDays[6].date)}
               </Text>
             </View>
 
-            <View
-              style={[
-                styles.goalStatus,
-
-                remaining === 0 && weeklyTarget > 0 && styles.goalStatusDone,
-              ]}
+            <TouchableOpacity
+              style={styles.weekArrow}
+              activeOpacity={0.8}
+              onPress={() => setWeekOffset((current) => current + 1)}
             >
-              <Ionicons
-                name={
-                  remaining === 0 && weeklyTarget > 0
-                    ? "checkmark"
-                    : "flag-outline"
-                }
-                size={20}
-                color={
-                  remaining === 0 && weeklyTarget > 0
-                    ? colors.sage
-                    : colors.terracotta
-                }
-              />
-            </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.blue} />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
+          <View style={styles.calendar}>
+            {weekDays.map((day) => {
+              const selected = day.key === selectedDate;
 
-                {
-                  width: `${progress}%` as `${number}%`,
-                },
-              ]}
-            />
-          </View>
+              const today = day.key === toDateKey(new Date());
 
-          <Text style={styles.goalHint}>
-            {weeklyTarget === 0
-              ? "Defina sua frequência no perfil."
-              : exceeded > 0
-                ? `Meta superada em ${exceeded} ${
-                    exceeded === 1 ? "conteúdo" : "conteúdos"
-                  }.`
-                : remaining > 0
-                  ? `Falta${remaining === 1 ? "" : "m"} ${remaining} ${
-                      remaining === 1 ? "conteúdo" : "conteúdos"
-                    } para completar sua semana.`
-                  : "Semana planejada ✓"}
-          </Text>
-        </View>
+              const count = getContentCount(day.key);
 
-        <View style={styles.weekNav}>
-          <TouchableOpacity
-            style={styles.weekArrow}
-            activeOpacity={0.8}
-            onPress={() => setWeekOffset((current) => current - 1)}
-          >
-            <Ionicons name="arrow-back" size={18} color={colors.text} />
-          </TouchableOpacity>
-
-          <View style={styles.weekNavCenter}>
-            <Text style={styles.weekNavLabel}>
-              {weekOffset === 0
-                ? "ESTA SEMANA"
-                : weekOffset === 1
-                  ? "PRÓXIMA SEMANA"
-                  : weekOffset === -1
-                    ? "SEMANA ANTERIOR"
-                    : "SEMANA"}
-            </Text>
-
-            <Text style={styles.weekRange}>
-              {formatWeekRange(weekDays[0].date, weekDays[6].date)}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.weekArrow}
-            activeOpacity={0.8}
-            onPress={() => setWeekOffset((current) => current + 1)}
-          >
-            <Ionicons name="arrow-forward" size={18} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.calendar}>
-          {weekDays.map((day) => {
-            const selected = day.key === selectedDate;
-
-            const today = day.key === toDateKey(new Date());
-
-            const count = getContentCount(day.key);
-
-            return (
-              <TouchableOpacity
-                key={day.key}
-                style={styles.day}
-                activeOpacity={0.75}
-                onPress={() => setSelectedDate(day.key)}
-              >
-                <Text
-                  style={[styles.dayName, selected && styles.dayNameSelected]}
-                >
-                  {day.dayName}
-                </Text>
-
-                <View
-                  style={[
-                    styles.dayNumberWrap,
-
-                    today && styles.dayToday,
-
-                    selected && styles.daySelected,
-                  ]}
+              return (
+                <TouchableOpacity
+                  key={day.key}
+                  style={styles.day}
+                  activeOpacity={0.75}
+                  onPress={() => setSelectedDate(day.key)}
                 >
                   <Text
+                    style={[styles.dayName, selected && styles.dayNameSelected]}
+                  >
+                    {day.dayName}
+                  </Text>
+
+                  <View
                     style={[
-                      styles.dayNumber,
+                      styles.dayNumberWrap,
 
-                      today && styles.dayNumberToday,
+                      today && styles.dayToday,
 
-                      selected && styles.dayNumberSelected,
+                      selected && styles.daySelected,
                     ]}
                   >
-                    {day.dayNumber}
-                  </Text>
-                </View>
+                    <Text
+                      style={[
+                        styles.dayNumber,
 
-                <View style={styles.dayIndicatorArea}>
-                  {count > 0 && (
-                    <View style={styles.dayDots}>
-                      {Array.from({
-                        length: Math.min(count, 3),
-                      }).map((_, index) => (
-                        <View
-                          key={index}
-                          style={[
-                            styles.dayDot,
+                        today && styles.dayNumberToday,
 
-                            selected && styles.dayDotSelected,
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                        selected && styles.dayNumberSelected,
+                      ]}
+                    >
+                      {day.dayNumber}
+                    </Text>
+                  </View>
+
+                  <View style={styles.dayIndicatorArea}>
+                    {count > 0 && (
+                      <View style={styles.dayDots}>
+                        {Array.from({
+                          length: Math.min(count, 3),
+                        }).map((_, index) => (
+                          <View
+                            key={index}
+                            style={[
+                              styles.dayDot,
+
+                              selected && styles.dayDotSelected,
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.daySectionHeader}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.dayTitle}>
               {formatSelectedDay(selectedDay.date)}
             </Text>
@@ -377,6 +400,14 @@ export default function PlanejarScreen() {
                 : selectedDayContents.length === 1
                   ? "1 conteúdo planejado."
                   : `${selectedDayContents.length} conteúdos planejados.`}
+            </Text>
+          </View>
+
+          <View style={styles.dayCountBadge}>
+            <Ionicons name="calendar-outline" size={14} color={colors.blue} />
+
+            <Text style={styles.dayCountBadgeText}>
+              {selectedDayContents.length}
             </Text>
           </View>
         </View>
@@ -421,7 +452,11 @@ export default function PlanejarScreen() {
         )}
 
         <View style={styles.unplannedHeader}>
-          <View>
+          <View style={styles.unplannedMark}>
+            <Ionicons name="albums-outline" size={20} color={colors.amber} />
+          </View>
+
+          <View style={{ flex: 1 }}>
             <Text style={styles.unplannedTitle}>Não planejados</Text>
 
             <Text style={styles.unplannedSubtitle}>
@@ -803,22 +838,111 @@ const styles = StyleSheet.create({
     paddingBottom: 140,
   },
 
-  header: {
-    paddingTop: spacing.lg,
+  planningHero: {
+    position: "relative",
 
-    paddingBottom: 30,
+    overflow: "hidden",
 
+    marginTop: spacing.lg,
+
+    marginBottom: 18,
+
+    padding: 20,
+
+    borderRadius: 28,
+
+    backgroundColor: colors.blueLight,
+
+    borderWidth: 1,
+
+    borderColor: "rgba(121, 165, 184, 0.18)",
+
+    ...shadows.card,
+  },
+
+  heroBubbleOne: {
+    position: "absolute",
+
+    width: 126,
+    height: 126,
+
+    top: -44,
+    right: -34,
+
+    borderRadius: 63,
+
+    backgroundColor: "rgba(225, 116, 85, 0.13)",
+  },
+
+  heroBubbleTwo: {
+    position: "absolute",
+
+    width: 86,
+    height: 86,
+
+    left: -26,
+    bottom: 28,
+
+    borderRadius: 43,
+
+    backgroundColor: "rgba(142, 127, 194, 0.11)",
+  },
+
+  heroTop: {
     flexDirection: "row",
 
-    alignItems: "flex-start",
+    alignItems: "center",
 
     justifyContent: "space-between",
   },
 
-  title: {
+  heroEyebrow: {
+    minHeight: 30,
+
+    paddingHorizontal: 10,
+
+    borderRadius: radius.round,
+
+    backgroundColor: "rgba(255, 253, 252, 0.74)",
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 6,
+  },
+
+  heroEyebrowText: {
+    fontSize: 10,
+
+    letterSpacing: 0.75,
+
+    fontFamily: fonts.bold,
+
+    color: colors.blue,
+  },
+
+  heroMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.blue,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    ...shadows.soft,
+  },
+
+  heroTitle: {
+    marginTop: 17,
+
     fontSize: 32,
 
-    lineHeight: 40,
+    lineHeight: 39,
 
     letterSpacing: -1,
 
@@ -827,47 +951,32 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  subtitle: {
-    marginTop: 6,
+  heroSubtitle: {
+    maxWidth: 315,
 
-    fontSize: 14,
+    marginTop: 5,
 
-    lineHeight: 21,
+    fontSize: 13,
+
+    lineHeight: 20,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
 
-  headerMark: {
-    width: 44,
-    height: 44,
+  goalCard: {
+    marginTop: 19,
 
-    marginTop: 3,
+    padding: 15,
 
-    borderRadius: 14,
+    borderRadius: 19,
 
-    backgroundColor: colors.blueLight,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  goal: {
-    padding: 18,
-
-    marginBottom: 32,
-
-    borderRadius: 22,
-
-    backgroundColor: colors.surface,
+    backgroundColor: "rgba(255, 253, 252, 0.9)",
 
     borderWidth: 1,
 
-    borderColor: colors.border,
-
-    ...shadows.soft,
+    borderColor: "rgba(255, 255, 255, 0.74)",
   },
 
   goalHeader: {
@@ -877,9 +986,9 @@ const styles = StyleSheet.create({
   },
 
   goalEyebrow: {
-    fontSize: 10,
+    fontSize: 9,
 
-    letterSpacing: 1,
+    letterSpacing: 0.85,
 
     fontFamily: fonts.bold,
 
@@ -887,13 +996,13 @@ const styles = StyleSheet.create({
   },
 
   goalTitle: {
-    marginTop: 5,
+    marginTop: 4,
 
-    fontSize: 22,
+    fontSize: 20,
 
-    lineHeight: 29,
+    lineHeight: 27,
 
-    letterSpacing: -0.4,
+    letterSpacing: -0.35,
 
     fontFamily: fonts.bold,
 
@@ -901,10 +1010,10 @@ const styles = StyleSheet.create({
   },
 
   goalStatus: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
 
-    borderRadius: 14,
+    borderRadius: 13,
 
     backgroundColor: colors.terracottaLight,
 
@@ -918,9 +1027,9 @@ const styles = StyleSheet.create({
   },
 
   progressTrack: {
-    height: 6,
+    height: 7,
 
-    marginTop: 18,
+    marginTop: 14,
 
     overflow: "hidden",
 
@@ -937,16 +1046,66 @@ const styles = StyleSheet.create({
     backgroundColor: colors.terracotta,
   },
 
+  goalFooter: {
+    marginTop: 10,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "space-between",
+
+    gap: 8,
+  },
+
   goalHint: {
-    marginTop: 11,
+    flex: 1,
 
-    fontSize: 12,
+    fontSize: 11,
 
-    lineHeight: 18,
+    lineHeight: 17,
 
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
+  },
+
+  goalPercent: {
+    minHeight: 27,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.terracottaLight,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  goalPercentText: {
+    fontSize: 10,
+
+    fontFamily: fonts.bold,
+
+    color: colors.terracotta,
+  },
+
+  weekPanel: {
+    marginBottom: 30,
+
+    padding: 14,
+
+    borderRadius: 22,
+
+    backgroundColor: colors.surface,
+
+    borderWidth: 1,
+
+    borderColor: colors.border,
+
+    ...shadows.soft,
   },
 
   weekNav: {
@@ -956,24 +1115,20 @@ const styles = StyleSheet.create({
 
     justifyContent: "space-between",
 
-    marginBottom: 20,
+    marginBottom: 17,
   },
 
   weekArrow: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
 
-    borderRadius: radius.round,
+    borderRadius: 12,
 
-    backgroundColor: colors.surface,
+    backgroundColor: colors.blueLight,
 
     alignItems: "center",
 
     justifyContent: "center",
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
   },
 
   weekNavCenter: {
@@ -981,9 +1136,9 @@ const styles = StyleSheet.create({
   },
 
   weekNavLabel: {
-    fontSize: 10,
+    fontSize: 9,
 
-    letterSpacing: 0.9,
+    letterSpacing: 0.85,
 
     fontFamily: fonts.bold,
 
@@ -991,11 +1146,11 @@ const styles = StyleSheet.create({
   },
 
   weekRange: {
-    marginTop: 4,
+    marginTop: 3,
 
-    fontSize: 16,
+    fontSize: 15,
 
-    lineHeight: 22,
+    lineHeight: 21,
 
     fontFamily: fonts.semibold,
 
@@ -1006,8 +1161,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
 
     justifyContent: "space-between",
-
-    marginBottom: 34,
   },
 
   day: {
@@ -1017,9 +1170,9 @@ const styles = StyleSheet.create({
   },
 
   dayName: {
-    marginBottom: 8,
+    marginBottom: 7,
 
-    fontSize: 10,
+    fontSize: 9,
 
     fontFamily: fonts.semibold,
 
@@ -1031,8 +1184,8 @@ const styles = StyleSheet.create({
   },
 
   dayNumberWrap: {
-    width: 40,
-    height: 40,
+    width: 39,
+    height: 39,
 
     borderRadius: radius.round,
 
@@ -1046,7 +1199,7 @@ const styles = StyleSheet.create({
   dayToday: {
     borderWidth: 1.5,
 
-    borderColor: colors.text,
+    borderColor: colors.terracotta,
   },
 
   daySelected: {
@@ -1064,7 +1217,9 @@ const styles = StyleSheet.create({
   },
 
   dayNumberToday: {
-    color: colors.text,
+    color: colors.terracotta,
+
+    fontFamily: fonts.bold,
   },
 
   dayNumberSelected: {
@@ -1074,9 +1229,9 @@ const styles = StyleSheet.create({
   },
 
   dayIndicatorArea: {
-    height: 10,
+    height: 9,
 
-    marginTop: 6,
+    marginTop: 5,
 
     justifyContent: "center",
   },
@@ -1102,6 +1257,12 @@ const styles = StyleSheet.create({
 
   daySectionHeader: {
     marginBottom: 15,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: 12,
   },
 
   dayTitle: {
@@ -1126,6 +1287,33 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
 
     color: colors.textSecondary,
+  },
+
+  dayCountBadge: {
+    minWidth: 42,
+    height: 42,
+
+    paddingHorizontal: 9,
+
+    borderRadius: 14,
+
+    backgroundColor: colors.blueLight,
+
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    gap: 4,
+  },
+
+  dayCountBadgeText: {
+    fontSize: 12,
+
+    fontFamily: fonts.bold,
+
+    color: colors.blue,
   },
 
   emptyDay: {
@@ -1186,23 +1374,42 @@ const styles = StyleSheet.create({
   },
 
   unplannedHeader: {
-    marginTop: 38,
+    marginTop: 36,
 
     marginBottom: 15,
 
+    padding: 14,
+
+    borderRadius: 20,
+
+    backgroundColor: colors.amberLight,
+
     flexDirection: "row",
 
-    alignItems: "flex-end",
+    alignItems: "center",
 
-    justifyContent: "space-between",
+    gap: 11,
+  },
+
+  unplannedMark: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: colors.surface,
+
+    alignItems: "center",
+
+    justifyContent: "center",
   },
 
   unplannedTitle: {
-    fontSize: 24,
+    fontSize: 20,
 
-    lineHeight: 31,
+    lineHeight: 27,
 
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
 
     fontFamily: fonts.bold,
 
@@ -1210,11 +1417,11 @@ const styles = StyleSheet.create({
   },
 
   unplannedSubtitle: {
-    marginTop: 4,
+    marginTop: 2,
 
-    fontSize: 13,
+    fontSize: 12,
 
-    lineHeight: 19,
+    lineHeight: 18,
 
     fontFamily: fonts.regular,
 
@@ -1222,15 +1429,15 @@ const styles = StyleSheet.create({
   },
 
   unplannedCount: {
-    minWidth: 30,
+    minWidth: 34,
 
-    height: 30,
+    height: 34,
 
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
 
     borderRadius: radius.round,
 
-    backgroundColor: colors.amberLight,
+    backgroundColor: colors.surface,
 
     alignItems: "center",
 
