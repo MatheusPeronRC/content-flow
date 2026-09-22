@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+
+import { router, useFocusEffect } from "expo-router";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -42,7 +43,7 @@ export default function PlanejarScreen() {
 
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()));
 
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
+  const [planningContent, setPlanningContent] = useState<ContentItem | null>(
     null,
   );
 
@@ -73,15 +74,19 @@ export default function PlanejarScreen() {
   }, [weekOffset]);
 
   useEffect(() => {
-    const exists = weekDays.some((day) => day.key === selectedDate);
+    const selectedStillExists = weekDays.some(
+      (day) => day.key === selectedDate,
+    );
 
-    if (!exists) {
-      const todayKey = toDateKey(new Date());
-
-      const todayExists = weekDays.some((day) => day.key === todayKey);
-
-      setSelectedDate(todayExists ? todayKey : weekDays[0].key);
+    if (selectedStillExists) {
+      return;
     }
+
+    const todayKey = toDateKey(new Date());
+
+    const todayInWeek = weekDays.some((day) => day.key === todayKey);
+
+    setSelectedDate(todayInWeek ? todayKey : weekDays[0].key);
   }, [weekDays, selectedDate]);
 
   useFocusEffect(
@@ -148,17 +153,17 @@ export default function PlanejarScreen() {
   );
 
   async function handlePlan(date: string | null) {
-    if (!selectedContent) {
+    if (!planningContent) {
       return;
     }
 
-    await updateContent(selectedContent.id, {
+    await updateContent(planningContent.id, {
       plannedDate: date,
     });
 
     setContents((current) =>
       current.map((content) =>
-        content.id === selectedContent.id
+        content.id === planningContent.id
           ? {
               ...content,
               plannedDate: date,
@@ -167,7 +172,15 @@ export default function PlanejarScreen() {
       ),
     );
 
-    setSelectedContent(null);
+    setPlanningContent(null);
+  }
+
+  function openContent(content: ContentItem) {
+    router.push(`/conteudo/${content.id}`);
+  }
+
+  function openPlanning(content: ContentItem) {
+    setPlanningContent(content);
   }
 
   function getContentCount(date: string) {
@@ -317,7 +330,7 @@ export default function PlanejarScreen() {
                   {day.dayNumber}
                 </Text>
 
-                {today && (
+                {today ? (
                   <Text
                     style={[
                       styles.todayLabel,
@@ -327,9 +340,7 @@ export default function PlanejarScreen() {
                   >
                     HOJE
                   </Text>
-                )}
-
-                {!today && count > 0 && (
+                ) : count > 0 ? (
                   <View
                     style={[
                       styles.countBadge,
@@ -347,11 +358,24 @@ export default function PlanejarScreen() {
                       {count}
                     </Text>
                   </View>
-                )}
+                ) : null}
               </TouchableOpacity>
             );
           })}
         </ScrollView>
+
+        <View style={styles.usageHint}>
+          <Ionicons
+            name="information-circle-outline"
+            size={18}
+            color={colors.blue}
+          />
+
+          <Text style={styles.usageHintText}>
+            Toque no conteúdo para abrir. Use Planejar ou Alterar para mudar o
+            dia.
+          </Text>
+        </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
@@ -381,7 +405,8 @@ export default function PlanejarScreen() {
               <Text style={styles.emptyDayTitle}>Dia livre</Text>
 
               <Text style={styles.emptyDayText}>
-                Escolha um conteúdo não planejado e coloque-o neste dia.
+                Escolha um conteúdo em “Não planejados” abaixo para colocá-lo
+                neste dia.
               </Text>
             </View>
           </View>
@@ -390,7 +415,8 @@ export default function PlanejarScreen() {
             <PlanningCard
               key={content.id}
               content={content}
-              onPress={() => setSelectedContent(content)}
+              onOpen={() => openContent(content)}
+              onPlan={() => openPlanning(content)}
             />
           ))
         )}
@@ -429,41 +455,57 @@ export default function PlanejarScreen() {
               key={content.id}
               content={content}
               unplanned
-              onPress={() => setSelectedContent(content)}
+              onOpen={() => openContent(content)}
+              onPlan={() => openPlanning(content)}
             />
           ))
         )}
       </ScrollView>
 
       <Modal
-        visible={selectedContent !== null}
+        visible={planningContent !== null}
         transparent
         animationType="slide"
-        onRequestClose={() => setSelectedContent(null)}
+        onRequestClose={() => setPlanningContent(null)}
       >
         <View style={styles.modalBackdrop}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
-            onPress={() => setSelectedContent(null)}
+            onPress={() => setPlanningContent(null)}
           />
 
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
 
-            <Text style={styles.sheetTitle}>Planejar conteúdo</Text>
+            <View style={styles.sheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sheetTitle}>
+                  {planningContent?.plannedDate
+                    ? "Alterar planejamento"
+                    : "Planejar conteúdo"}
+                </Text>
 
-            <Text style={styles.sheetContentTitle} numberOfLines={2}>
-              {selectedContent?.idea}
-            </Text>
+                <Text style={styles.sheetContentTitle} numberOfLines={2}>
+                  {planningContent?.idea}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.sheetClose}
+                onPress={() => setPlanningContent(null)}
+              >
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.sheetDescription}>
-              Escolha em qual dia você quer trabalhar neste conteúdo.
+              Escolha um dia desta semana.
             </Text>
 
             <View style={styles.sheetDays}>
               {weekDays.map((day) => {
-                const selected = selectedContent?.plannedDate === day.key;
+                const selected = planningContent?.plannedDate === day.key;
 
                 return (
                   <TouchableOpacity
@@ -494,12 +536,23 @@ export default function PlanejarScreen() {
                     >
                       {day.dayNumber}
                     </Text>
+
+                    {selected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={15}
+                        color={colors.surface}
+                        style={{
+                          marginTop: 4,
+                        }}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {selectedContent?.plannedDate && (
+            {planningContent?.plannedDate && (
               <TouchableOpacity
                 style={styles.removePlanning}
                 onPress={() => handlePlan(null)}
@@ -524,13 +577,18 @@ export default function PlanejarScreen() {
 
 type PlanningCardProps = {
   content: ContentItem;
-  onPress: () => void;
+
+  onOpen: () => void;
+
+  onPlan: () => void;
+
   unplanned?: boolean;
 };
 
 function PlanningCard({
   content,
-  onPress,
+  onOpen,
+  onPlan,
   unplanned = false,
 }: PlanningCardProps) {
   const status = getStatusMeta(content.status);
@@ -539,7 +597,7 @@ function PlanningCard({
     <TouchableOpacity
       style={styles.contentCard}
       activeOpacity={0.8}
-      onPress={onPress}
+      onPress={onOpen}
     >
       <View
         style={[
@@ -579,17 +637,35 @@ function PlanningCard({
         <Text style={styles.contentTitle} numberOfLines={2}>
           {content.idea}
         </Text>
+
+        <Text style={styles.openHint}>Toque para abrir</Text>
       </View>
 
-      <View
+      <TouchableOpacity
         style={[styles.planAction, !unplanned && styles.planActionScheduled]}
+        activeOpacity={0.8}
+        onPress={(event) => {
+          event.stopPropagation();
+
+          onPlan();
+        }}
       >
         <Ionicons
           name={unplanned ? "calendar-outline" : "calendar"}
-          size={17}
-          color={colors.blue}
+          size={16}
+          color={unplanned ? colors.blue : colors.sage}
         />
-      </View>
+
+        <Text
+          style={[
+            styles.planActionText,
+
+            !unplanned && styles.planActionTextScheduled,
+          ]}
+        >
+          {unplanned ? "Planejar" : "Alterar"}
+        </Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -599,42 +675,54 @@ function getStatusMeta(status: ContentStatus) {
     case "ideia":
       return {
         label: "IDEIA",
+
         icon: "bulb-outline" as const,
+
         ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
         label: "ROTEIRO",
+
         icon: "create-outline" as const,
+
         ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
         label: "PRODUZIR",
+
         icon: "videocam-outline" as const,
+
         ...statusColors.gravar,
       };
 
     case "editar":
       return {
         label: "EDITAR",
+
         icon: "cut-outline" as const,
+
         ...statusColors.editar,
       };
 
     case "pronto":
       return {
         label: "PRONTO",
+
         icon: "checkmark-circle-outline" as const,
+
         ...statusColors.pronto,
       };
 
     case "publicado":
       return {
         label: "PUBLICADO",
+
         icon: "paper-plane-outline" as const,
+
         ...statusColors.publicado,
       };
   }
@@ -881,7 +969,7 @@ const styles = StyleSheet.create({
   days: {
     gap: spacing.sm,
 
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.md,
   },
 
   dayCard: {
@@ -982,6 +1070,34 @@ const styles = StyleSheet.create({
     color: colors.blue,
   },
 
+  usageHint: {
+    flexDirection: "row",
+
+    alignItems: "center",
+
+    gap: spacing.sm,
+
+    marginBottom: spacing.xl,
+
+    paddingHorizontal: spacing.md,
+
+    paddingVertical: 10,
+
+    borderRadius: radius.md,
+
+    backgroundColor: colors.blueLight,
+  },
+
+  usageHintText: {
+    flex: 1,
+
+    fontSize: typography.tiny,
+
+    lineHeight: 15,
+
+    color: colors.textSecondary,
+  },
+
   sectionHeader: {
     marginBottom: spacing.md,
   },
@@ -1058,7 +1174,7 @@ const styles = StyleSheet.create({
   },
 
   contentCard: {
-    minHeight: 88,
+    minHeight: 96,
 
     flexDirection: "row",
 
@@ -1094,6 +1210,8 @@ const styles = StyleSheet.create({
 
   contentInfo: {
     flex: 1,
+
+    minWidth: 0,
   },
 
   contentMeta: {
@@ -1139,11 +1257,24 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  planAction: {
-    width: 36,
-    height: 36,
+  openHint: {
+    marginTop: 4,
 
-    borderRadius: radius.round,
+    fontSize: 9,
+
+    color: colors.textMuted,
+  },
+
+  planAction: {
+    minWidth: 76,
+
+    minHeight: 40,
+
+    marginLeft: spacing.sm,
+
+    paddingHorizontal: 9,
+
+    borderRadius: radius.md,
 
     backgroundColor: colors.blueLight,
 
@@ -1151,11 +1282,25 @@ const styles = StyleSheet.create({
 
     justifyContent: "center",
 
-    marginLeft: spacing.sm,
+    flexDirection: "row",
+
+    gap: 5,
   },
 
   planActionScheduled: {
     backgroundColor: colors.sageLight,
+  },
+
+  planActionText: {
+    fontSize: 9,
+
+    fontWeight: "700",
+
+    color: colors.blue,
+  },
+
+  planActionTextScheduled: {
+    color: colors.sage,
   },
 
   unplannedHeader: {
@@ -1251,6 +1396,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
 
+  sheetHeader: {
+    flexDirection: "row",
+
+    alignItems: "flex-start",
+
+    gap: spacing.md,
+  },
+
   sheetTitle: {
     fontSize: typography.heading,
 
@@ -1271,8 +1424,21 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
+  sheetClose: {
+    width: 38,
+    height: 38,
+
+    borderRadius: radius.round,
+
+    backgroundColor: colors.surfaceMuted,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
   sheetDescription: {
-    marginTop: 4,
+    marginTop: spacing.md,
 
     marginBottom: spacing.lg,
 
@@ -1292,7 +1458,7 @@ const styles = StyleSheet.create({
   sheetDay: {
     flex: 1,
 
-    minHeight: 66,
+    minHeight: 72,
 
     borderRadius: radius.md,
 

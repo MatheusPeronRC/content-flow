@@ -191,7 +191,7 @@ export default function InspirationDetailsScreen() {
     }
 
     router.push({
-      pathname: "/conteudo/criar",
+      pathname: "/conteudo/adaptar",
 
       params: {
         inspirationId: inspiration.id,
