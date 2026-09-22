@@ -6,32 +6,14 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" />
 
       <Stack.Screen
-        name="conteudo/novo"
+        name="inspiracao/nova"
         options={{
           presentation: "modal",
         }}
       />
 
       <Stack.Screen
-        name="inspiracao/nova"
-        options={{
-          presentation: "modal",
-        }}
-      />
-      <Stack.Screen
-        name="conteudo/criar"
-        options={{
-          presentation: "modal",
-        }}
-      />
-      <Stack.Screen
         name="conteudo/roteiro"
-        options={{
-          presentation: "modal",
-        }}
-      />
-      <Stack.Screen
-        name="conteudo/gravar"
         options={{
           presentation: "modal",
         }}
