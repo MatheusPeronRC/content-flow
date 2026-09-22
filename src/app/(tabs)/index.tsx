@@ -24,11 +24,11 @@ import { CreatorProfile } from "../../types/creatorProfile";
 
 import {
   colors,
+  fonts,
   radius,
   shadows,
   spacing,
   statusColors,
-  typography,
 } from "../../constants/theme";
 
 export default function HomeScreen() {
@@ -559,11 +559,11 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 16,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
 
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
   },
 
   profileButton: {
@@ -592,9 +592,9 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: spacing.sm,
 
-    fontSize: typography.body,
+    fontSize: 14,
 
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
 
     color: colors.terracotta,
   },
@@ -602,11 +602,11 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 34,
 
-    lineHeight: 39,
+    lineHeight: 40,
 
-    letterSpacing: -1.1,
+    letterSpacing: -1.3,
 
-    fontWeight: "700",
+    fontFamily: fonts.extraBold,
 
     color: colors.text,
   },
@@ -619,6 +619,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
 
     lineHeight: 21,
+
+    fontFamily: fonts.regular,
 
     color: colors.textSecondary,
   },
@@ -660,9 +662,9 @@ const styles = StyleSheet.create({
 
     fontSize: 22,
 
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.surface,
   },
@@ -743,9 +745,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 22,
 
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
 
-    fontWeight: "700",
+    fontFamily: fonts.bold,
 
     color: colors.text,
   },

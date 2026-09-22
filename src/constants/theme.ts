@@ -244,4 +244,20 @@ export const shadows = {
     shadowRadius: 22,
     elevation: 5,
   },
+  
+};
+
+export const fonts = {
+  regular: "Manrope_400Regular",
+
+  medium: "Manrope_500Medium",
+
+  semibold:
+    "Manrope_600SemiBold",
+
+  bold:
+    "Manrope_700Bold",
+
+  extraBold:
+    "Manrope_800ExtraBold",
 };
