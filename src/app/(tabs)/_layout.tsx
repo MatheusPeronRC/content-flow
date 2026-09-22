@@ -93,11 +93,11 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
-        name="perfil"
+        name="conteudos"
         options={{
-          title: "Perfil",
+          title: "Conteúdos",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="layers-outline" size={size} color={color} />
           ),
         }}
       />
