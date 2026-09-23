@@ -1,6 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import {
+    router,
+    useFocusEffect,
+    useLocalSearchParams,
+    useNavigation,
+} from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
     ActivityIndicator,
@@ -46,6 +51,7 @@ const categories = ["Hook", "Tema", "Edição", "Formato", "Roteiro", "CTA"];
 
 export default function InspirationDetailsScreen() {
   const params = useLocalSearchParams();
+  const navigation = useNavigation();
 
   const rawId = params.id;
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -64,9 +70,23 @@ export default function InspirationDetailsScreen() {
 
   const [note, setNote] = useState("");
 
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: editing ? { display: "none" } : undefined,
+    } as any);
+
+    return () => {
+      navigation.setOptions({
+        tabBarStyle: undefined,
+      } as any);
+    };
+  }, [editing, navigation]);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
+
+      setEditing(false);
 
       async function load() {
         if (!id) {
@@ -286,7 +306,10 @@ export default function InspirationDetailsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          editing && styles.contentEditing,
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -537,27 +560,28 @@ export default function InspirationDetailsScreen() {
                 {categories.map((item) => {
                   const selected = category === item;
 
-                  const accent = getCategoryColor(item);
-
                   return (
                     <TouchableOpacity
                       key={item}
                       style={[
                         styles.categoryOption,
-                        selected && {
-                          backgroundColor: accent.background,
-                          borderColor: accent.foreground,
-                        },
+                        selected && styles.categoryOptionSelected,
                       ]}
                       activeOpacity={0.8}
                       onPress={() => setCategory(selected ? null : item)}
                     >
+                      {selected ? (
+                        <Ionicons
+                          name="checkmark"
+                          size={14}
+                          color={colors.terracotta}
+                        />
+                      ) : null}
+
                       <Text
                         style={[
                           styles.categoryOptionText,
-                          selected && {
-                            color: accent.foreground,
-                          },
+                          selected && styles.categoryOptionTextSelected,
                         ]}
                       >
                         {item}
@@ -677,6 +701,10 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: 132,
+  },
+
+  contentEditing: {
+    paddingBottom: 52,
   },
 
   header: {
@@ -1063,14 +1091,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 5,
+  },
+
+  categoryOptionSelected: {
+    backgroundColor: colors.terracottaLight,
+    borderColor: colors.terracotta,
   },
 
   categoryOptionText: {
     fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
+  },
+
+  categoryOptionTextSelected: {
+    color: colors.terracotta,
   },
 
   noteInput: {

@@ -402,9 +402,7 @@ export default function ContentDetailsScreen() {
             <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>
-            {editing ? "Editar detalhes" : "Conteúdo"}
-          </Text>
+          <Text style={styles.headerTitle}>Conteúdo</Text>
 
           <TouchableOpacity
             style={[styles.headerButton, editing && styles.headerButtonEditing]}
@@ -747,8 +745,7 @@ export default function ContentDetailsScreen() {
                 <Text style={styles.sectionEyebrow}>SEU FLUXO</Text>
 
                 <Text style={styles.flowCurrent}>
-                  Agora:{" "}
-                  {status.label.charAt(0) + status.label.slice(1).toLowerCase()}
+                  Etapa atual: {status.label.toLowerCase()}
                 </Text>
               </View>
 
