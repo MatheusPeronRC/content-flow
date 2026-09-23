@@ -3,44 +3,44 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import InspirationThumbnail from "../../components/InspirationThumbnail";
-import PlatformIcon from "../../components/PlatformIcon";
+import InspirationThumbnail from "../../../components/InspirationThumbnail";
+import PlatformIcon from "../../../components/PlatformIcon";
 
 import {
-  deleteContent,
-  getContentById,
-  updateContent,
-} from "../../services/contentStorage";
+    deleteContent,
+    getContentById,
+    updateContent,
+} from "../../../services/contentStorage";
 
-import { getInspirationById } from "../../services/inspirationStorage";
-
-import {
-  ContentItem,
-  ContentReference,
-  ContentStatus,
-} from "../../types/content";
+import { getInspirationById } from "../../../services/inspirationStorage";
 
 import {
-  colors,
-  fonts,
-  radius,
-  shadows,
-  spacing,
-  statusColors,
-} from "../../constants/theme";
+    ContentItem,
+    ContentReference,
+    ContentStatus,
+} from "../../../types/content";
+
+import {
+    colors,
+    fonts,
+    radius,
+    shadows,
+    spacing,
+    statusColors,
+} from "../../../constants/theme";
 
 const formats = ["Reel", "Carrossel", "Story", "Foto"];
 
@@ -77,6 +77,8 @@ export default function ContentDetailsScreen() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
+
+      setEditing(false);
 
       async function load() {
         if (!id) {
@@ -400,7 +402,9 @@ export default function ContentDetailsScreen() {
             <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Conteúdo</Text>
+          <Text style={styles.headerTitle}>
+            {editing ? "Editar detalhes" : "Conteúdo"}
+          </Text>
 
           <TouchableOpacity
             style={[styles.headerButton, editing && styles.headerButtonEditing]}
@@ -743,7 +747,8 @@ export default function ContentDetailsScreen() {
                 <Text style={styles.sectionEyebrow}>SEU FLUXO</Text>
 
                 <Text style={styles.flowCurrent}>
-                  Etapa atual: {status.label.toLowerCase()}
+                  Agora:{" "}
+                  {status.label.charAt(0) + status.label.slice(1).toLowerCase()}
                 </Text>
               </View>
 
@@ -974,7 +979,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 50,
+    paddingBottom: 132,
   },
 
   header: {

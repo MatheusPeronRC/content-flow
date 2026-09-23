@@ -3,15 +3,16 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -99,6 +100,24 @@ export default function AdaptarConteudoScreen() {
     () => getPlatformMeta(inspiration?.source ?? "Outro"),
     [inspiration?.source],
   );
+
+  async function handleOpenOriginal() {
+    if (!inspiration?.url) {
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(inspiration.url);
+
+      if (!supported) {
+        return;
+      }
+
+      await Linking.openURL(inspiration.url);
+    } catch (error) {
+      console.error("Erro ao abrir referência:", error);
+    }
+  }
 
   function handleContinue() {
     if (!canContinue) {
@@ -202,7 +221,11 @@ export default function AdaptarConteudoScreen() {
             </Text>
           </View>
 
-          <View style={styles.referenceStrip}>
+          <TouchableOpacity
+            style={styles.referenceStrip}
+            activeOpacity={0.84}
+            onPress={handleOpenOriginal}
+          >
             <InspirationThumbnail
               thumbnailUrl={inspiration.thumbnailUrl}
               source={inspiration.source}
@@ -245,11 +268,22 @@ export default function AdaptarConteudoScreen() {
                 {referenceTitle}
               </Text>
 
-              <Text style={styles.referenceSecondary} numberOfLines={1}>
-                {inspiration.authorName?.trim() || cleanUrl(inspiration.url)}
-              </Text>
+              <View style={styles.referenceFooter}>
+                <Text style={styles.referenceSecondary} numberOfLines={1}>
+                  {inspiration.authorName?.trim() || cleanUrl(inspiration.url)}
+                </Text>
+
+                <View style={styles.referenceOpenHint}>
+                  <Text style={styles.referenceOpenText}>Abrir</Text>
+                  <Ionicons
+                    name="open-outline"
+                    size={14}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.workspace}>
             <View style={styles.workspaceHeader}>
@@ -528,12 +562,12 @@ const styles = StyleSheet.create({
   },
 
   platformText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.semibold,
   },
 
   categoryText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textMuted,
   },
@@ -546,12 +580,33 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
-  referenceSecondary: {
+  referenceFooter: {
     marginTop: 4,
-    fontSize: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+
+  referenceSecondary: {
+    flex: 1,
+    fontSize: 11,
     lineHeight: 16,
     fontFamily: fonts.regular,
     color: colors.textMuted,
+  },
+
+  referenceOpenHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  referenceOpenText: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
   },
 
   workspace: {
@@ -572,7 +627,7 @@ const styles = StyleSheet.create({
   },
 
   workspaceLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.terracotta,
@@ -588,7 +643,7 @@ const styles = StyleSheet.create({
 
   characterCount: {
     marginTop: 2,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textMuted,
   },
@@ -626,7 +681,7 @@ const styles = StyleSheet.create({
   },
 
   formatLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -684,16 +739,16 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
-    marginTop: 27,
+    marginTop: 20,
     backgroundColor: colors.divider,
   },
 
   continueSection: {
-    paddingTop: 22,
+    paddingTop: 17,
   },
 
   continueLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.terracotta,

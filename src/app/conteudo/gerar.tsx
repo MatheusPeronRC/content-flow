@@ -129,9 +129,14 @@ export default function GerarConteudoScreen() {
   }
 
   async function handleUseScript() {
-    await createContent("gravar");
+    const content = await createContent("gravar");
 
-    router.replace("/");
+    router.replace({
+      pathname: "/conteudo/[id]",
+      params: {
+        id: content.id,
+      },
+    });
   }
 
   async function handleEditScript() {
@@ -173,22 +178,14 @@ export default function GerarConteudoScreen() {
           <View style={styles.resultTop}>
             <View style={styles.stepRow}>
               <View style={styles.stepDone}>
-                <Ionicons name="checkmark" size={16} color={colors.surface} />
+                <Text style={styles.stepNumber}>2</Text>
               </View>
 
-              <Text style={styles.stepText}>Versão criada</Text>
+              <Text style={styles.stepText}>Sua versão</Text>
             </View>
 
             <View style={styles.versionControl}>
               <Text style={styles.versionLabel}>V{variation + 1}</Text>
-
-              <TouchableOpacity
-                style={styles.versionRefresh}
-                activeOpacity={0.8}
-                onPress={handleGenerateAgain}
-              >
-                <Ionicons name="refresh" size={15} color={colors.terracotta} />
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -218,7 +215,7 @@ export default function GerarConteudoScreen() {
 
           <View style={styles.ideaContent}>
             <View style={styles.ideaMeta}>
-              <Text style={styles.ideaLabel}>SUA IDEIA</Text>
+              <Text style={styles.ideaLabel}>SEU PONTO DE PARTIDA</Text>
 
               <View style={styles.formatPill}>
                 <Text style={styles.formatText}>{format}</Text>
@@ -380,15 +377,6 @@ export default function GerarConteudoScreen() {
             <Text style={styles.regenerateButtonText}>Gerar outra versão</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.mockWarning}>
-          <Ionicons name="flask-outline" size={15} color={colors.textMuted} />
-
-          <Text style={styles.mockWarningText}>
-            Esta geração ainda é simulada. A IA real será conectada depois que
-            validarmos esta experiência.
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -548,9 +536,15 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: radius.round,
-    backgroundColor: colors.sage,
+    backgroundColor: colors.terracottaLight,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  stepNumber: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
 
   stepText: {
@@ -561,8 +555,7 @@ const styles = StyleSheet.create({
 
   versionControl: {
     minHeight: 34,
-    paddingLeft: 10,
-    paddingRight: 5,
+    paddingHorizontal: 11,
     borderRadius: radius.round,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -576,15 +569,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.bold,
     color: colors.textSecondary,
-  },
-
-  versionRefresh: {
-    width: 25,
-    height: 25,
-    borderRadius: radius.round,
-    backgroundColor: colors.terracottaLight,
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   resultTitle: {
@@ -664,7 +648,7 @@ const styles = StyleSheet.create({
   },
 
   formatText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
@@ -685,7 +669,7 @@ const styles = StyleSheet.create({
   },
 
   originText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
   },
 
@@ -765,7 +749,7 @@ const styles = StyleSheet.create({
   },
 
   blockLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.85,
     fontFamily: fonts.bold,
   },
@@ -777,7 +761,7 @@ const styles = StyleSheet.create({
   },
 
   blockHint: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -811,7 +795,7 @@ const styles = StyleSheet.create({
   pointNumber: {
     width: 28,
     paddingTop: 2,
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 0.4,
     fontFamily: fonts.bold,
     color: colors.amber,
@@ -838,7 +822,7 @@ const styles = StyleSheet.create({
 
   actionsLabel: {
     marginBottom: 10,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -872,7 +856,8 @@ const styles = StyleSheet.create({
 
   useButtonHint: {
     marginTop: 2,
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: "rgba(255,253,252,0.72)",
   },
@@ -907,7 +892,8 @@ const styles = StyleSheet.create({
 
   editButtonHint: {
     marginTop: 2,
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -925,23 +911,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.terracotta,
-  },
-
-  mockWarning: {
-    marginTop: 17,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-  },
-
-  mockWarningText: {
-    flex: 1,
-    fontSize: 10,
-    lineHeight: 16,
-    fontFamily: fonts.regular,
-    color: colors.textMuted,
   },
 });

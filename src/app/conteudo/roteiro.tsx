@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -103,6 +104,26 @@ export default function RoteiroScreen() {
       cta.trim().length > 0
     );
   }, [hook, points, cta]);
+
+  async function handleOpenReference() {
+    const url = content?.reference?.url;
+
+    if (!url) {
+      return;
+    }
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+
+      if (!supported) {
+        return;
+      }
+
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error("Erro ao abrir referência:", error);
+    }
+  }
 
   function updatePoint(index: number, value: string) {
     setPoints((current) =>
@@ -241,10 +262,22 @@ export default function RoteiroScreen() {
             <View style={styles.editorTop}>
               <View style={styles.editorStep}>
                 <View style={styles.editorStepNumber}>
-                  <Text style={styles.editorStepNumberText}>2</Text>
+                  {content.reference ? (
+                    <Text style={styles.editorStepNumberText}>3</Text>
+                  ) : (
+                    <Ionicons
+                      name="create-outline"
+                      size={16}
+                      color={colors.amber}
+                    />
+                  )}
                 </View>
 
-                <Text style={styles.editorStepText}>Ajustar o roteiro</Text>
+                <Text style={styles.editorStepText}>
+                  {content.reference
+                    ? "Ajustar o roteiro"
+                    : "Construir o roteiro"}
+                </Text>
               </View>
 
               <View style={styles.blockCount}>
@@ -267,7 +300,12 @@ export default function RoteiroScreen() {
             </Text>
           </View>
 
-          <View style={styles.contextCard}>
+          <TouchableOpacity
+            style={styles.contextCard}
+            activeOpacity={content.reference ? 0.84 : 1}
+            disabled={!content.reference}
+            onPress={handleOpenReference}
+          >
             {content.reference ? (
               <InspirationThumbnail
                 thumbnailUrl={content.reference.thumbnailUrl}
@@ -307,12 +345,20 @@ export default function RoteiroScreen() {
                   <Text style={styles.originText}>
                     Referência: {content.reference.source}
                   </Text>
+
+                  <Text style={styles.originOpenText}>Abrir original</Text>
+
+                  <Ionicons
+                    name="open-outline"
+                    size={13}
+                    color={colors.textMuted}
+                  />
                 </View>
               ) : (
                 <Text style={styles.originText}>Conteúdo original</Text>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.editorDocument}>
             <EditorSection
@@ -803,7 +849,7 @@ const styles = StyleSheet.create({
   },
 
   contextLabel: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -819,7 +865,7 @@ const styles = StyleSheet.create({
   },
 
   formatText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
@@ -840,9 +886,15 @@ const styles = StyleSheet.create({
   },
 
   originText: {
-    marginTop: 5,
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+
+  originOpenText: {
+    marginLeft: 3,
+    fontSize: 11,
+    fontFamily: fonts.medium,
     color: colors.textMuted,
   },
 
@@ -883,7 +935,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.85,
     fontFamily: fonts.bold,
   },
@@ -902,7 +954,7 @@ const styles = StyleSheet.create({
   },
 
   hookInput: {
-    minHeight: 135,
+    minHeight: 120,
     marginTop: 14,
     padding: 14,
     borderRadius: 15,
@@ -916,7 +968,7 @@ const styles = StyleSheet.create({
   },
 
   ctaInput: {
-    minHeight: 115,
+    minHeight: 105,
     marginTop: 14,
     padding: 14,
     borderRadius: 15,
@@ -930,7 +982,7 @@ const styles = StyleSheet.create({
   },
 
   stepsCount: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.textMuted,
   },
@@ -969,7 +1021,7 @@ const styles = StyleSheet.create({
   },
 
   pointNumber: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 0.4,
     fontFamily: fonts.bold,
     color: colors.amber,
@@ -1036,8 +1088,8 @@ const styles = StyleSheet.create({
 
   flexibilityText: {
     flex: 1,
-    fontSize: 10,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -1048,7 +1100,7 @@ const styles = StyleSheet.create({
 
   actionsLabel: {
     marginBottom: 10,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -1090,7 +1142,8 @@ const styles = StyleSheet.create({
 
   primaryButtonHint: {
     marginTop: 2,
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: "rgba(255,253,252,0.72)",
   },

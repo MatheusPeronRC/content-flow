@@ -64,13 +64,6 @@ export default function RootLayout() {
       />
 
       <Stack.Screen
-        name="inspiracao/[id]"
-        options={{
-          presentation: "card",
-        }}
-      />
-
-      <Stack.Screen
         name="onboarding"
         options={{
           presentation: "card",

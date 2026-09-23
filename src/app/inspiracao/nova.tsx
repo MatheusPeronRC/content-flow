@@ -3,16 +3,16 @@ import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -23,10 +23,10 @@ import PlatformIcon, { getPlatformMeta } from "../../components/PlatformIcon";
 import { saveInspiration } from "../../services/inspirationStorage";
 
 import {
-    detectMediaSource,
-    getMediaMetadata,
-    MediaMetadata,
-    normalizeMediaUrl,
+  detectMediaSource,
+  getMediaMetadata,
+  MediaMetadata,
+  normalizeMediaUrl,
 } from "../../services/mediaMetadataService";
 
 import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";

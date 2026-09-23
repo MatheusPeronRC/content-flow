@@ -3,36 +3,44 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import InspirationThumbnail from "../../components/InspirationThumbnail";
-import PlatformIcon, { getPlatformMeta } from "../../components/PlatformIcon";
+import InspirationThumbnail from "../../../components/InspirationThumbnail";
+import PlatformIcon, {
+    getPlatformMeta,
+} from "../../../components/PlatformIcon";
 
 import {
-  deleteInspiration,
-  getInspirationById,
-  updateInspiration,
-} from "../../services/inspirationStorage";
+    deleteInspiration,
+    getInspirationById,
+    updateInspiration,
+} from "../../../services/inspirationStorage";
 
 import {
-  getMediaMetadata,
-  normalizeMediaUrl,
-} from "../../services/mediaMetadataService";
+    getMediaMetadata,
+    normalizeMediaUrl,
+} from "../../../services/mediaMetadataService";
 
-import { Inspiration } from "../../types/inspiration";
+import { Inspiration } from "../../../types/inspiration";
 
-import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
+import {
+    colors,
+    fonts,
+    radius,
+    shadows,
+    spacing,
+} from "../../../constants/theme";
 
 const categories = ["Hook", "Tema", "Edição", "Formato", "Roteiro", "CTA"];
 
@@ -314,7 +322,11 @@ export default function InspirationDetailsScreen() {
 
         {!editing ? (
           <>
-            <View style={styles.referenceCard}>
+            <TouchableOpacity
+              style={styles.referenceCard}
+              activeOpacity={0.84}
+              onPress={handleOpenOriginal}
+            >
               <InspirationThumbnail
                 thumbnailUrl={inspiration.thumbnailUrl}
                 source={inspiration.source}
@@ -374,38 +386,21 @@ export default function InspirationDetailsScreen() {
                   </Text>
                 ) : null}
 
-                <Text style={styles.savedAt}>
-                  Salva em {formatCreatedDate(inspiration.createdAt)}
-                </Text>
+                <View style={styles.referenceFooter}>
+                  <Text style={styles.savedAt}>
+                    Salva em {formatCreatedDate(inspiration.createdAt)}
+                  </Text>
+
+                  <View style={styles.referenceOpenHint}>
+                    <Text style={styles.referenceOpenText}>Abrir original</Text>
+                    <Ionicons
+                      name="open-outline"
+                      size={15}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.originalLink}
-              activeOpacity={0.82}
-              onPress={handleOpenOriginal}
-            >
-              <View style={styles.originalLinkIcon}>
-                <Ionicons name="open-outline" size={18} color={colors.blue} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={styles.smallLabel}>LINK ORIGINAL</Text>
-
-                <Text style={styles.originalLinkTitle}>
-                  Abrir no {inspiration.source}
-                </Text>
-
-                <Text style={styles.originalLinkUrl} numberOfLines={1}>
-                  {cleanUrl(inspiration.url)}
-                </Text>
-              </View>
-
-              <Ionicons
-                name="chevron-forward"
-                size={17}
-                color={colors.textMuted}
-              />
             </TouchableOpacity>
 
             <View style={styles.noteSection}>
@@ -673,10 +668,6 @@ function formatCreatedDate(isoDate: string) {
   });
 }
 
-function cleanUrl(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/^www\./, "");
-}
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -685,7 +676,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 52,
+    paddingBottom: 132,
   },
 
   header: {
@@ -758,7 +749,7 @@ const styles = StyleSheet.create({
   },
 
   sourcePillText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.semibold,
   },
 
@@ -779,7 +770,7 @@ const styles = StyleSheet.create({
   },
 
   categoryPillText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
@@ -801,61 +792,44 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 
+  referenceFooter: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+
   savedAt: {
-    marginTop: 7,
-    fontSize: 10,
+    flexShrink: 1,
+    fontSize: 11,
     lineHeight: 16,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
 
-  originalLink: {
-    minHeight: 76,
-    marginTop: 14,
-    paddingHorizontal: 13,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+  referenceOpenHint: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
   },
 
-  originalLinkIcon: {
-    width: 40,
-    height: 40,
-    marginRight: 11,
-    borderRadius: 12,
-    backgroundColor: colors.blueLight,
-    alignItems: "center",
-    justifyContent: "center",
+  referenceOpenText: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
   },
 
   smallLabel: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.75,
     fontFamily: fonts.bold,
     color: colors.textMuted,
   },
 
-  originalLinkTitle: {
-    marginTop: 2,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.semibold,
-    color: colors.text,
-  },
-
-  originalLinkUrl: {
-    marginTop: 2,
-    fontSize: 10,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.textMuted,
-  },
-
   noteSection: {
-    marginTop: 25,
+    marginTop: 22,
   },
 
   sectionHeading: {
@@ -883,17 +857,17 @@ const styles = StyleSheet.create({
 
   noteQuote: {
     position: "relative",
-    marginTop: 13,
-    paddingVertical: 12,
-    paddingLeft: 17,
+    marginTop: 10,
+    paddingVertical: 9,
+    paddingLeft: 16,
     paddingRight: 4,
   },
 
   noteAccent: {
     position: "absolute",
     left: 0,
-    top: 10,
-    bottom: 10,
+    top: 7,
+    bottom: 7,
     width: 3,
     borderRadius: radius.round,
     backgroundColor: colors.lavender,
@@ -921,7 +895,7 @@ const styles = StyleSheet.create({
   },
 
   nextEyebrow: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.terracotta,
@@ -940,8 +914,8 @@ const styles = StyleSheet.create({
   nextDescription: {
     maxWidth: 315,
     marginTop: 5,
-    fontSize: 12,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1027,8 +1001,8 @@ const styles = StyleSheet.create({
 
   editPreviewHint: {
     marginTop: 4,
-    fontSize: 10,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -1052,7 +1026,7 @@ const styles = StyleSheet.create({
   },
 
   characterCount: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textMuted,
   },

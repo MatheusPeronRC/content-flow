@@ -212,6 +212,20 @@ export default function TabsLayout() {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="inspiracao/[id]"
+          options={{
+            href: null,
+          }}
+        />
+
+        <Tabs.Screen
+          name="conteudo/[id]"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
 
       <Modal
@@ -527,7 +541,7 @@ const styles = StyleSheet.create({
   },
 
   recommendedText: {
-    fontSize: 9,
+    fontSize: 11,
 
     letterSpacing: 0.4,
 
