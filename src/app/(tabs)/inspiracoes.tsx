@@ -5,17 +5,18 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
+import PlatformIcon from "../../components/PlatformIcon";
 
 import { getInspirations } from "../../services/inspirationStorage";
 
@@ -291,11 +292,7 @@ function InspirationGridCard({
           </View>
 
           <View style={styles.sourceBadge}>
-            <Ionicons
-              name={getSourceIcon(inspiration.source)}
-              size={13}
-              color={colors.surface}
-            />
+            <PlatformIcon source={inspiration.source} size={14} />
           </View>
         </View>
 
@@ -366,25 +363,6 @@ function EmptyState() {
       </TouchableOpacity>
     </View>
   );
-}
-
-function getSourceIcon(source: string): keyof typeof Ionicons.glyphMap {
-  switch (source) {
-    case "Instagram":
-      return "logo-instagram";
-
-    case "TikTok":
-      return "musical-note-outline";
-
-    case "YouTube":
-      return "logo-youtube";
-
-    case "Kwai":
-      return "play-outline";
-
-    default:
-      return "link-outline";
-  }
 }
 
 function getCategoryColor(category: string | null) {
@@ -603,7 +581,7 @@ const styles = StyleSheet.create({
   },
 
   libraryCount: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
@@ -654,22 +632,23 @@ const styles = StyleSheet.create({
 
   categoryBadge: {
     maxWidth: "72%",
-    minHeight: 26,
-    paddingHorizontal: 8,
+    minHeight: 28,
+    paddingHorizontal: 9,
     borderRadius: radius.round,
     alignItems: "center",
     justifyContent: "center",
   },
 
   categoryBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
+    lineHeight: 14,
     fontFamily: fonts.bold,
   },
 
   sourceBadge: {
-    width: 27,
-    height: 27,
-    borderRadius: 9,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     backgroundColor: "rgba(31, 28, 26, 0.62)",
     alignItems: "center",
     justifyContent: "center",
@@ -681,8 +660,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 11,
-    paddingTop: 30,
-    paddingBottom: 12,
+    paddingTop: 32,
+    paddingBottom: 14,
     backgroundColor: "rgba(25, 21, 19, 0.48)",
   },
 
@@ -708,32 +687,33 @@ const styles = StyleSheet.create({
   },
 
   cardFooter: {
-    minHeight: 50,
-    paddingTop: 8,
+    minHeight: 54,
+    paddingTop: 9,
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 4,
+    gap: 7,
   },
 
   cardCaption: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 17,
     fontFamily: fonts.semibold,
     color: colors.text,
   },
 
   cardMeta: {
-    marginTop: 2,
-    fontSize: 10,
-    lineHeight: 15,
+    marginTop: 3,
+    fontSize: 11,
+    lineHeight: 16,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
   moreButton: {
-    width: 26,
-    height: 28,
-    borderRadius: 8,
+    width: 30,
+    height: 32,
+    marginTop: 1,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
   },

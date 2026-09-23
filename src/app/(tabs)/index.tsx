@@ -5,6 +5,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -167,9 +168,16 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.profileButton}
             activeOpacity={0.8}
-            onPress={() => router.push("/onboarding")}
+            onPress={() => router.push("/perfil")}
           >
-            <Ionicons name="person-outline" size={20} color={colors.text} />
+            {profile?.avatarUri ? (
+              <Image
+                source={{ uri: profile.avatarUri }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <Ionicons name="person-outline" size={20} color={colors.text} />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -718,6 +726,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
 
+    overflow: "hidden",
+
     borderRadius: radius.round,
 
     backgroundColor: colors.surface,
@@ -729,6 +739,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
 
     justifyContent: "center",
+  },
+
+  profileImage: {
+    width: "100%",
+    height: "100%",
   },
 
   heroPanel: {
@@ -806,7 +821,7 @@ const styles = StyleSheet.create({
   },
 
   heroBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
 
     letterSpacing: 0.75,
 
@@ -920,7 +935,7 @@ const styles = StyleSheet.create({
   heroStatLabel: {
     marginTop: 1,
 
-    fontSize: 10,
+    fontSize: 11,
 
     fontFamily: fonts.medium,
 
@@ -959,7 +974,7 @@ const styles = StyleSheet.create({
   },
 
   weekGoalLabel: {
-    fontSize: 10,
+    fontSize: 11,
 
     letterSpacing: 1,
 
@@ -1274,7 +1289,7 @@ const styles = StyleSheet.create({
   },
 
   todayStatus: {
-    fontSize: 9,
+    fontSize: 11,
 
     fontFamily: fonts.bold,
 
@@ -1296,7 +1311,7 @@ const styles = StyleSheet.create({
   },
 
   todayFormatText: {
-    fontSize: 9,
+    fontSize: 11,
 
     fontFamily: fonts.semibold,
 
@@ -1417,7 +1432,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     marginBottom: 8,
 
-    fontSize: 10,
+    fontSize: 11,
 
     fontFamily: fonts.bold,
 
@@ -1582,7 +1597,7 @@ const styles = StyleSheet.create({
   inspirationEyebrow: {
     marginBottom: 2,
 
-    fontSize: 9,
+    fontSize: 11,
 
     letterSpacing: 0.8,
 

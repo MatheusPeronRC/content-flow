@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-
+import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
-
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
     ActivityIndicator,
     Alert,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -28,15 +28,15 @@ import {
     CreatorProfile,
 } from "../types/creatorProfile";
 
-import { colors, radius, spacing, typography } from "../constants/theme";
+import { colors, radius, spacing } from "../constants/theme";
 
-const objectives: {
+const objectives: Array<{
   value: CreatorObjective;
   title: string;
   icon: keyof typeof Ionicons.glyphMap;
   background: string;
   foreground: string;
-}[] = [
+}> = [
   {
     value: "clientes",
     title: "Atrair clientes",
@@ -44,7 +44,6 @@ const objectives: {
     background: colors.terracottaLight,
     foreground: colors.terracotta,
   },
-
   {
     value: "autoridade",
     title: "Construir autoridade",
@@ -52,7 +51,6 @@ const objectives: {
     background: colors.amberLight,
     foreground: colors.amber,
   },
-
   {
     value: "audiencia",
     title: "Crescer audiência",
@@ -60,10 +58,9 @@ const objectives: {
     background: colors.blueLight,
     foreground: colors.blue,
   },
-
   {
     value: "vendas",
-    title: "Vender produtos ou serviços",
+    title: "Vender mais",
     icon: "bag-outline",
     background: colors.sageLight,
     foreground: colors.sage,
@@ -73,49 +70,50 @@ const objectives: {
 const frequencies = [
   {
     value: 2,
-    label: "1–2x",
+    label: "2 por semana",
+    shortLabel: "2 / semana",
   },
   {
     value: 3,
-    label: "3x",
+    label: "3 por semana",
+    shortLabel: "3 / semana",
   },
   {
     value: 5,
-    label: "4–5x",
+    label: "5 por semana",
+    shortLabel: "5 / semana",
   },
   {
     value: 7,
     label: "Todos os dias",
+    shortLabel: "Todos os dias",
   },
 ];
 
-const formats: {
+const formats: Array<{
   value: ContentFormat;
   icon: keyof typeof Ionicons.glyphMap;
   background: string;
   foreground: string;
-}[] = [
+}> = [
   {
     value: "Reel",
     icon: "videocam-outline",
     background: colors.terracottaLight,
     foreground: colors.terracotta,
   },
-
   {
     value: "Carrossel",
     icon: "albums-outline",
     background: colors.amberLight,
     foreground: colors.amber,
   },
-
   {
     value: "Story",
     icon: "phone-portrait-outline",
     background: colors.lavenderLight,
     foreground: colors.lavender,
   },
-
   {
     value: "Foto",
     icon: "image-outline",
@@ -126,18 +124,14 @@ const formats: {
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState<CreatorProfile | null>(null);
-
   const [loading, setLoading] = useState(true);
-
   const [saving, setSaving] = useState(false);
 
   const [profession, setProfession] = useState("");
-
   const [objective, setObjective] = useState<CreatorObjective | null>(null);
-
   const [postsPerWeek, setPostsPerWeek] = useState<number | null>(null);
-
   const [selectedFormats, setSelectedFormats] = useState<ContentFormat[]>([]);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -159,14 +153,11 @@ export default function ProfileScreen() {
           }
 
           setProfile(data);
-
           setProfession(data.profession);
-
           setObjective(data.objective);
-
           setPostsPerWeek(data.postsPerWeek);
-
           setSelectedFormats(data.formats);
+          setAvatarUri(data.avatarUri ?? null);
         } catch (error) {
           console.error("Erro ao carregar perfil:", error);
         } finally {
@@ -184,6 +175,50 @@ export default function ProfileScreen() {
     }, []),
   );
 
+  const formIsValid =
+    profession.trim().length >= 2 &&
+    objective !== null &&
+    postsPerWeek !== null &&
+    selectedFormats.length > 0;
+
+  const hasChanges = useMemo(() => {
+    if (!profile) {
+      return false;
+    }
+
+    const currentFormats = [...selectedFormats].sort();
+    const savedFormats = [...profile.formats].sort();
+
+    return (
+      profession.trim() !== profile.profession ||
+      objective !== profile.objective ||
+      postsPerWeek !== profile.postsPerWeek ||
+      avatarUri !== (profile.avatarUri ?? null) ||
+      currentFormats.length !== savedFormats.length ||
+      currentFormats.some((item, index) => item !== savedFormats[index])
+    );
+  }, [
+    profile,
+    profession,
+    objective,
+    postsPerWeek,
+    selectedFormats,
+    avatarUri,
+  ]);
+
+  const canSave = formIsValid && hasChanges && !saving;
+
+  const selectedObjective = objectives.find((item) => item.value === objective);
+
+  const selectedFrequency = frequencies.find(
+    (item) => item.value === postsPerWeek,
+  );
+
+  const formatsSummary =
+    selectedFormats.length > 0
+      ? selectedFormats.join(" • ")
+      : "Nenhum formato selecionado";
+
   function toggleFormat(format: ContentFormat) {
     setSelectedFormats((current) => {
       if (current.includes(format)) {
@@ -194,17 +229,64 @@ export default function ProfileScreen() {
     });
   }
 
-  function canSave() {
-    return (
-      profession.trim().length >= 2 &&
-      objective !== null &&
-      postsPerWeek !== null &&
-      selectedFormats.length > 0
-    );
+  async function handlePickAvatar() {
+    try {
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert(
+          "Permissão necessária",
+          "Permita o acesso às suas fotos para escolher uma imagem de perfil.",
+        );
+
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (result.canceled || result.assets.length === 0) {
+        return;
+      }
+
+      setAvatarUri(result.assets[0].uri);
+    } catch (error) {
+      console.error("Erro ao selecionar foto:", error);
+
+      Alert.alert("Não foi possível abrir suas fotos", "Tente novamente.");
+    }
+  }
+
+  function handleAvatarPress() {
+    if (!avatarUri) {
+      handlePickAvatar();
+      return;
+    }
+
+    Alert.alert("Foto do perfil", "O que você deseja fazer?", [
+      {
+        text: "Trocar foto",
+        onPress: handlePickAvatar,
+      },
+      {
+        text: "Remover foto",
+        style: "destructive",
+        onPress: () => setAvatarUri(null),
+      },
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+    ]);
   }
 
   async function handleSave() {
-    if (!canSave() || !objective || !postsPerWeek || saving) {
+    if (!formIsValid || !objective || !postsPerWeek || saving || !hasChanges) {
       return;
     }
 
@@ -213,22 +295,24 @@ export default function ProfileScreen() {
 
       await updateCreatorProfile({
         profession: profession.trim(),
-
         objective,
-
         postsPerWeek,
-
         formats: selectedFormats,
+        avatarUri,
       });
 
       const updated = await getCreatorProfile();
 
-      setProfile(updated);
+      if (updated) {
+        setProfile(updated);
+        setProfession(updated.profession);
+        setObjective(updated.objective);
+        setPostsPerWeek(updated.postsPerWeek);
+        setSelectedFormats(updated.formats);
+        setAvatarUri(updated.avatarUri ?? null);
+      }
 
-      Alert.alert(
-        "Preferências salvas",
-        "O ContentFlow foi atualizado com suas novas preferências.",
-      );
+      Alert.alert("Perfil atualizado", "Suas preferências foram salvas.");
     } catch (error) {
       console.error("Erro ao salvar perfil:", error);
 
@@ -243,7 +327,6 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
           <ActivityIndicator color={colors.terracotta} />
-
           <Text style={styles.loadingText}>Carregando perfil...</Text>
         </View>
       </SafeAreaView>
@@ -254,6 +337,14 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
+          <View style={styles.emptyIcon}>
+            <Ionicons
+              name="person-outline"
+              size={24}
+              color={colors.terracotta}
+            />
+          </View>
+
           <Text style={styles.errorTitle}>Perfil não encontrado</Text>
 
           <Text style={styles.errorText}>
@@ -262,6 +353,7 @@ export default function ProfileScreen() {
 
           <TouchableOpacity
             style={styles.onboardingButton}
+            activeOpacity={0.86}
             onPress={() => router.replace("/onboarding")}
           >
             <Text style={styles.onboardingButtonText}>Fazer onboarding</Text>
@@ -281,733 +373,775 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
+            activeOpacity={0.8}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={21} color={colors.text} />
+            <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
           <Text style={styles.headerTitle}>Meu perfil</Text>
 
-          <View style={styles.headerSpace} />
+          <TouchableOpacity
+            style={[
+              styles.headerSaveButton,
+              !canSave && styles.headerSaveButtonDisabled,
+            ]}
+            activeOpacity={0.8}
+            disabled={!canSave}
+            onPress={handleSave}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.terracotta} />
+            ) : (
+              <Text
+                style={[
+                  styles.headerSaveText,
+                  !canSave && styles.headerSaveTextDisabled,
+                ]}
+              >
+                Salvar
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.profileHero}>
-          <View style={styles.avatar}>
-            <Ionicons name="person-outline" size={28} color={colors.surface} />
-          </View>
+        <View style={styles.profileHeader}>
+          <TouchableOpacity
+            style={styles.avatarWrap}
+            activeOpacity={0.85}
+            onPress={handleAvatarPress}
+          >
+            <View style={styles.avatar}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons
+                  name="person-outline"
+                  size={35}
+                  color={colors.terracotta}
+                />
+              )}
+            </View>
 
-          <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>{profession}</Text>
-
-            <Text style={styles.heroSubtitle}>
-              Personalize como o ContentFlow organiza sua rotina.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View
-              style={[
-                styles.sectionIcon,
-                {
-                  backgroundColor: colors.terracottaLight,
-                },
-              ]}
-            >
+            <View style={styles.avatarAction}>
               <Ionicons
-                name="briefcase-outline"
-                size={19}
-                color={colors.terracotta}
+                name="camera-outline"
+                size={16}
+                color={colors.surface}
               />
             </View>
+          </TouchableOpacity>
 
-            <View>
-              <Text style={styles.sectionTitle}>Profissão ou nicho</Text>
+          <Text style={styles.profileLabel}>SEU PERFIL</Text>
 
-              <Text style={styles.sectionSubtitle}>
-                Como você se apresenta profissionalmente.
+          <Text style={styles.profileProfession}>
+            {profession.trim() || "Seu perfil"}
+          </Text>
+
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Ionicons
+                name="flag-outline"
+                size={14}
+                color={colors.terracotta}
+              />
+
+              <Text style={styles.summaryText}>
+                {selectedObjective?.title ?? "Defina seu objetivo"}
+              </Text>
+            </View>
+
+            <View style={styles.summaryDot} />
+
+            <View style={styles.summaryItem}>
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={colors.textSecondary}
+              />
+
+              <Text style={styles.summaryText}>
+                {selectedFrequency?.shortLabel ?? "Defina sua meta"}
               </Text>
             </View>
           </View>
 
-          <TextInput
-            value={profession}
-            onChangeText={setProfession}
-            placeholder="Ex.: Nutricionista"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
-          />
+          <Text style={styles.formatsSummary}>{formatsSummary}</Text>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View
-              style={[
-                styles.sectionIcon,
-                {
-                  backgroundColor: colors.amberLight,
-                },
-              ]}
-            >
-              <Ionicons name="flag-outline" size={19} color={colors.amber} />
-            </View>
+        <View style={styles.headerDivider} />
 
-            <View>
-              <Text style={styles.sectionTitle}>Objetivo principal</Text>
+        <View style={styles.preferencesIntro}>
+          <Text style={styles.preferencesTitle}>Preferências</Text>
 
-              <Text style={styles.sectionSubtitle}>
-                O que seu conteúdo precisa ajudar a conquistar.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.objectiveList}>
-            {objectives.map((item) => {
-              const selected = objective === item.value;
-
-              return (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[
-                    styles.objectiveCard,
-
-                    selected && styles.objectiveCardSelected,
-                  ]}
-                  onPress={() => setObjective(item.value)}
-                >
-                  <View
-                    style={[
-                      styles.objectiveIcon,
-
-                      {
-                        backgroundColor: item.background,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={item.icon}
-                      size={20}
-                      color={item.foreground}
-                    />
-                  </View>
-
-                  <Text style={styles.objectiveText}>{item.title}</Text>
-
-                  <View
-                    style={[styles.radio, selected && styles.radioSelected]}
-                  >
-                    {selected && <View style={styles.radioDot} />}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View
-              style={[
-                styles.sectionIcon,
-                {
-                  backgroundColor: colors.blueLight,
-                },
-              ]}
-            >
-              <Ionicons name="calendar-outline" size={19} color={colors.blue} />
-            </View>
-
-            <View>
-              <Text style={styles.sectionTitle}>Meta semanal</Text>
-
-              <Text style={styles.sectionSubtitle}>
-                Quantos conteúdos você quer publicar por semana.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.frequencyGrid}>
-            {frequencies.map((item) => {
-              const selected = postsPerWeek === item.value;
-
-              return (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[
-                    styles.frequency,
-
-                    selected && styles.frequencySelected,
-                  ]}
-                  onPress={() => setPostsPerWeek(item.value)}
-                >
-                  <Text
-                    style={[
-                      styles.frequencyText,
-
-                      selected && styles.frequencyTextSelected,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View
-              style={[
-                styles.sectionIcon,
-                {
-                  backgroundColor: colors.lavenderLight,
-                },
-              ]}
-            >
-              <Ionicons name="apps-outline" size={19} color={colors.lavender} />
-            </View>
-
-            <View>
-              <Text style={styles.sectionTitle}>Formatos preferidos</Text>
-
-              <Text style={styles.sectionSubtitle}>
-                Selecione todos que fazem parte da sua rotina.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.formatGrid}>
-            {formats.map((item) => {
-              const selected = selectedFormats.includes(item.value);
-
-              return (
-                <TouchableOpacity
-                  key={item.value}
-                  style={[
-                    styles.formatCard,
-
-                    selected && {
-                      backgroundColor: item.background,
-
-                      borderColor: item.foreground,
-                    },
-                  ]}
-                  onPress={() => toggleFormat(item.value)}
-                >
-                  <View
-                    style={[
-                      styles.formatIcon,
-
-                      {
-                        backgroundColor: selected
-                          ? colors.surface
-                          : item.background,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name={item.icon}
-                      size={21}
-                      color={item.foreground}
-                    />
-                  </View>
-
-                  <Text style={styles.formatText}>{item.value}</Text>
-
-                  {selected && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={19}
-                      color={item.foreground}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
-          <Ionicons
-            name="sparkles-outline"
-            size={20}
-            color={colors.terracotta}
-          />
-
-          <Text style={styles.infoText}>
-            Essas preferências serão usadas pelo ContentFlow para personalizar
-            planejamento e criação de conteúdo.
+          <Text style={styles.preferencesDescription}>
+            Ajuste como o ContentFlow entende sua rotina de criação.
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, !canSave() && styles.saveButtonDisabled]}
-          disabled={!canSave() || saving}
-          onPress={handleSave}
-          activeOpacity={0.85}
-        >
-          <Ionicons
-            name="checkmark"
-            size={19}
-            color={canSave() ? colors.surface : colors.textMuted}
-          />
+        <View style={styles.settingsCard}>
+          <View style={styles.settingSection}>
+            <SectionHeader
+              icon="briefcase-outline"
+              iconBackground={colors.terracottaLight}
+              iconColor={colors.terracotta}
+              title="Profissão ou nicho"
+              subtitle="Como você se apresenta profissionalmente."
+            />
 
-          <Text
-            style={[styles.saveText, !canSave() && styles.saveTextDisabled]}
-          >
-            {saving ? "Salvando..." : "Salvar preferências"}
-          </Text>
-        </TouchableOpacity>
+            <TextInput
+              value={profession}
+              onChangeText={setProfession}
+              placeholder="Ex.: Nutricionista"
+              placeholderTextColor={colors.textMuted}
+              style={styles.input}
+              autoCapitalize="sentences"
+              returnKeyType="done"
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.settingSection}>
+            <SectionHeader
+              icon="flag-outline"
+              iconBackground={colors.amberLight}
+              iconColor={colors.amber}
+              title="Objetivo principal"
+              subtitle="O que seu conteúdo precisa ajudar a conquistar."
+            />
+
+            <View style={styles.objectiveList}>
+              {objectives.map((item) => {
+                const selected = objective === item.value;
+
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.objectiveOption,
+                      selected && styles.optionSelected,
+                    ]}
+                    activeOpacity={0.82}
+                    onPress={() => setObjective(item.value)}
+                  >
+                    <View
+                      style={[
+                        styles.optionIcon,
+                        {
+                          backgroundColor: item.background,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={19}
+                        color={item.foreground}
+                      />
+                    </View>
+
+                    <Text style={styles.optionText}>{item.title}</Text>
+
+                    <View
+                      style={[
+                        styles.selectionCircle,
+                        selected && styles.selectionCircleSelected,
+                      ]}
+                    >
+                      {selected ? (
+                        <Ionicons
+                          name="checkmark"
+                          size={14}
+                          color={colors.surface}
+                        />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.settingSection}>
+            <SectionHeader
+              icon="calendar-outline"
+              iconBackground={colors.blueLight}
+              iconColor={colors.blue}
+              title="Meta semanal"
+              subtitle="Quantos conteúdos você quer publicar por semana."
+            />
+
+            <View style={styles.frequencyGrid}>
+              {frequencies.map((item) => {
+                const selected = postsPerWeek === item.value;
+
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.frequencyOption,
+                      selected && styles.frequencyOptionSelected,
+                    ]}
+                    activeOpacity={0.82}
+                    onPress={() => setPostsPerWeek(item.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.frequencyText,
+                        selected && styles.frequencyTextSelected,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.settingSection}>
+            <SectionHeader
+              icon="apps-outline"
+              iconBackground={colors.lavenderLight}
+              iconColor={colors.lavender}
+              title="Formatos preferidos"
+              subtitle="Selecione todos que fazem parte da sua rotina."
+            />
+
+            <View style={styles.formatGrid}>
+              {formats.map((item) => {
+                const selected = selectedFormats.includes(item.value);
+
+                return (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.formatOption,
+                      selected && styles.optionSelected,
+                    ]}
+                    activeOpacity={0.82}
+                    onPress={() => toggleFormat(item.value)}
+                  >
+                    <View
+                      style={[
+                        styles.formatIcon,
+                        {
+                          backgroundColor: item.background,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={item.icon}
+                        size={20}
+                        color={item.foreground}
+                      />
+                    </View>
+
+                    <Text style={styles.formatText}>{item.value}</Text>
+
+                    <View
+                      style={[
+                        styles.selectionCircle,
+                        selected && styles.selectionCircleSelected,
+                      ]}
+                    >
+                      {selected ? (
+                        <Ionicons
+                          name="checkmark"
+                          size={14}
+                          color={colors.surface}
+                        />
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.footerHint}>
+          As mudanças só são aplicadas quando você toca em Salvar.
+        </Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+type SectionHeaderProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBackground: string;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+};
+
+function SectionHeader({
+  icon,
+  iconBackground,
+  iconColor,
+  title,
+  subtitle,
+}: SectionHeaderProps) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View
+        style={[
+          styles.sectionIcon,
+          {
+            backgroundColor: iconBackground,
+          },
+        ]}
+      >
+        <Ionicons name={icon} size={19} color={iconColor} />
+      </View>
+
+      <View style={styles.sectionHeaderText}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
-    paddingBottom: spacing.xxl,
+    paddingBottom: 42,
   },
 
   header: {
     height: 68,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     justifyContent: "space-between",
   },
 
   backButton: {
-    width: 40,
-    height: 40,
-
+    width: 42,
+    height: 42,
     borderRadius: radius.round,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
-  },
-
-  headerSpace: {
-    width: 40,
   },
 
   headerTitle: {
-    fontSize: typography.subheading,
-
+    fontSize: 18,
     fontWeight: "700",
-
     color: colors.text,
   },
 
-  profileHero: {
-    flexDirection: "row",
-
+  headerSaveButton: {
+    minWidth: 58,
+    height: 42,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     alignItems: "center",
+    justifyContent: "center",
+  },
 
-    backgroundColor: colors.primaryDark,
+  headerSaveButtonDisabled: {
+    opacity: 0.72,
+  },
 
-    borderRadius: radius.xl,
+  headerSaveText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.terracotta,
+  },
 
-    padding: spacing.lg,
+  headerSaveTextDisabled: {
+    color: colors.textMuted,
+  },
 
-    marginTop: spacing.md,
+  profileHeader: {
+    paddingTop: 16,
+    paddingBottom: 25,
+    alignItems: "center",
+  },
 
-    marginBottom: spacing.xl,
+  avatarWrap: {
+    width: 92,
+    height: 92,
+    marginBottom: 15,
+    position: "relative",
   },
 
   avatar: {
-    width: 58,
-    height: 58,
-
+    width: 92,
+    height: 92,
+    overflow: "hidden",
     borderRadius: radius.round,
-
-    backgroundColor: colors.terracotta,
-
+    backgroundColor: colors.terracottaLight,
+    borderWidth: 3,
+    borderColor: colors.surface,
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
-  heroContent: {
-    flex: 1,
+  avatarImage: {
+    width: "100%",
+    height: "100%",
   },
 
-  heroTitle: {
-    fontSize: typography.heading,
+  avatarAction: {
+    position: "absolute",
+    right: 0,
+    bottom: 1,
+    width: 31,
+    height: 31,
+    borderRadius: radius.round,
+    backgroundColor: colors.terracotta,
+    borderWidth: 3,
+    borderColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
+  profileLabel: {
+    marginBottom: 4,
+    fontSize: 11,
+    letterSpacing: 0.8,
     fontWeight: "700",
-
-    color: colors.surface,
+    color: colors.terracotta,
   },
 
-  heroSubtitle: {
-    marginTop: 4,
+  profileProfession: {
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.55,
+    fontWeight: "700",
+    color: colors.text,
+    textAlign: "center",
+  },
 
-    fontSize: typography.caption,
+  summaryRow: {
+    maxWidth: 330,
+    marginTop: 10,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    rowGap: 6,
+  },
 
+  summaryItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  summaryText: {
+    fontSize: 13,
     lineHeight: 18,
-
-    color: "#D7E3DE",
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
 
-  section: {
-    marginBottom: spacing.xl,
+  summaryDot: {
+    width: 4,
+    height: 4,
+    marginHorizontal: 10,
+    borderRadius: radius.round,
+    backgroundColor: colors.textMuted,
+  },
+
+  formatsSummary: {
+    maxWidth: 320,
+    marginTop: 8,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+    color: colors.textMuted,
+  },
+
+  headerDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+  },
+
+  preferencesIntro: {
+    paddingTop: 23,
+    paddingBottom: 14,
+  },
+
+  preferencesTitle: {
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "700",
+    color: colors.text,
+  },
+
+  preferencesDescription: {
+    maxWidth: 340,
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textSecondary,
+  },
+
+  settingsCard: {
+    overflow: "hidden",
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  settingSection: {
+    padding: 17,
+  },
+
+  divider: {
+    height: 1,
+    marginHorizontal: 17,
+    backgroundColor: colors.border,
   },
 
   sectionHeader: {
+    marginBottom: 14,
     flexDirection: "row",
-
     alignItems: "center",
-
-    marginBottom: spacing.md,
   },
 
   sectionIcon: {
     width: 40,
     height: 40,
-
-    borderRadius: radius.md,
-
+    marginRight: 11,
+    borderRadius: 12,
     alignItems: "center",
-
     justifyContent: "center",
+  },
 
-    marginRight: spacing.sm,
+  sectionHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   sectionTitle: {
-    fontSize: typography.subheading,
-
+    fontSize: 17,
+    lineHeight: 22,
     fontWeight: "700",
-
     color: colors.text,
   },
 
   sectionSubtitle: {
     marginTop: 2,
-
-    maxWidth: 285,
-
-    fontSize: typography.tiny,
-
-    lineHeight: 15,
-
+    paddingRight: 4,
+    fontSize: 13,
+    lineHeight: 19,
     color: colors.textSecondary,
   },
 
   input: {
-    height: 54,
-
-    paddingHorizontal: spacing.md,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.surface,
-
+    minHeight: 54,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: colors.background,
     borderWidth: 1,
-
     borderColor: colors.border,
-
     fontSize: 16,
-
+    lineHeight: 22,
     color: colors.text,
   },
 
   objectiveList: {
-    gap: spacing.sm,
+    gap: 8,
   },
 
-  objectiveCard: {
-    minHeight: 62,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    paddingHorizontal: spacing.md,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.surface,
-
+  objectiveOption: {
+    minHeight: 58,
+    paddingHorizontal: 11,
+    borderRadius: 15,
+    backgroundColor: colors.background,
     borderWidth: 1,
-
     borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
-  objectiveCardSelected: {
-    borderColor: colors.primary,
-
-    borderWidth: 1.5,
+  optionSelected: {
+    borderColor: colors.terracotta,
+    backgroundColor: colors.surface,
   },
 
-  objectiveIcon: {
+  optionIcon: {
     width: 38,
     height: 38,
-
-    borderRadius: radius.md,
-
+    marginRight: 10,
+    borderRadius: 12,
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
-  objectiveText: {
+  optionText: {
     flex: 1,
-
-    fontSize: typography.body,
-
+    minWidth: 0,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: "600",
-
     color: colors.text,
   },
 
-  radio: {
-    width: 20,
-    height: 20,
-
+  selectionCircle: {
+    width: 24,
+    height: 24,
+    marginLeft: 8,
     borderRadius: radius.round,
-
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  radioSelected: {
-    borderColor: colors.primary,
-  },
-
-  radioDot: {
-    width: 10,
-    height: 10,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.primary,
+  selectionCircleSelected: {
+    backgroundColor: colors.terracotta,
+    borderColor: colors.terracotta,
   },
 
   frequencyGrid: {
     flexDirection: "row",
-
     flexWrap: "wrap",
-
-    gap: spacing.sm,
+    gap: 8,
   },
 
-  frequency: {
+  frequencyOption: {
     minWidth: "47%",
-
+    minHeight: 50,
     flexGrow: 1,
-
-    height: 52,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.surface,
-
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: colors.background,
     borderWidth: 1,
-
     borderColor: colors.border,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  frequencySelected: {
-    backgroundColor: colors.blue,
-
-    borderColor: colors.blue,
+  frequencyOptionSelected: {
+    backgroundColor: colors.terracottaLight,
+    borderColor: colors.terracotta,
   },
 
   frequencyText: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
     color: colors.textSecondary,
+    textAlign: "center",
   },
 
   frequencyTextSelected: {
-    color: colors.surface,
+    color: colors.terracotta,
   },
 
   formatGrid: {
-    gap: spacing.sm,
+    gap: 8,
   },
 
-  formatCard: {
-    minHeight: 60,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    paddingHorizontal: spacing.md,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.surface,
-
+  formatOption: {
+    minHeight: 58,
+    paddingHorizontal: 11,
+    borderRadius: 15,
+    backgroundColor: colors.background,
     borderWidth: 1,
-
     borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   formatIcon: {
     width: 38,
     height: 38,
-
-    borderRadius: radius.md,
-
+    marginRight: 10,
+    borderRadius: 12,
     alignItems: "center",
-
     justifyContent: "center",
-
-    marginRight: spacing.md,
   },
 
   formatText: {
     flex: 1,
-
-    fontSize: typography.body,
-
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: "600",
-
     color: colors.text,
   },
 
-  infoCard: {
-    flexDirection: "row",
-
-    alignItems: "flex-start",
-
-    gap: spacing.sm,
-
-    padding: spacing.md,
-
-    marginBottom: spacing.lg,
-
-    borderRadius: radius.lg,
-
-    backgroundColor: colors.terracottaLight,
-  },
-
-  infoText: {
-    flex: 1,
-
-    fontSize: typography.caption,
-
+  footerHint: {
+    marginTop: 16,
+    paddingHorizontal: 4,
+    fontSize: 12,
     lineHeight: 18,
-
-    color: colors.textSecondary,
-  },
-
-  saveButton: {
-    height: 54,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    gap: spacing.sm,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.primary,
-  },
-
-  saveButtonDisabled: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  saveText: {
-    fontSize: typography.body,
-
-    fontWeight: "700",
-
-    color: colors.surface,
-  },
-
-  saveTextDisabled: {
+    textAlign: "center",
     color: colors.textMuted,
   },
 
   center: {
     flex: 1,
-
+    paddingHorizontal: 30,
     alignItems: "center",
-
     justifyContent: "center",
-
-    padding: spacing.lg,
-
-    gap: spacing.md,
   },
 
   loadingText: {
+    marginTop: 12,
+    fontSize: 13,
     color: colors.textSecondary,
   },
 
+  emptyIcon: {
+    width: 54,
+    height: 54,
+    marginBottom: 16,
+    borderRadius: 17,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   errorTitle: {
-    fontSize: typography.heading,
-
+    fontSize: 22,
+    lineHeight: 28,
     fontWeight: "700",
-
     color: colors.text,
   },
 
   errorText: {
+    maxWidth: 290,
+    marginTop: 7,
+    fontSize: 14,
+    lineHeight: 21,
     textAlign: "center",
-
     color: colors.textSecondary,
   },
 
   onboardingButton: {
-    minHeight: 48,
-
-    paddingHorizontal: spacing.lg,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.primary,
-
+    minHeight: 50,
+    marginTop: 20,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    backgroundColor: colors.terracotta,
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   onboardingButtonText: {
-    color: colors.surface,
-
+    fontSize: 14,
     fontWeight: "700",
+    color: colors.surface,
   },
 });

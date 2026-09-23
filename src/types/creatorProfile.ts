@@ -19,8 +19,11 @@ export type CreatorProfile = {
 
   formats: ContentFormat[];
 
+  avatarUri?: string | null;
+
   onboardingCompleted: boolean;
 
   createdAt: string;
+
   updatedAt: string;
 };

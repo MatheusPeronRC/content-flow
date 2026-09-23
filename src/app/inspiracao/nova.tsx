@@ -35,17 +35,11 @@ const categories = ["Hook", "Tema", "Roteiro", "Formato", "Edição", "CTA"];
 
 export default function NewInspirationScreen() {
   const [url, setUrl] = useState("");
-
   const [category, setCategory] = useState<string | null>(null);
-
   const [note, setNote] = useState("");
-
   const [saving, setSaving] = useState(false);
-
   const [metadata, setMetadata] = useState<MediaMetadata | null>(null);
-
   const [metadataUrl, setMetadataUrl] = useState("");
-
   const [metadataLoading, setMetadataLoading] = useState(false);
 
   const source = useMemo(
@@ -81,7 +75,6 @@ export default function NewInspirationScreen() {
         }
 
         setMetadata(resolved);
-
         setMetadataUrl(normalized);
       } finally {
         if (active) {
@@ -162,54 +155,36 @@ export default function NewInspirationScreen() {
             <View style={styles.headerSpace} />
           </View>
 
-          <View style={styles.heroPanel}>
-            <View style={styles.heroBubbleOne} />
-
-            <View style={styles.heroBubbleTwo} />
-
-            <View style={styles.heroTop}>
-              <View style={styles.heroBadge}>
-                <Ionicons name="sparkles" size={13} color={colors.rose} />
-
-                <Text style={styles.heroBadgeText}>SEU ACERVO CRIATIVO</Text>
+          <View style={styles.intro}>
+            <View style={styles.introLabelRow}>
+              <View style={styles.introMark}>
+                <Ionicons
+                  name="bookmark-outline"
+                  size={16}
+                  color={colors.terracotta}
+                />
               </View>
 
-              <View style={styles.heroMark}>
-                <Ionicons name="bookmark" size={20} color={colors.surface} />
-              </View>
+              <Text style={styles.introEyebrow}>NOVA REFERÊNCIA</Text>
             </View>
 
-            <Text style={styles.heroTitle}>
-              Viu algo bom?
-              {"\n"}
-              Guarda aqui.
+            <Text style={styles.introTitle}>
+              Viu algo bom?{"\n"}Guarda aqui.
             </Text>
 
-            <Text style={styles.heroDescription}>
-              Cole o link e o ContentFlow tenta reconhecer a plataforma, a capa
-              e as informações da referência.
+            <Text style={styles.introDescription}>
+              Cole o link. O ContentFlow tenta reconhecer a plataforma, a capa e
+              as principais informações da referência.
             </Text>
-
-            <View style={styles.heroTip}>
-              <View style={styles.heroTipMark}>
-                <Ionicons name="flash-outline" size={16} color={colors.rose} />
-              </View>
-
-              <Text style={styles.heroTipText}>
-                Você organiza o motivo e a categoria em poucos segundos.
-              </Text>
-            </View>
           </View>
 
-          <View style={styles.linkPanel}>
+          <View style={styles.primaryCard}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionMarkBlue}>
-                <Ionicons name="link-outline" size={19} color={colors.blue} />
+              <View style={[styles.sectionIcon, styles.linkIcon]}>
+                <Ionicons name="link-outline" size={20} color={colors.blue} />
               </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sectionEyebrowBlue}>REFERÊNCIA</Text>
-
+              <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Cole o link</Text>
 
                 <Text style={styles.sectionSubtitle}>
@@ -229,7 +204,7 @@ export default function NewInspirationScreen() {
                   },
                 ]}
               >
-                <PlatformIcon source={source} size={20} />
+                <PlatformIcon source={source} size={21} />
               </View>
 
               <TextInput
@@ -244,8 +219,8 @@ export default function NewInspirationScreen() {
               />
             </View>
 
-            {url.trim() && (
-              <View style={styles.sourceDetected}>
+            {url.trim() ? (
+              <View style={styles.detectedRow}>
                 <View
                   style={[
                     styles.detectedMark,
@@ -263,7 +238,7 @@ export default function NewInspirationScreen() {
                   )}
                 </View>
 
-                <Text style={styles.sourceDetectedText}>
+                <Text style={styles.detectedText}>
                   {metadataLoading
                     ? "Buscando capa e informações..."
                     : source === "Outro"
@@ -271,9 +246,13 @@ export default function NewInspirationScreen() {
                       : `${source} reconhecido automaticamente.`}
                 </Text>
               </View>
+            ) : (
+              <Text style={styles.linkHelper}>
+                Basta colar. O restante pode ser organizado depois.
+              </Text>
             )}
 
-            {url.trim() && (
+            {url.trim() ? (
               <View style={styles.previewCard}>
                 <InspirationThumbnail
                   thumbnailUrl={metadata?.thumbnailUrl}
@@ -284,7 +263,7 @@ export default function NewInspirationScreen() {
 
                 <View style={styles.previewContent}>
                   <View style={styles.previewMetaRow}>
-                    <Text style={styles.previewEyebrow}>PREVIEW</Text>
+                    <Text style={styles.previewEyebrow}>REFERÊNCIA</Text>
 
                     <View
                       style={[
@@ -321,39 +300,34 @@ export default function NewInspirationScreen() {
                     !metadata?.thumbnailUrl &&
                     (source === "Instagram" || source === "Kwai") ? (
                     <Text style={styles.previewFallbackText}>
-                      Capa indisponível por enquanto. O link será salvo
+                      A capa não está disponível, mas o link será salvo
                       normalmente.
                     </Text>
                   ) : null}
                 </View>
               </View>
-            )}
+            ) : null}
           </View>
 
-          <View style={styles.categoryPanel}>
+          <View style={styles.secondaryCard}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionMarkAmber}>
+              <View style={[styles.sectionIcon, styles.categoryIcon]}>
                 <Ionicons
                   name="pricetags-outline"
-                  size={19}
+                  size={20}
                   color={colors.amber}
                 />
               </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sectionEyebrowAmber}>ORGANIZAÇÃO</Text>
-
+              <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>
-                  O que fez você salvar isso?
+                  O que chamou sua atenção?
                 </Text>
 
                 <Text style={styles.sectionSubtitle}>
-                  Escolha uma categoria para encontrar depois.
+                  Opcional — escolha uma categoria para encontrar isso mais
+                  rápido depois.
                 </Text>
-              </View>
-
-              <View style={styles.optionalPill}>
-                <Text style={styles.optionalText}>OPCIONAL</Text>
               </View>
             </View>
 
@@ -361,62 +335,53 @@ export default function NewInspirationScreen() {
               {categories.map((item) => {
                 const selected = category === item;
 
-                const accent = getCategoryColor(item);
-
                 return (
                   <TouchableOpacity
                     key={item}
                     style={[
                       styles.categoryOption,
-                      selected && {
-                        backgroundColor: accent.background,
-                        borderColor: accent.foreground,
-                      },
+                      selected && styles.categoryOptionSelected,
                     ]}
                     activeOpacity={0.8}
                     onPress={() => setCategory(selected ? null : item)}
                   >
+                    {selected ? (
+                      <Ionicons
+                        name="checkmark"
+                        size={14}
+                        color={colors.terracotta}
+                      />
+                    ) : null}
+
                     <Text
                       style={[
                         styles.categoryText,
-                        selected && {
-                          color: accent.foreground,
-                        },
+                        selected && styles.categoryTextSelected,
                       ]}
                     >
                       {item}
                     </Text>
-
-                    {selected && (
-                      <Ionicons
-                        name="checkmark"
-                        size={13}
-                        color={accent.foreground}
-                      />
-                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
           </View>
 
-          <View style={styles.notePanel}>
+          <View style={styles.secondaryCard}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionMarkLavender}>
+              <View style={[styles.sectionIcon, styles.noteIcon]}>
                 <Ionicons
                   name="chatbubble-ellipses-outline"
-                  size={19}
+                  size={20}
                   color={colors.lavender}
                 />
               </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sectionEyebrowLavender}>SUA LEITURA</Text>
-
-                <Text style={styles.sectionTitle}>Por que vale guardar?</Text>
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Anote do seu jeito</Text>
 
                 <Text style={styles.sectionSubtitle}>
-                  Anote o detalhe que você não quer esquecer.
+                  Registre o detalhe que fez essa referência valer a pena.
                 </Text>
               </View>
 
@@ -432,142 +397,62 @@ export default function NewInspirationScreen() {
               maxLength={300}
               scrollEnabled={false}
               textAlignVertical="top"
-              placeholder="Ex.: gostei da abertura, da forma de explicar, da edição ou do formato..."
+              placeholder="Ex.: gostei da abertura, da forma de explicar ou da edição..."
               placeholderTextColor={colors.textMuted}
               style={styles.noteInput}
             />
 
-            <View style={styles.tip}>
-              <View style={styles.tipMark}>
-                <Ionicons
-                  name="bulb-outline"
-                  size={16}
-                  color={colors.lavender}
-                />
-              </View>
+            <View style={styles.noteHelper}>
+              <Ionicons
+                name="bulb-outline"
+                size={16}
+                color={colors.textMuted}
+              />
 
-              <Text style={styles.tipText}>
-                Uma frase simples já ajuda você a lembrar depois por que essa
-                referência valeu a pena.
+              <Text style={styles.noteHelperText}>
+                Uma frase já é suficiente para você lembrar por que salvou.
               </Text>
             </View>
           </View>
 
-          <View style={styles.savePanel}>
-            <View style={styles.saveBubble} />
+          <TouchableOpacity
+            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
+            activeOpacity={0.86}
+            disabled={!canSave}
+            onPress={handleSave}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.surface} />
+            ) : (
+              <Ionicons name="bookmark" size={18} color={colors.surface} />
+            )}
 
-            <View style={styles.saveBadge}>
-              <Ionicons
-                name="bookmark-outline"
-                size={14}
-                color={colors.terracotta}
-              />
-
-              <Text style={styles.saveBadgeText}>SALVAR NO ACERVO</Text>
-            </View>
-
-            <Text style={styles.savePanelTitle}>Pronto para guardar.</Text>
-
-            <Text style={styles.savePanelText}>
-              Depois você pode editar, categorizar melhor ou transformar essa
-              referência em conteúdo.
+            <Text
+              style={[
+                styles.saveButtonText,
+                !canSave && styles.saveButtonTextDisabled,
+              ]}
+            >
+              {saving ? "Salvando..." : "Salvar inspiração"}
             </Text>
 
-            <TouchableOpacity
-              style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-              activeOpacity={0.86}
-              disabled={!canSave}
-              onPress={handleSave}
-            >
-              <View style={styles.saveButtonMark}>
-                {saving ? (
-                  <ActivityIndicator size="small" color={colors.terracotta} />
-                ) : (
-                  <Ionicons
-                    name="bookmark"
-                    size={18}
-                    color={canSave ? colors.terracotta : colors.textMuted}
-                  />
-                )}
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.saveButtonText,
-                    !canSave && styles.saveButtonTextDisabled,
-                  ]}
-                >
-                  {saving ? "Salvando..." : "Salvar inspiração"}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.saveButtonHint,
-                    !canSave && styles.saveButtonHintDisabled,
-                  ]}
-                >
-                  Vai para sua biblioteca
-                </Text>
-              </View>
-
+            {!saving ? (
               <Ionicons
                 name="arrow-forward"
                 size={19}
                 color={canSave ? colors.surface : colors.textMuted}
               />
-            </TouchableOpacity>
-          </View>
+            ) : null}
+          </TouchableOpacity>
+
+          <Text style={styles.footerHint}>
+            Depois você pode editar, reorganizar ou transformar essa referência
+            em conteúdo.
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-function getCategoryColor(category: string) {
-  switch (category) {
-    case "Hook":
-      return {
-        background: colors.terracottaLight,
-        foreground: colors.terracotta,
-      };
-
-    case "Tema":
-      return {
-        background: colors.roseLight,
-        foreground: colors.rose,
-      };
-
-    case "Roteiro":
-      return {
-        background: colors.amberLight,
-        foreground: colors.amber,
-      };
-
-    case "Formato":
-      return {
-        background: colors.blueLight,
-        foreground: colors.blue,
-      };
-
-    case "Edição":
-      return {
-        background: colors.lavenderLight,
-        foreground: colors.lavender,
-      };
-
-    case "CTA":
-      return {
-        background: colors.sageLight,
-        foreground: colors.sage,
-      };
-
-    default:
-      return {
-        background: colors.primaryLight,
-        foreground: colors.primary,
-      };
-  }
 }
 
 const styles = StyleSheet.create({
@@ -613,233 +498,115 @@ const styles = StyleSheet.create({
     width: 42,
   },
 
-  heroPanel: {
-    position: "relative",
-    overflow: "hidden",
-    marginTop: 14,
-    marginBottom: 16,
-    padding: 18,
-    borderRadius: 28,
-    backgroundColor: colors.roseLight,
-    borderWidth: 1,
-    borderColor: "rgba(207,130,149,0.15)",
-    ...shadows.card,
+  intro: {
+    paddingTop: 19,
+    paddingBottom: 23,
   },
 
-  heroBubbleOne: {
-    position: "absolute",
-    width: 126,
-    height: 126,
-    top: -48,
-    right: -36,
-    borderRadius: 63,
-    backgroundColor: "rgba(225,116,85,0.13)",
-  },
-
-  heroBubbleTwo: {
-    position: "absolute",
-    width: 82,
-    height: 82,
-    left: -28,
-    bottom: 24,
-    borderRadius: 41,
-    backgroundColor: "rgba(142,127,194,0.12)",
-  },
-
-  heroTop: {
+  introLabelRow: {
+    marginBottom: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 8,
   },
 
-  heroBadge: {
-    minHeight: 30,
-    paddingHorizontal: 10,
-    borderRadius: radius.round,
-    backgroundColor: "rgba(255,253,252,0.8)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  heroBadgeText: {
-    fontSize: 10,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.rose,
-  },
-
-  heroMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: colors.rose,
+  introMark: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: colors.terracottaLight,
     alignItems: "center",
     justifyContent: "center",
-    ...shadows.soft,
   },
 
-  heroTitle: {
-    maxWidth: 330,
-    marginTop: 16,
-    fontSize: 30,
-    lineHeight: 37,
-    letterSpacing: -0.85,
+  introEyebrow: {
+    fontSize: 11,
+    letterSpacing: 0.85,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  introTitle: {
+    maxWidth: 340,
+    fontSize: 31,
+    lineHeight: 38,
+    letterSpacing: -0.9,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  heroDescription: {
-    maxWidth: 320,
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 20,
+  introDescription: {
+    maxWidth: 345,
+    marginTop: 9,
+    fontSize: 14,
+    lineHeight: 22,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  heroTip: {
-    minHeight: 55,
-    marginTop: 15,
-    padding: 10,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,253,252,0.72)",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  heroTipMark: {
-    width: 34,
-    height: 34,
-    marginRight: 9,
-    borderRadius: 11,
+  primaryCard: {
+    padding: 16,
+    borderRadius: 22,
     backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  heroTipText: {
-    flex: 1,
-    fontSize: 11,
-    lineHeight: 17,
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-  },
-
-  linkPanel: {
-    marginBottom: 14,
-    padding: 16,
-    borderRadius: 22,
-    backgroundColor: colors.blueLight,
     borderWidth: 1,
-    borderColor: "rgba(121,165,184,0.14)",
+    borderColor: colors.border,
     ...shadows.soft,
   },
 
-  categoryPanel: {
-    marginBottom: 14,
+  secondaryCard: {
+    marginTop: 14,
     padding: 16,
     borderRadius: 22,
-    backgroundColor: colors.amberLight,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "rgba(201,154,69,0.14)",
-    ...shadows.soft,
-  },
-
-  notePanel: {
-    marginBottom: 16,
-    padding: 16,
-    borderRadius: 22,
-    backgroundColor: colors.lavenderLight,
-    borderWidth: 1,
-    borderColor: "rgba(142,127,194,0.14)",
-    ...shadows.soft,
+    borderColor: colors.border,
   },
 
   sectionHeader: {
-    marginBottom: 13,
+    marginBottom: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
 
-  sectionMarkBlue: {
+  sectionIcon: {
     width: 42,
     height: 42,
     borderRadius: 13,
-    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  sectionMarkAmber: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
+  linkIcon: {
+    backgroundColor: colors.blueLight,
   },
 
-  sectionMarkLavender: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
+  categoryIcon: {
+    backgroundColor: colors.amberLight,
   },
 
-  sectionEyebrowBlue: {
-    fontSize: 9,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.blue,
+  noteIcon: {
+    backgroundColor: colors.lavenderLight,
   },
 
-  sectionEyebrowAmber: {
-    fontSize: 9,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.amber,
-  },
-
-  sectionEyebrowLavender: {
-    fontSize: 9,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.lavender,
+  sectionHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   sectionTitle: {
-    marginTop: 2,
     fontSize: 17,
-    lineHeight: 23,
+    lineHeight: 22,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   sectionSubtitle: {
     marginTop: 2,
-    fontSize: 11,
-    lineHeight: 17,
+    paddingRight: 2,
+    fontSize: 13,
+    lineHeight: 19,
     fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-
-  optionalPill: {
-    minHeight: 28,
-    paddingHorizontal: 8,
-    borderRadius: radius.round,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  optionalText: {
-    fontSize: 9,
-    letterSpacing: 0.55,
-    fontFamily: fonts.bold,
     color: colors.textSecondary,
   },
 
@@ -847,15 +614,15 @@ const styles = StyleSheet.create({
     minHeight: 62,
     paddingHorizontal: 11,
     borderRadius: 17,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    borderColor: colors.border,
     flexDirection: "row",
     alignItems: "center",
   },
 
   urlFieldActive: {
-    borderColor: "rgba(121,165,184,0.3)",
+    borderColor: colors.border,
   },
 
   sourceMark: {
@@ -871,13 +638,22 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 60,
     paddingVertical: 0,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 21,
     fontFamily: fonts.regular,
     color: colors.text,
   },
 
-  sourceDetected: {
+  linkHelper: {
+    marginTop: 9,
+    paddingHorizontal: 2,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+
+  detectedRow: {
     minHeight: 38,
     marginTop: 9,
     paddingHorizontal: 2,
@@ -894,22 +670,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  sourceDetectedText: {
+  detectedText: {
     flex: 1,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
 
   previewCard: {
     minHeight: 132,
-    marginTop: 10,
-    padding: 11,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,253,252,0.82)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    marginTop: 9,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -923,7 +697,7 @@ const styles = StyleSheet.create({
   previewContent: {
     flex: 1,
     minWidth: 0,
-    marginLeft: 11,
+    marginLeft: 12,
   },
 
   previewMetaRow: {
@@ -934,22 +708,22 @@ const styles = StyleSheet.create({
   },
 
   previewEyebrow: {
-    fontSize: 9,
-    letterSpacing: 0.8,
+    fontSize: 11,
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
-    color: colors.blue,
+    color: colors.textMuted,
   },
 
   previewSourcePill: {
-    minHeight: 24,
-    paddingHorizontal: 7,
+    minHeight: 26,
+    paddingHorizontal: 8,
     borderRadius: radius.round,
     alignItems: "center",
     justifyContent: "center",
   },
 
   previewSourceText: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.semibold,
   },
 
@@ -963,16 +737,16 @@ const styles = StyleSheet.create({
 
   previewAuthor: {
     marginTop: 6,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
 
   previewFallbackText: {
     marginTop: 6,
-    fontSize: 10,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -987,154 +761,93 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingHorizontal: 13,
     borderRadius: radius.round,
-    backgroundColor: "rgba(255,253,252,0.8)",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    borderColor: colors.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
   },
 
+  categoryOptionSelected: {
+    backgroundColor: colors.terracottaLight,
+    borderColor: colors.terracotta,
+  },
+
   categoryText: {
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
+  },
+
+  categoryTextSelected: {
+    color: colors.terracotta,
   },
 
   counterPill: {
     minHeight: 28,
     paddingHorizontal: 8,
     borderRadius: radius.round,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
   },
 
   counter: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
 
   noteInput: {
-    minHeight: 155,
+    minHeight: 145,
     padding: 15,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
+    borderRadius: 17,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.72)",
+    borderColor: colors.border,
     fontSize: 15,
     lineHeight: 24,
     fontFamily: fonts.regular,
     color: colors.text,
   },
 
-  tip: {
+  noteHelper: {
     marginTop: 10,
+    paddingHorizontal: 2,
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 8,
+    gap: 7,
   },
 
-  tipMark: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  tipText: {
+  noteHelperText: {
     flex: 1,
-    paddingTop: 2,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-
-  savePanel: {
-    position: "relative",
-    overflow: "hidden",
-    padding: 17,
-    borderRadius: 24,
-    backgroundColor: colors.primary,
-    ...shadows.hero,
-  },
-
-  saveBubble: {
-    position: "absolute",
-    width: 116,
-    height: 116,
-    top: -46,
-    right: -30,
-    borderRadius: 58,
-    backgroundColor: "rgba(225,116,85,0.18)",
-  },
-
-  saveBadge: {
-    alignSelf: "flex-start",
-    minHeight: 29,
-    paddingHorizontal: 9,
-    borderRadius: radius.round,
-    backgroundColor: "rgba(255,253,252,0.1)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-
-  saveBadgeText: {
-    fontSize: 9,
-    letterSpacing: 0.75,
-    fontFamily: fonts.bold,
-    color: colors.terracotta,
-  },
-
-  savePanelTitle: {
-    marginTop: 12,
-    fontSize: 21,
-    lineHeight: 28,
-    fontFamily: fonts.bold,
-    color: colors.surface,
-  },
-
-  savePanelText: {
-    maxWidth: 305,
-    marginTop: 4,
-    fontSize: 11,
-    lineHeight: 17,
-    fontFamily: fonts.regular,
-    color: "rgba(255,253,252,0.68)",
+    color: colors.textMuted,
   },
 
   saveButton: {
-    minHeight: 62,
-    marginTop: 14,
-    paddingHorizontal: 13,
-    borderRadius: 18,
+    minHeight: 58,
+    marginTop: 22,
+    paddingHorizontal: 16,
+    borderRadius: 17,
     backgroundColor: colors.terracotta,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "center",
+    gap: 9,
+    ...shadows.soft,
   },
 
   saveButtonDisabled: {
     backgroundColor: colors.surfaceMuted,
   },
 
-  saveButtonMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
   saveButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: fonts.bold,
     color: colors.surface,
   },
@@ -1143,14 +856,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  saveButtonHint: {
-    marginTop: 1,
-    fontSize: 10,
+  footerHint: {
+    maxWidth: 320,
+    marginTop: 10,
+    alignSelf: "center",
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
-    color: "rgba(255,253,252,0.72)",
-  },
-
-  saveButtonHintDisabled: {
+    textAlign: "center",
     color: colors.textMuted,
   },
 });

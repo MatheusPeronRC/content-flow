@@ -68,8 +68,6 @@ export default function ContentDetailsScreen() {
 
   const [editing, setEditing] = useState(false);
 
-  const [inspirationExists, setInspirationExists] = useState(false);
-
   const [idea, setIdea] = useState("");
 
   const [format, setFormat] = useState<string | null>(null);
@@ -127,10 +125,6 @@ export default function ContentDetailsScreen() {
                 ...data,
                 reference,
               };
-
-              if (active) {
-                setInspirationExists(true);
-              }
             }
           } else if (data.reference?.inspirationId) {
             const inspiration = await getInspirationById(
@@ -172,12 +166,6 @@ export default function ContentDetailsScreen() {
                   reference: enrichedReference,
                 };
               }
-
-              if (active) {
-                setInspirationExists(true);
-              }
-            } else if (active) {
-              setInspirationExists(false);
             }
           }
 
@@ -312,22 +300,6 @@ export default function ContentDetailsScreen() {
         "Não foi possível abrir esse link.",
       );
     }
-  }
-
-  function handleOpenInspiration() {
-    const inspirationId =
-      content?.reference?.inspirationId ?? content?.inspirationId;
-
-    if (!inspirationId || !inspirationExists) {
-      return;
-    }
-
-    router.push({
-      pathname: "/inspiracao/[id]",
-      params: {
-        id: inspirationId,
-      },
-    });
   }
 
   function handleDelete() {
@@ -605,7 +577,11 @@ export default function ContentDetailsScreen() {
               </View>
 
               {content.reference ? (
-                <View style={styles.originStrip}>
+                <TouchableOpacity
+                  style={styles.originStrip}
+                  activeOpacity={0.84}
+                  onPress={handleOpenReference}
+                >
                   <InspirationThumbnail
                     thumbnailUrl={content.reference.thumbnailUrl}
                     source={content.reference.source}
@@ -633,9 +609,19 @@ export default function ContentDetailsScreen() {
                       <Text style={styles.originSourceText}>
                         {content.reference.source}
                       </Text>
+
+                      <Text style={styles.originOpenHint}>Abrir original</Text>
                     </View>
                   </View>
-                </View>
+
+                  <View style={styles.originOpenIcon}>
+                    <Ionicons
+                      name="open-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                </TouchableOpacity>
               ) : null}
             </View>
 
@@ -820,108 +806,6 @@ export default function ContentDetailsScreen() {
                 </View>
               )}
             </View>
-
-            {content.reference ? (
-              <View style={styles.referenceSection}>
-                <View style={styles.referenceHeading}>
-                  <Text style={styles.sectionEyebrow}>REFERÊNCIA</Text>
-
-                  <Text style={styles.referenceHeadingText}>
-                    Origem da ideia
-                  </Text>
-                </View>
-
-                <View style={styles.referenceCard}>
-                  <InspirationThumbnail
-                    thumbnailUrl={content.reference.thumbnailUrl}
-                    source={content.reference.source}
-                    variant="compact"
-                    style={styles.referenceThumbnail}
-                  />
-
-                  <View style={styles.referenceContent}>
-                    <View style={styles.referenceSourceRow}>
-                      <PlatformIcon
-                        source={content.reference.source}
-                        size={12}
-                      />
-
-                      <Text style={styles.referenceSource}>
-                        {content.reference.source}
-                      </Text>
-
-                      {content.reference.category ? (
-                        <>
-                          <View style={styles.metaDot} />
-
-                          <Text
-                            style={styles.referenceCategory}
-                            numberOfLines={1}
-                          >
-                            {content.reference.category}
-                          </Text>
-                        </>
-                      ) : null}
-                    </View>
-
-                    <Text style={styles.referenceTitle} numberOfLines={2}>
-                      {content.reference.mediaTitle?.trim() ||
-                        content.reference.note?.trim() ||
-                        `Referência do ${content.reference.source}`}
-                    </Text>
-
-                    <Text style={styles.referenceSecondary} numberOfLines={1}>
-                      {content.reference.authorName?.trim() ||
-                        cleanUrl(content.reference.url)}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    style={styles.referenceOpen}
-                    activeOpacity={0.8}
-                    onPress={handleOpenReference}
-                  >
-                    <Ionicons
-                      name="open-outline"
-                      size={16}
-                      color={colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {content.reference.note?.trim() &&
-                content.reference.note.trim() !==
-                  content.reference.mediaTitle?.trim() ? (
-                  <View style={styles.referenceNote}>
-                    <Text style={styles.referenceNoteLabel}>
-                      O QUE TE CHAMOU ATENÇÃO
-                    </Text>
-
-                    <Text style={styles.referenceNoteText}>
-                      {content.reference.note}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {inspirationExists ? (
-                  <TouchableOpacity
-                    style={styles.savedInspirationLink}
-                    activeOpacity={0.8}
-                    onPress={handleOpenInspiration}
-                  >
-                    <Text style={styles.savedInspirationText}>
-                      Ver inspiração salva
-                    </Text>
-
-                    <Ionicons
-                      name="chevron-forward"
-                      size={15}
-                      color={colors.textMuted}
-                    />
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            ) : null}
 
             <View style={styles.bottomDivider} />
 
@@ -1126,7 +1010,7 @@ const styles = StyleSheet.create({
   },
 
   editEyebrow: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.terracotta,
@@ -1148,7 +1032,7 @@ const styles = StyleSheet.create({
 
   formLabel: {
     marginBottom: 9,
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.75,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -1290,7 +1174,7 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.7,
     fontFamily: fonts.bold,
   },
@@ -1308,7 +1192,7 @@ const styles = StyleSheet.create({
   },
 
   dateText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.blue,
   },
@@ -1343,7 +1227,7 @@ const styles = StyleSheet.create({
   },
 
   metaPillText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
@@ -1371,8 +1255,8 @@ const styles = StyleSheet.create({
   },
 
   originLabel: {
-    fontSize: 9,
-    letterSpacing: 0.75,
+    fontSize: 11,
+    letterSpacing: 0.7,
     fontFamily: fonts.bold,
     color: colors.textMuted,
   },
@@ -1393,9 +1277,26 @@ const styles = StyleSheet.create({
   },
 
   originSourceText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
+  },
+
+  originOpenHint: {
+    marginLeft: 4,
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
+  },
+
+  originOpenIcon: {
+    width: 34,
+    height: 34,
+    marginLeft: 8,
+    borderRadius: 10,
+    backgroundColor: colors.surfaceSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sectionHeading: {
@@ -1407,7 +1308,7 @@ const styles = StyleSheet.create({
   },
 
   sectionEyebrow: {
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -1508,8 +1409,8 @@ const styles = StyleSheet.create({
   },
 
   scriptLabel: {
-    fontSize: 10,
-    letterSpacing: 0.85,
+    fontSize: 11,
+    letterSpacing: 0.8,
     fontFamily: fonts.bold,
   },
 
@@ -1520,7 +1421,7 @@ const styles = StyleSheet.create({
   },
 
   scriptHint: {
-    fontSize: 9,
+    fontSize: 11,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -1554,8 +1455,8 @@ const styles = StyleSheet.create({
   pointNumber: {
     width: 30,
     paddingTop: 2,
-    fontSize: 9,
-    letterSpacing: 0.4,
+    fontSize: 11,
+    letterSpacing: 0.35,
     fontFamily: fonts.bold,
     color: colors.amber,
   },
@@ -1612,8 +1513,8 @@ const styles = StyleSheet.create({
   },
 
   nextStageLabel: {
-    fontSize: 9,
-    letterSpacing: 0.75,
+    fontSize: 11,
+    letterSpacing: 0.7,
     fontFamily: fonts.bold,
     color: colors.textMuted,
   },
@@ -1629,8 +1530,8 @@ const styles = StyleSheet.create({
   nextStageText: {
     marginTop: 2,
     paddingRight: 5,
-    fontSize: 10,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1664,136 +1565,9 @@ const styles = StyleSheet.create({
 
   completedText: {
     marginTop: 3,
-    fontSize: 10,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-
-  referenceSection: {
-    marginTop: 28,
-  },
-
-  referenceHeading: {
-    marginBottom: 10,
-  },
-
-  referenceHeadingText: {
-    marginTop: 3,
-    fontSize: 17,
-    lineHeight: 23,
-    fontFamily: fonts.bold,
-    color: colors.text,
-  },
-
-  referenceCard: {
-    minHeight: 96,
-    padding: 11,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  referenceThumbnail: {
-    width: 62,
-    height: 76,
-    borderRadius: 12,
-  },
-
-  referenceContent: {
-    flex: 1,
-    minWidth: 0,
-    marginLeft: 10,
-  },
-
-  referenceSourceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-
-  referenceSource: {
-    fontSize: 10,
-    fontFamily: fonts.semibold,
-    color: colors.textSecondary,
-  },
-
-  metaDot: {
-    width: 3,
-    height: 3,
-    marginHorizontal: 2,
-    borderRadius: radius.round,
-    backgroundColor: colors.textMuted,
-  },
-
-  referenceCategory: {
-    flexShrink: 1,
-    fontSize: 9,
-    fontFamily: fonts.medium,
-    color: colors.textMuted,
-  },
-
-  referenceTitle: {
-    marginTop: 5,
-    fontSize: 13,
-    lineHeight: 19,
-    fontFamily: fonts.semibold,
-    color: colors.text,
-  },
-
-  referenceSecondary: {
-    marginTop: 4,
-    fontSize: 9,
-    lineHeight: 15,
-    fontFamily: fonts.regular,
-    color: colors.textMuted,
-  },
-
-  referenceOpen: {
-    width: 34,
-    height: 34,
-    marginLeft: 7,
-    borderRadius: 10,
-    backgroundColor: colors.surfaceSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  referenceNote: {
-    marginTop: 10,
-    paddingLeft: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.lavender,
-  },
-
-  referenceNoteLabel: {
-    fontSize: 9,
-    letterSpacing: 0.75,
-    fontFamily: fonts.bold,
-    color: colors.textMuted,
-  },
-
-  referenceNoteText: {
-    marginTop: 5,
-    fontSize: 12,
-    lineHeight: 19,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-
-  savedInspirationLink: {
-    minHeight: 42,
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  savedInspirationText: {
     fontSize: 11,
-    fontFamily: fonts.medium,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
