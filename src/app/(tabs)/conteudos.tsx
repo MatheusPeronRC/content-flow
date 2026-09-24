@@ -1,29 +1,31 @@
 import { Ionicons } from "@expo/vector-icons";
-
 import { router, useFocusEffect } from "expo-router";
-
 import { useCallback, useMemo, useState } from "react";
 
 import {
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ProductionEffortBadge } from "../../components/ProductionEffortSelector";
+
 import { getContents, updateContent } from "../../services/contentStorage";
 
 import { ContentItem, ContentStatus } from "../../types/content";
+import { ProductionEffort } from "../../types/productionEffort";
 
 import {
   colors,
   fonts,
   radius,
-  shadows,
   spacing,
   statusColors,
 } from "../../constants/theme";
@@ -37,50 +39,44 @@ const statusOrder: ContentStatus[] = [
   "publicado",
 ];
 
-type FilterValue = "todos" | ContentStatus;
+type FilterValue = "todos" | "rascunho" | "andamento" | "pronto" | "publicado";
 
-const filters: {
+const filters: Array<{
   value: FilterValue;
   label: string;
-}[] = [
-  {
-    value: "todos",
-    label: "Todos",
-  },
-  {
-    value: "ideia",
-    label: "Ideias",
-  },
-  {
-    value: "roteiro",
-    label: "Roteiro",
-  },
-  {
-    value: "gravar",
-    label: "Produzir",
-  },
-  {
-    value: "editar",
-    label: "Editar",
-  },
-  {
-    value: "pronto",
-    label: "Pronto",
-  },
-  {
-    value: "publicado",
-    label: "Publicado",
-  },
+}> = [
+  { value: "todos", label: "Todos" },
+  { value: "rascunho", label: "Rascunho" },
+  { value: "andamento", label: "Em andamento" },
+  { value: "pronto", label: "Pronto" },
+  { value: "publicado", label: "Publicado" },
+];
+
+type EffortFilter = "all" | ProductionEffort;
+
+const effortFilters: Array<{
+  value: EffortFilter;
+  label: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+}> = [
+  { value: "all", label: "Todos" },
+  { value: "quick", label: "Rápidos", icon: "flash-outline" },
+  { value: "medium", label: "Médios", icon: "time-outline" },
+  { value: "demanding", label: "Demorados", icon: "layers-outline" },
 ];
 
 export default function ContentsScreen() {
   const [contents, setContents] = useState<ContentItem[]>([]);
-
   const [selectedFilter, setSelectedFilter] = useState<FilterValue>("todos");
 
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     null,
   );
+
+  const [selectedEffort, setSelectedEffort] = useState<EffortFilter>("all");
+
+  const [search, setSearch] = useState("");
+  const [effortPanelVisible, setEffortPanelVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,7 +94,7 @@ export default function ContentsScreen() {
         }
       }
 
-      loadContents();
+      void loadContents();
 
       return () => {
         active = false;
@@ -107,28 +103,45 @@ export default function ContentsScreen() {
   );
 
   const visibleContents = useMemo(() => {
-    const filtered =
-      selectedFilter === "todos"
-        ? contents
-        : contents.filter((content) => content.status === selectedFilter);
+    const query = search.trim().toLowerCase();
+
+    const filtered = contents.filter((content) => {
+      if (!matchesStatusFilter(content.status, selectedFilter)) {
+        return false;
+      }
+
+      if (
+        selectedEffort !== "all" &&
+        content.productionEffort !== selectedEffort
+      ) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const searchable = [
+        content.idea,
+        content.format,
+        content.objective,
+        content.status,
+        content.reference?.mediaTitle,
+        content.reference?.authorName,
+        content.reference?.note,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
 
     return [...filtered].sort(
       (a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
-  }, [contents, selectedFilter]);
-
-  const activeCount = contents.filter(
-    (content) => content.status !== "publicado" && content.status !== "pronto",
-  ).length;
-
-  const readyCount = contents.filter(
-    (content) => content.status === "pronto",
-  ).length;
-
-  const publishedCount = contents.filter(
-    (content) => content.status === "publicado",
-  ).length;
+  }, [contents, selectedFilter, selectedEffort, search]);
 
   async function changeStatus(content: ContentItem, status: ContentStatus) {
     try {
@@ -166,153 +179,200 @@ export default function ContentsScreen() {
     }
   }
 
-  async function advanceStatus(content: ContentItem) {
-    const nextStatus = getNextStatus(content.status);
-
-    if (!nextStatus) {
-      return;
-    }
-
-    await changeStatus(content, nextStatus);
-  }
-
   function openContent(content: ContentItem) {
     router.push(`/conteudo/${content.id}` as any);
   }
+
+  function openCreate() {
+    router.push("/conteudo/manual" as any);
+  }
+
+  const activeEffortLabel =
+    effortFilters.find((item) => item.value === selectedEffort)?.label ??
+    "Todos";
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.heroPanel}>
-          <View style={styles.heroBubbleOne} />
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Conteúdos</Text>
 
-          <View style={styles.heroBubbleTwo} />
-
-          <View style={styles.heroHeader}>
-            <View style={styles.heroEyebrow}>
-              <Ionicons name="sparkles" size={13} color={colors.lavender} />
-
-              <Text style={styles.heroEyebrowText}>CENTRAL DE PRODUÇÃO</Text>
-            </View>
-
-            <View style={styles.heroMark}>
-              <Ionicons name="layers" size={21} color={colors.surface} />
-            </View>
+            <Text style={styles.subtitle}>
+              Acompanhe e gerencie todos os seus conteúdos.
+            </Text>
           </View>
 
-          <Text style={styles.heroTitle}>Conteúdos</Text>
+          <TouchableOpacity
+            style={styles.createButton}
+            activeOpacity={0.86}
+            onPress={openCreate}
+          >
+            <Ionicons name="add" size={18} color={colors.surface} />
 
-          <Text style={styles.heroSubtitle}>
-            Acompanhe o que está em criação, pronto ou já publicado.
-          </Text>
-
-          <View style={styles.overview}>
-            <OverviewItem
-              value={activeCount}
-              label="Em andamento"
-              icon="flash-outline"
-              background={colors.terracottaLight}
-              color={colors.terracotta}
-            />
-
-            <OverviewItem
-              value={readyCount}
-              label="Prontos"
-              icon="checkmark-circle-outline"
-              background={colors.sageLight}
-              color={colors.sage}
-            />
-
-            <OverviewItem
-              value={publishedCount}
-              label="Publicados"
-              icon="paper-plane-outline"
-              background={colors.blueLight}
-              color={colors.blue}
-            />
-          </View>
+            <Text style={styles.createButtonText}>Criar conteúdo</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
+          contentContainerStyle={styles.statusFilters}
         >
           {filters.map((filter) => {
             const selected = selectedFilter === filter.value;
 
-            const count =
-              filter.value === "todos"
-                ? contents.length
-                : getStatusCount(contents, filter.value);
-
             return (
               <TouchableOpacity
                 key={filter.value}
-                style={[styles.filter, selected && styles.filterSelected]}
+                style={[
+                  styles.statusFilter,
+                  selected && styles.statusFilterSelected,
+                ]}
                 activeOpacity={0.8}
                 onPress={() => setSelectedFilter(filter.value)}
               >
                 <Text
                   style={[
-                    styles.filterText,
-
-                    selected && styles.filterTextSelected,
+                    styles.statusFilterText,
+                    selected && styles.statusFilterTextSelected,
                   ]}
                 >
                   {filter.label}
                 </Text>
-
-                {count > 0 && (
-                  <View
-                    style={[
-                      styles.filterCount,
-
-                      selected && styles.filterCountSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterCountText,
-
-                        selected && styles.filterCountTextSelected,
-                      ]}
-                    >
-                      {count}
-                    </Text>
-                  </View>
-                )}
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        <View style={styles.listHeader}>
-          <View>
-            <Text style={styles.listTitle}>
-              {getFilterTitle(selectedFilter)}
-            </Text>
+        <View style={styles.searchRow}>
+          <View style={styles.searchField}>
+            <Ionicons
+              name="search-outline"
+              size={19}
+              color={colors.textSecondary}
+            />
 
-            <Text style={styles.listSubtitle}>
-              {getFilterSubtitle(selectedFilter, visibleContents.length)}
-            </Text>
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar conteúdo..."
+              placeholderTextColor={colors.textMuted}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+
+            {search.length > 0 ? (
+              <TouchableOpacity
+                style={styles.clearSearch}
+                activeOpacity={0.8}
+                onPress={() => setSearch("")}
+              >
+                <Ionicons name="close" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : null}
           </View>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              selectedEffort !== "all" && styles.filterButtonActive,
+            ]}
+            activeOpacity={0.82}
+            onPress={() => setEffortPanelVisible((current) => !current)}
+          >
+            <Ionicons
+              name="options-outline"
+              size={20}
+              color={selectedEffort !== "all" ? colors.terracotta : colors.text}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {effortPanelVisible ? (
+          <View style={styles.effortPanel}>
+            <View style={styles.effortPanelHeader}>
+              <View>
+                <Text style={styles.effortTitle}>Esforço de produção</Text>
+
+                <Text style={styles.effortSubtitle}>
+                  Mostrando: {activeEffortLabel}
+                </Text>
+              </View>
+
+              {selectedEffort !== "all" ? (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedEffort("all")}
+                >
+                  <Text style={styles.clearFilterText}>Limpar</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <View style={styles.effortFilters}>
+              {effortFilters.map((filter) => {
+                const selected = selectedEffort === filter.value;
+
+                return (
+                  <TouchableOpacity
+                    key={filter.value}
+                    style={[
+                      styles.effortFilter,
+                      selected && styles.effortFilterSelected,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedEffort(filter.value)}
+                  >
+                    {filter.icon ? (
+                      <Ionicons
+                        name={filter.icon}
+                        size={14}
+                        color={
+                          selected ? colors.terracotta : colors.textSecondary
+                        }
+                      />
+                    ) : null}
+
+                    <Text
+                      style={[
+                        styles.effortFilterText,
+                        selected && styles.effortFilterTextSelected,
+                      ]}
+                    >
+                      {filter.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.listHeader}>
+          <Text style={styles.resultCount}>
+            {visibleContents.length}{" "}
+            {visibleContents.length === 1 ? "conteúdo" : "conteúdos"}
+          </Text>
         </View>
 
         {visibleContents.length === 0 ? (
-          <EmptyState filter={selectedFilter} />
+          <EmptyState
+            hasSearch={Boolean(search.trim())}
+            onCreate={openCreate}
+          />
         ) : (
           <View style={styles.list}>
             {visibleContents.map((content) => (
-              <ContentCard
+              <ContentRow
                 key={content.id}
                 content={content}
                 onOpen={() => openContent(content)}
-                onAdvance={() => advanceStatus(content)}
-                onOptions={() => setSelectedContent(content)}
+                onStatusPress={() => setSelectedContent(content)}
               />
             ))}
           </View>
@@ -341,13 +401,14 @@ export default function ContentsScreen() {
 
                 <Text style={styles.sheetTitle}>Alterar etapa</Text>
 
-                <Text style={styles.sheetContent} numberOfLines={3}>
+                <Text style={styles.sheetContent} numberOfLines={2}>
                   {selectedContent?.idea}
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={styles.sheetClose}
+                activeOpacity={0.8}
                 onPress={() => setSelectedContent(null)}
               >
                 <Ionicons name="close" size={20} color={colors.text} />
@@ -363,7 +424,6 @@ export default function ContentsScreen() {
                 }
 
                 const meta = getStatusMeta(status);
-
                 const selected = selectedContent.status === status;
 
                 return (
@@ -371,20 +431,17 @@ export default function ContentsScreen() {
                     key={status}
                     style={[
                       styles.statusOption,
-
                       selected && styles.statusOptionSelected,
                     ]}
-                    activeOpacity={0.8}
+                    activeOpacity={0.82}
                     onPress={async () => {
                       await changeStatus(selectedContent, status);
-
                       setSelectedContent(null);
                     }}
                   >
                     <View
                       style={[
-                        styles.statusOptionMark,
-
+                        styles.statusOptionIcon,
                         {
                           backgroundColor: meta.background,
                         },
@@ -406,26 +463,16 @@ export default function ContentsScreen() {
                     </View>
 
                     {selected ? (
-                      <View
-                        style={[
-                          styles.selectedStatus,
-
-                          {
-                            backgroundColor: meta.foreground,
-                          },
-                        ]}
-                      >
-                        <Ionicons
-                          name="checkmark"
-                          size={13}
-                          color={colors.surface}
-                        />
-                      </View>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={colors.terracotta}
+                      />
                     ) : (
                       <Ionicons
                         name="chevron-forward"
                         size={17}
-                        color={colors.textSecondary}
+                        color={colors.textMuted}
                       />
                     )}
                   </TouchableOpacity>
@@ -435,19 +482,18 @@ export default function ContentsScreen() {
 
             <TouchableOpacity
               style={styles.openContentAction}
-              activeOpacity={0.8}
+              activeOpacity={0.82}
               onPress={() => {
                 if (!selectedContent) {
                   return;
                 }
 
                 const content = selectedContent;
-
                 setSelectedContent(null);
 
                 setTimeout(() => {
                   openContent(content);
-                }, 150);
+                }, 100);
               }}
             >
               <Text style={styles.openContentText}>Abrir conteúdo</Text>
@@ -465,120 +511,54 @@ export default function ContentsScreen() {
   );
 }
 
-type OverviewItemProps = {
-  value: number;
-  label: string;
-  color: string;
-  background: string;
-  icon: keyof typeof Ionicons.glyphMap;
-};
-
-function OverviewItem({
-  value,
-  label,
-  color,
-  background,
-  icon,
-}: OverviewItemProps) {
-  return (
-    <View style={styles.overviewItem}>
-      <View
-        style={[
-          styles.overviewIcon,
-          {
-            backgroundColor: background,
-          },
-        ]}
-      >
-        <Ionicons name={icon} size={15} color={color} />
-      </View>
-
-      <View style={{ flex: 1 }}>
-        <Text
-          style={[
-            styles.overviewValue,
-            {
-              color,
-            },
-          ]}
-        >
-          {value}
-        </Text>
-
-        <Text style={styles.overviewLabel} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-type ContentCardProps = {
-  content: ContentItem;
-  onOpen: () => void;
-  onAdvance: () => void;
-  onOptions: () => void;
-};
-
-function ContentCard({
+function ContentRow({
   content,
   onOpen,
-  onAdvance,
-  onOptions,
-}: ContentCardProps) {
+  onStatusPress,
+}: {
+  content: ContentItem;
+  onOpen: () => void;
+  onStatusPress: () => void;
+}) {
   const status = getStatusMeta(content.status);
-
-  const nextStatus = getNextStatus(content.status);
-
-  const nextMeta = nextStatus ? getStatusMeta(nextStatus) : null;
+  const thumbnail = content.reference?.thumbnailUrl ?? null;
 
   return (
     <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          borderColor: status.background,
-        },
-      ]}
-      activeOpacity={0.88}
+      style={styles.contentRow}
+      activeOpacity={0.86}
       onPress={onOpen}
     >
-      <View
-        style={[
-          styles.cardAccent,
-
-          {
-            backgroundColor: status.foreground,
-          },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.statusMark,
-
-          {
-            backgroundColor: status.background,
-          },
-        ]}
-      >
-        <Ionicons name={status.icon} size={18} color={status.foreground} />
+      <View style={styles.thumbnail}>
+        {thumbnail ? (
+          <Image source={{ uri: thumbnail }} style={styles.thumbnailImage} />
+        ) : (
+          <Ionicons name={status.icon} size={22} color={status.foreground} />
+        )}
       </View>
 
-      <View style={styles.cardMain}>
-        <View style={styles.cardMeta}>
-          <View
+      <View style={styles.rowMain}>
+        <View style={styles.rowTitleLine}>
+          <Text style={styles.rowTitle} numberOfLines={2}>
+            {content.idea}
+          </Text>
+
+          <TouchableOpacity
             style={[
-              styles.statusPill,
+              styles.statusBadge,
               {
                 backgroundColor: status.background,
               },
             ]}
+            activeOpacity={0.78}
+            onPress={(event) => {
+              event.stopPropagation();
+              onStatusPress();
+            }}
           >
             <Text
               style={[
-                styles.statusLabel,
-
+                styles.statusBadgeText,
                 {
                   color: status.foreground,
                 },
@@ -586,189 +566,136 @@ function ContentCard({
             >
               {status.label}
             </Text>
-          </View>
+          </TouchableOpacity>
+        </View>
 
-          {content.format && (
-            <View style={styles.metaPill}>
-              <Text style={styles.metaText}>{content.format}</Text>
-            </View>
-          )}
-
-          {content.plannedDate && (
+        <View style={styles.metaRow}>
+          {content.format ? (
             <View style={styles.metaPill}>
               <Ionicons
-                name="calendar-outline"
-                size={11}
+                name={getFormatIcon(content.format)}
+                size={12}
                 color={colors.textSecondary}
               />
 
-              <Text style={styles.metaText}>
-                {formatDate(content.plannedDate)}
-              </Text>
+              <Text style={styles.metaText}>{content.format}</Text>
             </View>
-          )}
+          ) : null}
+
+          <ProductionEffortBadge effort={content.productionEffort} subtle />
         </View>
 
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {content.idea}
-        </Text>
-
-        {nextStatus && nextMeta ? (
-          <TouchableOpacity
-            style={[
-              styles.nextAction,
-              {
-                backgroundColor: nextMeta.background,
-              },
-            ]}
-            activeOpacity={0.82}
-            onPress={(event) => {
-              event.stopPropagation();
-
-              onAdvance();
-            }}
-          >
-            <Text style={styles.nextEyebrow}>Próxima</Text>
-
-            <Text
-              style={[
-                styles.nextText,
-
-                {
-                  color: nextMeta.foreground,
-                },
-              ]}
-            >
-              {nextMeta.label}
-            </Text>
-
-            <Ionicons
-              name="arrow-forward"
-              size={14}
-              color={nextMeta.foreground}
-            />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.finishedPill}>
-            <Ionicons name="checkmark" size={13} color={colors.sage} />
-
-            <Text style={styles.finishedPillText}>Fluxo concluído</Text>
-          </View>
-        )}
+        <Text style={styles.dateText}>{formatContentDate(content)}</Text>
       </View>
 
-      <TouchableOpacity
-        style={styles.optionsButton}
-        activeOpacity={0.8}
-        onPress={(event) => {
-          event.stopPropagation();
-
-          onOptions();
-        }}
-      >
-        <Ionicons
-          name="ellipsis-horizontal"
-          size={18}
-          color={colors.textSecondary}
-        />
-      </TouchableOpacity>
+      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </TouchableOpacity>
   );
 }
-function EmptyState({ filter }: { filter: FilterValue }) {
-  const all = filter === "todos";
 
+function EmptyState({
+  hasSearch,
+  onCreate,
+}: {
+  hasSearch: boolean;
+  onCreate: () => void;
+}) {
   return (
     <View style={styles.emptyState}>
-      <View style={styles.emptyVisual}>
-        <View style={styles.emptyVisualOne} />
-
-        <View style={styles.emptyVisualTwo} />
-
-        <View style={styles.emptyVisualIcon}>
-          <Ionicons
-            name={all ? "sparkles-outline" : "layers-outline"}
-            size={24}
-            color={colors.lavender}
-          />
-        </View>
+      <View style={styles.emptyIcon}>
+        <Ionicons
+          name={hasSearch ? "search-outline" : "document-text-outline"}
+          size={24}
+          color={colors.terracotta}
+        />
       </View>
 
       <Text style={styles.emptyTitle}>
-        {all ? "Sua produção começa aqui." : "Nada nessa etapa agora."}
+        {hasSearch
+          ? "Nenhum conteúdo encontrado."
+          : "Sua produção começa aqui."}
       </Text>
 
       <Text style={styles.emptyText}>
-        {all
-          ? "Crie algo do zero ou transforme uma referência que você salvou."
-          : "Seus conteúdos aparecerão aqui conforme avançarem pelo fluxo."}
+        {hasSearch
+          ? "Tente outro termo ou ajuste os filtros."
+          : "Crie algo do zero ou transforme uma inspiração em conteúdo."}
       </Text>
 
-      {all && (
+      {!hasSearch ? (
         <TouchableOpacity
-          style={styles.emptyAction}
+          style={styles.emptyButton}
           activeOpacity={0.85}
-          onPress={() => router.push("/conteudo/manual" as any)}
+          onPress={onCreate}
         >
           <Ionicons name="add" size={18} color={colors.surface} />
 
-          <Text style={styles.emptyActionText}>Criar conteúdo</Text>
+          <Text style={styles.emptyButtonText}>Criar conteúdo</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 }
 
-function getNextStatus(status: ContentStatus): ContentStatus | null {
-  const index = statusOrder.indexOf(status);
+function matchesStatusFilter(status: ContentStatus, filter: FilterValue) {
+  switch (filter) {
+    case "todos":
+      return true;
 
-  if (index < 0 || index === statusOrder.length - 1) {
-    return null;
+    case "rascunho":
+      return status === "ideia" || status === "roteiro";
+
+    case "andamento":
+      return status === "gravar" || status === "editar";
+
+    case "pronto":
+      return status === "pronto";
+
+    case "publicado":
+      return status === "publicado";
   }
-
-  return statusOrder[index + 1];
 }
 
 function getStatusMeta(status: ContentStatus) {
   switch (status) {
     case "ideia":
       return {
-        label: "IDEIA",
+        label: "Rascunho",
         icon: "bulb-outline" as const,
         ...statusColors.ideia,
       };
 
     case "roteiro":
       return {
-        label: "ROTEIRO",
+        label: "Rascunho",
         icon: "create-outline" as const,
         ...statusColors.roteiro,
       };
 
     case "gravar":
       return {
-        label: "PRODUZIR",
+        label: "Em andamento",
         icon: "videocam-outline" as const,
         ...statusColors.gravar,
       };
 
     case "editar":
       return {
-        label: "EDITAR",
+        label: "Em andamento",
         icon: "cut-outline" as const,
         ...statusColors.editar,
       };
 
     case "pronto":
       return {
-        label: "PRONTO",
+        label: "Pronto",
         icon: "checkmark-circle-outline" as const,
         ...statusColors.pronto,
       };
 
     case "publicado":
       return {
-        label: "PUBLICADO",
+        label: "Publicado",
         icon: "paper-plane-outline" as const,
         ...statusColors.publicado,
       };
@@ -797,956 +724,559 @@ function getStatusDescription(status: ContentStatus) {
   }
 }
 
-function getStatusCount(contents: ContentItem[], status: ContentStatus) {
-  return contents.filter((content) => content.status === status).length;
-}
+function getFormatIcon(format: string): keyof typeof Ionicons.glyphMap {
+  const normalized = format.toLowerCase();
 
-function getFilterTitle(filter: FilterValue) {
-  switch (filter) {
-    case "todos":
-      return "Sua produção";
-
-    case "ideia":
-      return "Ideias";
-
-    case "roteiro":
-      return "Em roteiro";
-
-    case "gravar":
-      return "Para produzir";
-
-    case "editar":
-      return "Para editar";
-
-    case "pronto":
-      return "Prontos";
-
-    case "publicado":
-      return "Publicados";
-  }
-}
-
-function getFilterSubtitle(filter: FilterValue, count: number) {
-  if (count === 0) {
-    return "Nenhum conteúdo por aqui.";
+  if (normalized.includes("reel") || normalized.includes("vídeo")) {
+    return "videocam-outline";
   }
 
-  if (filter === "todos") {
-    return count === 1
-      ? "1 conteúdo no seu fluxo."
-      : `${count} conteúdos no seu fluxo.`;
+  if (normalized.includes("carrossel")) {
+    return "albums-outline";
   }
 
-  return count === 1
-    ? "1 conteúdo nesta etapa."
-    : `${count} conteúdos nesta etapa.`;
+  if (normalized.includes("story")) {
+    return "phone-portrait-outline";
+  }
+
+  return "image-outline";
 }
 
-function formatDate(dateKey: string) {
-  const [year, month, day] = dateKey.split("-").map(Number);
+function formatContentDate(content: ContentItem) {
+  if (content.plannedDate) {
+    const [year, month, day] = content.plannedDate.split("-").map(Number);
 
-  const date = new Date(year, month - 1, day);
+    const date = new Date(year, month - 1, day);
 
-  return date
-    .toLocaleDateString("pt-BR", {
-      day: "2-digit",
+    return date.toLocaleDateString("pt-BR", {
+      day: "numeric",
       month: "short",
-    })
-    .replace(".", "")
-    .toUpperCase();
+      year: "numeric",
+    });
+  }
+
+  return new Date(content.updatedAt).toLocaleDateString("pt-BR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-
     backgroundColor: colors.background,
   },
 
   content: {
     paddingHorizontal: spacing.lg,
-
     paddingBottom: 140,
   },
 
-  heroPanel: {
-    position: "relative",
-
-    overflow: "hidden",
-
-    marginTop: spacing.lg,
-
-    marginBottom: 24,
-
-    padding: 20,
-
-    borderRadius: 28,
-
-    backgroundColor: colors.lavenderLight,
-
-    borderWidth: 1,
-
-    borderColor: "rgba(142, 127, 194, 0.14)",
-
-    ...shadows.card,
-  },
-
-  heroBubbleOne: {
-    position: "absolute",
-
-    width: 118,
-    height: 118,
-
-    top: -44,
-    right: -32,
-
-    borderRadius: 59,
-
-    backgroundColor: "rgba(225, 116, 85, 0.13)",
-  },
-
-  heroBubbleTwo: {
-    position: "absolute",
-
-    width: 72,
-    height: 72,
-
-    right: 54,
-    bottom: -34,
-
-    borderRadius: 36,
-
-    backgroundColor: "rgba(121, 165, 184, 0.15)",
-  },
-
-  heroHeader: {
+  header: {
+    paddingTop: 20,
+    paddingBottom: 20,
     flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+  },
 
+  title: {
+    fontSize: 31,
+    lineHeight: 38,
+    letterSpacing: -0.9,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  subtitle: {
+    maxWidth: 270,
+    marginTop: 3,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  createButton: {
+    minHeight: 42,
+    marginTop: 2,
+    paddingHorizontal: 13,
+    borderRadius: 13,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
 
+  createButtonText: {
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+
+  statusFilters: {
+    gap: 7,
+    paddingBottom: 16,
+  },
+
+  statusFilter: {
+    minHeight: 37,
+    paddingHorizontal: 13,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  statusFilterSelected: {
+    backgroundColor: colors.terracotta,
+    borderColor: colors.terracotta,
+  },
+
+  statusFilterText: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
+  },
+
+  statusFilterTextSelected: {
+    color: colors.surface,
+  },
+
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+
+  searchField: {
+    flex: 1,
+    minHeight: 48,
+    paddingHorizontal: 13,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  searchInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: fonts.regular,
+    color: colors.text,
+  },
+
+  clearSearch: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.round,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  filterButtonActive: {
+    borderColor: colors.terracotta,
+    backgroundColor: colors.terracottaLight,
+  },
+
+  effortPanel: {
+    marginTop: 9,
+    padding: 13,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  effortPanelHeader: {
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
   },
 
-  heroEyebrow: {
-    minHeight: 30,
-
-    paddingHorizontal: 10,
-
-    borderRadius: radius.round,
-
-    backgroundColor: "rgba(255, 253, 252, 0.72)",
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 6,
-  },
-
-  heroEyebrowText: {
-    fontSize: 10,
-
-    letterSpacing: 0.75,
-
-    fontFamily: fonts.bold,
-
-    color: colors.lavender,
-  },
-
-  heroMark: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
-    backgroundColor: colors.lavender,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    ...shadows.soft,
-  },
-
-  heroTitle: {
-    marginTop: 17,
-
-    fontSize: 32,
-
-    lineHeight: 39,
-
-    letterSpacing: -1,
-
-    fontFamily: fonts.bold,
-
+  effortTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
 
-  heroSubtitle: {
-    maxWidth: 300,
-
-    marginTop: 5,
-
-    fontSize: 13,
-
-    lineHeight: 20,
-
+  effortSubtitle: {
+    marginTop: 2,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  overview: {
-    marginTop: 20,
-
-    flexDirection: "row",
-
-    gap: 8,
+  clearFilterText: {
+    fontSize: 11,
+    fontFamily: fonts.semibold,
+    color: colors.terracotta,
   },
 
-  overviewItem: {
-    flex: 1,
-
-    minWidth: 0,
-
-    minHeight: 74,
-
-    paddingHorizontal: 9,
-
-    paddingVertical: 10,
-
-    borderRadius: 17,
-
-    backgroundColor: "rgba(255, 253, 252, 0.88)",
-
-    borderWidth: 1,
-
-    borderColor: "rgba(255, 255, 255, 0.72)",
-
+  effortFilters: {
     flexDirection: "row",
-
-    alignItems: "center",
-
+    flexWrap: "wrap",
     gap: 7,
   },
 
-  overviewIcon: {
-    width: 31,
-    height: 31,
-
-    borderRadius: 10,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
-  overviewValue: {
-    fontSize: 20,
-
-    lineHeight: 24,
-
-    fontFamily: fonts.bold,
-  },
-
-  overviewLabel: {
-    marginTop: 1,
-
-    fontSize: 9,
-
-    lineHeight: 13,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.textSecondary,
-  },
-
-  filters: {
-    gap: 8,
-
-    paddingBottom: 30,
-  },
-
-  filter: {
-    minHeight: 40,
-
-    paddingHorizontal: 15,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 6,
-
+  effortFilter: {
+    minHeight: 34,
+    paddingHorizontal: 11,
     borderRadius: radius.round,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    backgroundColor: colors.surface,
-  },
-
-  filterSelected: {
-    backgroundColor: colors.text,
-
-    borderColor: colors.text,
-  },
-
-  filterText: {
-    fontSize: 12,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.textSecondary,
-  },
-
-  filterTextSelected: {
-    color: colors.surface,
-  },
-
-  filterCount: {
-    minWidth: 20,
-
-    height: 20,
-
-    paddingHorizontal: 5,
-
-    borderRadius: radius.round,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
     backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.surfaceMuted,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
 
-  filterCountSelected: {
-    backgroundColor: colors.inkSoft,
+  effortFilterSelected: {
+    borderColor: colors.terracotta,
+    backgroundColor: colors.terracottaLight,
   },
 
-  filterCountText: {
-    fontSize: 9,
-
-    fontFamily: fonts.bold,
-
+  effortFilterText: {
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
 
-  filterCountTextSelected: {
-    color: colors.surface,
+  effortFilterTextSelected: {
+    color: colors.terracotta,
   },
 
   listHeader: {
-    marginBottom: 15,
+    minHeight: 47,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
   },
 
-  listTitle: {
-    fontSize: 24,
-
-    lineHeight: 31,
-
-    letterSpacing: -0.6,
-
-    fontFamily: fonts.bold,
-
-    color: colors.text,
-  },
-
-  listSubtitle: {
-    marginTop: 4,
-
-    fontSize: 12,
-
-    lineHeight: 18,
-
-    fontFamily: fonts.regular,
-
-    color: colors.textSecondary,
+  resultCount: {
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
   },
 
   list: {
+    overflow: "hidden",
+    borderRadius: 17,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  contentRow: {
+    minHeight: 97,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
 
-  card: {
-    minHeight: 106,
-
-    position: "relative",
-
+  thumbnail: {
+    width: 66,
+    height: 66,
     overflow: "hidden",
-
-    paddingVertical: 13,
-
-    paddingRight: 11,
-
-    paddingLeft: 14,
-
-    flexDirection: "row",
-
+    borderRadius: 13,
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
-
-    borderRadius: 19,
-
-    borderWidth: 1,
-
-    backgroundColor: colors.surface,
-
-    ...shadows.card,
-  },
-
-  cardAccent: {
-    position: "absolute",
-
-    left: 0,
-    top: 11,
-    bottom: 11,
-
-    width: 4,
-
-    borderRadius: radius.round,
-  },
-
-  statusMark: {
-    width: 46,
-    height: 46,
-
-    marginRight: 11,
-
-    borderRadius: 15,
-
-    alignItems: "center",
-
     justifyContent: "center",
   },
 
-  cardMain: {
-    flex: 1,
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
+  },
 
+  rowMain: {
+    flex: 1,
     minWidth: 0,
   },
 
-  cardMeta: {
+  rowTitleLine: {
     flexDirection: "row",
-
-    flexWrap: "wrap",
-
-    alignItems: "center",
-
-    gap: 5,
+    alignItems: "flex-start",
+    gap: 8,
   },
 
-  statusPill: {
-    minHeight: 23,
+  rowTitle: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
 
+  statusBadge: {
+    minHeight: 25,
+    maxWidth: 100,
     paddingHorizontal: 8,
-
     borderRadius: radius.round,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
-  statusLabel: {
+  statusBadgeText: {
     fontSize: 9,
-
-    letterSpacing: 0.45,
-
+    lineHeight: 13,
     fontFamily: fonts.bold,
+  },
+
+  metaRow: {
+    marginTop: 7,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
   },
 
   metaPill: {
-    minHeight: 23,
-
-    paddingHorizontal: 7,
-
+    minHeight: 24,
+    paddingHorizontal: 8,
     borderRadius: radius.round,
-
     backgroundColor: colors.surfaceMuted,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     gap: 4,
   },
 
-  metaDot: {
-    display: "none",
-  },
-
   metaText: {
-    fontSize: 9,
-
+    fontSize: 10,
     lineHeight: 14,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.textSecondary,
-  },
-
-  cardTitle: {
-    marginTop: 7,
-
-    paddingRight: 4,
-
-    fontSize: 16,
-
-    lineHeight: 22,
-
-    letterSpacing: -0.15,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
-  },
-
-  optionsButton: {
-    width: 32,
-    height: 32,
-
-    marginLeft: 7,
-
-    borderRadius: 11,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    backgroundColor: colors.surfaceSoft,
-  },
-
-  nextAction: {
-    alignSelf: "flex-start",
-
-    minHeight: 29,
-
-    marginTop: 9,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  nextEyebrow: {
-    fontSize: 9,
-
     fontFamily: fonts.medium,
-
     color: colors.textSecondary,
   },
 
-  nextText: {
+  dateText: {
+    marginTop: 6,
     fontSize: 10,
-
-    letterSpacing: 0.25,
-
-    fontFamily: fonts.bold,
-  },
-
-  nextArrow: {
-    display: "none",
-  },
-
-  cardDivider: {
-    display: "none",
-  },
-
-  finishedArea: {
-    display: "none",
-  },
-
-  finishedMark: {
-    display: "none",
-  },
-
-  finishedTitle: {
-    display: "none",
-  },
-
-  finishedText: {
-    display: "none",
-  },
-
-  finishedPill: {
-    alignSelf: "flex-start",
-
-    minHeight: 29,
-
-    marginTop: 9,
-
-    paddingHorizontal: 9,
-
-    borderRadius: radius.round,
-
-    backgroundColor: colors.sageLight,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    gap: 5,
-  },
-
-  finishedPillText: {
-    fontSize: 10,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.sage,
+    lineHeight: 14,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
   },
 
   emptyState: {
-    alignItems: "center",
-
-    paddingTop: 48,
-
-    paddingHorizontal: spacing.lg,
-  },
-
-  emptyVisual: {
-    width: 94,
-    height: 82,
-
-    position: "relative",
-
-    marginBottom: 24,
-  },
-
-  emptyVisualOne: {
-    position: "absolute",
-
-    left: 5,
-    top: 8,
-
-    width: 58,
-    height: 58,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.terracottaLight,
-
-    transform: [
-      {
-        rotate: "-7deg",
-      },
-    ],
-  },
-
-  emptyVisualTwo: {
-    position: "absolute",
-
-    right: 4,
-    bottom: 2,
-
-    width: 58,
-    height: 58,
-
-    borderRadius: 18,
-
-    backgroundColor: colors.lavenderLight,
-
-    transform: [
-      {
-        rotate: "7deg",
-      },
-    ],
-  },
-
-  emptyVisualIcon: {
-    position: "absolute",
-
-    left: 29,
-    top: 25,
-
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
+    marginTop: 22,
+    padding: 24,
+    borderRadius: 20,
     backgroundColor: colors.surface,
-
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: "center",
+  },
 
+  emptyIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
     justifyContent: "center",
-
-    ...shadows.soft,
   },
 
   emptyTitle: {
-    maxWidth: 310,
-
-    fontSize: 22,
-
-    lineHeight: 29,
-
-    letterSpacing: -0.4,
-
-    textAlign: "center",
-
+    marginTop: 14,
+    fontSize: 18,
+    lineHeight: 24,
     fontFamily: fonts.bold,
-
     color: colors.text,
+    textAlign: "center",
   },
 
   emptyText: {
-    maxWidth: 295,
-
-    marginTop: 8,
-
-    fontSize: 13,
-
-    lineHeight: 20,
-
-    textAlign: "center",
-
+    maxWidth: 300,
+    marginTop: 5,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
+    textAlign: "center",
   },
 
-  emptyAction: {
-    minHeight: 50,
-
-    marginTop: 22,
-
-    paddingHorizontal: 19,
-
-    borderRadius: 15,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    gap: 7,
-
+  emptyButton: {
+    minHeight: 46,
+    marginTop: 17,
+    paddingHorizontal: 15,
+    borderRadius: 13,
     backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
 
-  emptyActionText: {
-    fontSize: 13,
-
-    fontFamily: fonts.semibold,
-
+  emptyButtonText: {
+    fontSize: 12,
+    fontFamily: fonts.bold,
     color: colors.surface,
   },
 
   modalBackdrop: {
     flex: 1,
-
     justifyContent: "flex-end",
-
     backgroundColor: colors.overlay,
   },
 
   sheet: {
-    marginHorizontal: 10,
-
-    marginBottom: 8,
-
     paddingHorizontal: spacing.lg,
-
-    paddingTop: 12,
-
-    paddingBottom: spacing.lg,
-
-    borderRadius: radius.xxl,
-
+    paddingTop: 10,
+    paddingBottom: 18,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
     backgroundColor: colors.surface,
   },
 
   sheetHandle: {
-    width: 36,
+    width: 42,
     height: 4,
-
+    marginBottom: 18,
     alignSelf: "center",
-
-    marginBottom: 22,
-
     borderRadius: radius.round,
-
     backgroundColor: colors.border,
   },
 
   sheetHeader: {
     flexDirection: "row",
-
     alignItems: "flex-start",
-
     gap: 12,
   },
 
   sheetEyebrow: {
-    marginBottom: 5,
-
-    fontSize: 10,
-
-    letterSpacing: 0.8,
-
+    fontSize: 9,
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
-
-    color: colors.lavender,
+    color: colors.terracotta,
   },
 
   sheetTitle: {
-    fontSize: 24,
-
-    lineHeight: 31,
-
-    letterSpacing: -0.5,
-
+    marginTop: 3,
+    fontSize: 20,
+    lineHeight: 26,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   sheetContent: {
-    maxWidth: 275,
-
-    marginTop: 6,
-
-    fontSize: 13,
-
-    lineHeight: 20,
-
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   sheetClose: {
-    width: 40,
-    height: 40,
-
+    width: 38,
+    height: 38,
     borderRadius: radius.round,
-
     backgroundColor: colors.surfaceMuted,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   sheetHint: {
-    marginTop: 24,
-
-    marginBottom: 11,
-
-    fontSize: 13,
-
-    lineHeight: 19,
-
-    fontFamily: fonts.semibold,
-
-    color: colors.text,
+    marginTop: 18,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
   },
 
   statusOptions: {
-    gap: 8,
+    marginTop: 10,
+    overflow: "hidden",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   statusOption: {
-    minHeight: 68,
-
+    minHeight: 61,
     paddingHorizontal: 12,
-
-    borderRadius: 17,
-
-    borderWidth: 1,
-
-    borderColor: colors.border,
-
-    flexDirection: "row",
-
-    alignItems: "center",
-
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
     backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
 
   statusOptionSelected: {
-    backgroundColor: colors.surfaceSoft,
-
-    borderColor: colors.text,
+    backgroundColor: colors.background,
   },
 
-  statusOptionMark: {
-    width: 40,
-    height: 40,
-
-    marginRight: 12,
-
+  statusOptionIcon: {
+    width: 38,
+    height: 38,
     borderRadius: 12,
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   statusOptionTitle: {
-    fontSize: 11,
-
-    letterSpacing: 0.3,
-
-    fontFamily: fonts.bold,
-
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
 
   statusOptionText: {
-    marginTop: 3,
-
-    fontSize: 11,
-
-    lineHeight: 16,
-
+    marginTop: 2,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  selectedStatus: {
-    width: 24,
-    height: 24,
-
-    borderRadius: radius.round,
-
-    alignItems: "center",
-
-    justifyContent: "center",
-  },
-
   openContentAction: {
-    minHeight: 52,
-
-    marginTop: 18,
-
-    paddingHorizontal: 3,
-
-    borderTopWidth: 1,
-
-    borderTopColor: colors.divider,
-
+    minHeight: 48,
+    marginTop: 12,
+    borderRadius: 13,
+    backgroundColor: colors.surfaceMuted,
     flexDirection: "row",
-
-    alignItems: "flex-end",
-
-    justifyContent: "space-between",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
 
   openContentText: {
-    fontSize: 13,
-
+    fontSize: 12,
     fontFamily: fonts.semibold,
-
     color: colors.terracotta,
   },
 });

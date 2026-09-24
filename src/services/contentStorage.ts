@@ -5,6 +5,7 @@ import {
   ContentScript,
   ContentStatus,
 } from "../types/content";
+import { ProductionEffort } from "../types/productionEffort";
 
 type ContentRow = {
   id: string;
@@ -14,6 +15,7 @@ type ContentRow = {
   idea: string;
   format: string | null;
   objective: string | null;
+  production_effort: ProductionEffort | null;
   status: ContentStatus;
   planned_date: string | null;
   script: unknown;
@@ -21,21 +23,29 @@ type ContentRow = {
   updated_at: string;
 };
 
+let cachedUserId: string | null = null;
+let cachedContents: ContentItem[] | null = null;
+
 async function getAuthenticatedUserId(): Promise<string> {
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
 
   if (error) {
     throw error;
   }
 
-  if (!user) {
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    cachedUserId = null;
+    cachedContents = null;
+
     throw new Error("Usuário não autenticado.");
   }
 
-  return user.id;
+  return userId;
 }
 
 function normalizeScript(value: unknown): ContentScript {
@@ -85,6 +95,12 @@ function normalizeReference(value: unknown): ContentReference | undefined {
         ? candidate.category
         : null,
     note: candidate.note,
+    productionEffort:
+      candidate.productionEffort === "quick" ||
+      candidate.productionEffort === "medium" ||
+      candidate.productionEffort === "demanding"
+        ? candidate.productionEffort
+        : null,
     thumbnailUrl:
       typeof candidate.thumbnailUrl === "string" ||
       candidate.thumbnailUrl === null
@@ -116,6 +132,7 @@ function mapRowToContent(row: ContentRow): ContentItem {
     idea: row.idea,
     format: row.format,
     objective: row.objective,
+    productionEffort: row.production_effort,
     status: row.status,
     plannedDate: row.planned_date,
     script: normalizeScript(row.script),
@@ -124,14 +141,50 @@ function mapRowToContent(row: ContentRow): ContentItem {
   };
 }
 
-export async function getContents(): Promise<ContentItem[]> {
+function updateCachedContent(
+  userId: string,
+  id: string,
+  updates: Partial<ContentItem>,
+  updatedAt?: string,
+) {
+  if (cachedUserId !== userId || cachedContents === null) {
+    return;
+  }
+
+  cachedContents = cachedContents.map((content) =>
+    content.id === id
+      ? {
+          ...content,
+          ...updates,
+          updatedAt: updatedAt ?? content.updatedAt,
+        }
+      : content,
+  );
+}
+
+export function clearContentsCache() {
+  cachedUserId = null;
+  cachedContents = null;
+}
+
+export async function getContents(
+  forceRefresh = false,
+): Promise<ContentItem[]> {
   try {
     const userId = await getAuthenticatedUserId();
+
+    if (
+      !forceRefresh &&
+      cachedUserId === userId &&
+      cachedContents !== null
+    ) {
+      return cachedContents;
+    }
 
     const { data, error } = await supabase
       .from("contents")
       .select(
-        "id, user_id, inspiration_id, reference, idea, format, objective, status, planned_date, script, created_at, updated_at",
+        "id, user_id, inspiration_id, reference, idea, format, objective, production_effort, status, planned_date, script, created_at, updated_at",
       )
       .eq("user_id", userId)
       .order("created_at", {
@@ -142,7 +195,7 @@ export async function getContents(): Promise<ContentItem[]> {
       throw error;
     }
 
-    return (data ?? []).map((row) =>
+    const mappedContents = (data ?? []).map((row) =>
       mapRowToContent({
         id: row.id,
         user_id: row.user_id,
@@ -151,6 +204,7 @@ export async function getContents(): Promise<ContentItem[]> {
         idea: row.idea,
         format: row.format,
         objective: row.objective,
+        production_effort: row.production_effort as ProductionEffort | null,
         status: row.status as ContentStatus,
         planned_date: row.planned_date,
         script: row.script,
@@ -158,6 +212,11 @@ export async function getContents(): Promise<ContentItem[]> {
         updated_at: row.updated_at,
       }),
     );
+
+    cachedUserId = userId;
+    cachedContents = mappedContents;
+
+    return mappedContents;
   } catch (error) {
     console.error("Erro ao carregar conteúdos:", error);
     return [];
@@ -170,10 +229,20 @@ export async function getContentById(
   try {
     const userId = await getAuthenticatedUserId();
 
+    if (cachedUserId === userId && cachedContents !== null) {
+      const cachedContent = cachedContents.find(
+        (content) => content.id === id,
+      );
+
+      if (cachedContent) {
+        return cachedContent;
+      }
+    }
+
     const { data, error } = await supabase
       .from("contents")
       .select(
-        "id, user_id, inspiration_id, reference, idea, format, objective, status, planned_date, script, created_at, updated_at",
+        "id, user_id, inspiration_id, reference, idea, format, objective, production_effort, status, planned_date, script, created_at, updated_at",
       )
       .eq("user_id", userId)
       .eq("id", id)
@@ -187,7 +256,7 @@ export async function getContentById(
       return null;
     }
 
-    return mapRowToContent({
+    const content = mapRowToContent({
       id: data.id,
       user_id: data.user_id,
       inspiration_id: data.inspiration_id,
@@ -195,12 +264,25 @@ export async function getContentById(
       idea: data.idea,
       format: data.format,
       objective: data.objective,
+      production_effort: data.production_effort as ProductionEffort | null,
       status: data.status as ContentStatus,
       planned_date: data.planned_date,
       script: data.script,
       created_at: data.created_at,
       updated_at: data.updated_at,
     });
+
+    if (cachedUserId === userId && cachedContents !== null) {
+      const exists = cachedContents.some(
+        (item) => item.id === content.id,
+      );
+
+      if (!exists) {
+        cachedContents = [content, ...cachedContents];
+      }
+    }
+
+    return content;
   } catch (error) {
     console.error("Erro ao carregar conteúdo:", error);
     return null;
@@ -220,6 +302,7 @@ export async function saveContent(
     idea: content.idea,
     format: content.format,
     objective: content.objective,
+    production_effort: content.productionEffort ?? null,
     status: content.status,
     planned_date: content.plannedDate ?? null,
     script: content.script,
@@ -230,6 +313,15 @@ export async function saveContent(
   if (error) {
     throw error;
   }
+
+  if (cachedUserId === userId && cachedContents !== null) {
+    cachedContents = [
+      content,
+      ...cachedContents.filter(
+        (item) => item.id !== content.id,
+      ),
+    ];
+  }
 }
 
 export async function updateContent(
@@ -237,9 +329,10 @@ export async function updateContent(
   updates: Partial<ContentItem>,
 ): Promise<void> {
   const userId = await getAuthenticatedUserId();
+  const updatedAt = new Date().toISOString();
 
   const payload: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   };
 
   if (updates.inspirationId !== undefined) {
@@ -260,6 +353,10 @@ export async function updateContent(
 
   if (updates.objective !== undefined) {
     payload.objective = updates.objective;
+  }
+
+  if (updates.productionEffort !== undefined) {
+    payload.production_effort = updates.productionEffort;
   }
 
   if (updates.status !== undefined) {
@@ -283,6 +380,13 @@ export async function updateContent(
   if (error) {
     throw error;
   }
+
+  updateCachedContent(
+    userId,
+    id,
+    updates,
+    updatedAt,
+  );
 }
 
 export async function deleteContent(
@@ -298,5 +402,11 @@ export async function deleteContent(
 
   if (error) {
     throw error;
+  }
+
+  if (cachedUserId === userId && cachedContents !== null) {
+    cachedContents = cachedContents.filter(
+      (content) => content.id !== id,
+    );
   }
 }

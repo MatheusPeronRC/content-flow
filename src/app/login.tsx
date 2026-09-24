@@ -1,8 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as ExpoLinking from "expo-linking";
 import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -29,6 +31,12 @@ export default function LoginScreen() {
 
   const [submitting, setSubmitting] = useState(false);
 
+  const [resetModalVisible, setResetModalVisible] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetFeedback, setResetFeedback] = useState<string | null>(null);
+
   const [feedback, setFeedback] = useState<{
     type: "error" | "success";
     text: string;
@@ -50,6 +58,63 @@ export default function LoginScreen() {
     setConfirmPassword("");
     setShowPassword(false);
     setShowConfirmPassword(false);
+  }
+
+  function openResetPassword() {
+    setResetEmail(normalizedEmail);
+    setResetFeedback(null);
+    setResetSent(false);
+    setResetModalVisible(true);
+  }
+
+  function closeResetPassword() {
+    if (resetSubmitting) {
+      return;
+    }
+
+    setResetModalVisible(false);
+    setResetFeedback(null);
+    setResetSent(false);
+  }
+
+  async function handleRequestPasswordReset() {
+    const targetEmail = resetEmail.trim().toLowerCase();
+
+    if (!targetEmail || !targetEmail.includes("@") || resetSubmitting) {
+      setResetFeedback("Informe um e-mail válido.");
+      return;
+    }
+
+    try {
+      setResetSubmitting(true);
+      setResetFeedback(null);
+
+      const redirectTo = ExpoLinking.createURL("/redefinir-senha");
+
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setResetSent(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+      if (message.includes("rate limit")) {
+        setResetFeedback(
+          "Muitas tentativas em pouco tempo. Aguarde um pouco e tente novamente.",
+        );
+      } else {
+        setResetFeedback(
+          "Não foi possível enviar as instruções agora. Tente novamente.",
+        );
+      }
+    } finally {
+      setResetSubmitting(false);
+    }
   }
 
   async function handleSubmit() {
@@ -90,6 +155,26 @@ export default function LoginScreen() {
 
       if (error) {
         throw error;
+      }
+
+      const identities = data.user?.identities;
+
+      const existingAccountResponse =
+        Array.isArray(identities) && identities.length === 0;
+
+      if (existingAccountResponse) {
+        setMode("login");
+        setPassword("");
+        setConfirmPassword("");
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+
+        setFeedback({
+          type: "error",
+          text: "Não foi possível criar uma nova conta com esse e-mail. Se você já tem cadastro, tente entrar.",
+        });
+
+        return;
       }
 
       if (data.session) {
@@ -230,6 +315,18 @@ export default function LoginScreen() {
                 onSubmitEditing={mode === "login" ? handleSubmit : undefined}
               />
 
+              {mode === "login" ? (
+                <TouchableOpacity
+                  style={styles.forgotPasswordButton}
+                  activeOpacity={0.8}
+                  onPress={openResetPassword}
+                >
+                  <Text style={styles.forgotPasswordText}>
+                    Esqueci minha senha
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+
               {mode === "signup" ? (
                 <>
                   <Field
@@ -334,6 +431,142 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={resetModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeResetPassword}
+      >
+        <View style={styles.resetBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={closeResetPassword}
+          />
+
+          <View style={styles.resetCard}>
+            <View style={styles.resetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.resetEyebrow}>RECUPERAR ACESSO</Text>
+
+                <Text style={styles.resetTitle}>
+                  {resetSent ? "Confira seu e-mail" : "Esqueceu sua senha?"}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.resetClose}
+                activeOpacity={0.8}
+                onPress={closeResetPassword}
+              >
+                <Ionicons name="close" size={19} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {resetSent ? (
+              <>
+                <View style={styles.resetSuccessIcon}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={24}
+                    color={colors.terracotta}
+                  />
+                </View>
+
+                <Text style={styles.resetSuccessText}>
+                  Se existir uma conta com esse e-mail, você receberá um link
+                  para criar uma nova senha.
+                </Text>
+
+                <Text style={styles.resetSuccessHint}>
+                  Confira também a caixa de spam. O link pode levar alguns
+                  instantes para chegar.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.resetPrimaryButton}
+                  activeOpacity={0.85}
+                  onPress={closeResetPassword}
+                >
+                  <Text style={styles.resetPrimaryButtonText}>Entendi</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.resetDescription}>
+                  Informe o e-mail da sua conta. Enviaremos as instruções para
+                  definir uma nova senha.
+                </Text>
+
+                <Text style={styles.resetLabel}>E-MAIL</Text>
+
+                <View style={styles.resetInputShell}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={18}
+                    color={colors.textMuted}
+                  />
+
+                  <TextInput
+                    value={resetEmail}
+                    onChangeText={setResetEmail}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                    placeholder="voce@email.com"
+                    placeholderTextColor={colors.textMuted}
+                    style={styles.resetInput}
+                    onSubmitEditing={handleRequestPasswordReset}
+                  />
+                </View>
+
+                {resetFeedback ? (
+                  <View style={styles.resetFeedback}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={16}
+                      color={colors.terracotta}
+                    />
+
+                    <Text style={styles.resetFeedbackText}>
+                      {resetFeedback}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[
+                    styles.resetPrimaryButton,
+                    resetSubmitting && styles.resetPrimaryButtonDisabled,
+                  ]}
+                  activeOpacity={0.85}
+                  disabled={resetSubmitting}
+                  onPress={handleRequestPasswordReset}
+                >
+                  {resetSubmitting ? (
+                    <ActivityIndicator color={colors.surface} />
+                  ) : (
+                    <>
+                      <Text style={styles.resetPrimaryButtonText}>
+                        Enviar instruções
+                      </Text>
+
+                      <Ionicons
+                        name="arrow-forward"
+                        size={18}
+                        color={colors.surface}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -424,6 +657,14 @@ function translateAuthError(message: string) {
 
   if (normalized.includes("email not confirmed")) {
     return "Confirme seu e-mail antes de entrar.";
+  }
+
+  if (
+    normalized.includes("user already registered") ||
+    normalized.includes("already registered") ||
+    normalized.includes("user_already_exists")
+  ) {
+    return "Não foi possível criar uma nova conta com esse e-mail. Se você já tem cadastro, tente entrar.";
   }
 
   if (normalized.includes("password")) {
@@ -624,6 +865,169 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.round,
+  },
+
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginTop: 9,
+    paddingVertical: 3,
+  },
+
+  forgotPasswordText: {
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.semibold,
+    color: colors.terracotta,
+  },
+
+  resetBackdrop: {
+    flex: 1,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.overlay,
+  },
+
+  resetCard: {
+    width: "100%",
+    maxWidth: 390,
+    padding: 18,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.elevated,
+  },
+
+  resetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+
+  resetEyebrow: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  resetTitle: {
+    marginTop: 3,
+    fontSize: 21,
+    lineHeight: 27,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  resetClose: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  resetDescription: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  resetLabel: {
+    marginTop: 18,
+    marginBottom: 7,
+    fontSize: 11,
+    letterSpacing: 0.7,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  resetInputShell: {
+    minHeight: 52,
+    paddingHorizontal: 13,
+    borderRadius: 14,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  resetInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: colors.text,
+  },
+
+  resetFeedback: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+
+  resetFeedbackText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.medium,
+    color: colors.terracotta,
+  },
+
+  resetPrimaryButton: {
+    minHeight: 52,
+    marginTop: 17,
+    paddingHorizontal: 15,
+    borderRadius: 14,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  resetPrimaryButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  resetPrimaryButtonText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+
+  resetSuccessIcon: {
+    width: 54,
+    height: 54,
+    marginTop: 18,
+    borderRadius: 17,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  resetSuccessText: {
+    marginTop: 13,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  resetSuccessHint: {
+    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
   },
 
   passwordHelp: {

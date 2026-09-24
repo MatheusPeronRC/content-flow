@@ -16,8 +16,13 @@ import {
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  ProductionEffortSelector,
+  getProductionEffortLabel,
+} from "../../components/ProductionEffortSelector";
 import { saveContent } from "../../services/contentStorage";
 import { ContentItem } from "../../types/content";
+import { ProductionEffort } from "../../types/productionEffort";
 
 import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
@@ -83,9 +88,11 @@ export default function ManualContentScreen() {
   const [idea, setIdea] = useState("");
   const [format, setFormat] = useState<string | null>(null);
   const [objective, setObjective] = useState<string | null>(null);
+  const [productionEffort, setProductionEffort] =
+    useState<ProductionEffort | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const canContinue = idea.trim().length > 0;
+  const canContinue = idea.trim().length > 0 && productionEffort !== null;
   const ideaCount = idea.length;
 
   const selectedSummary = useMemo(() => {
@@ -99,8 +106,12 @@ export default function ManualContentScreen() {
       items.push(objective);
     }
 
+    if (productionEffort) {
+      items.push(getProductionEffortLabel(productionEffort));
+    }
+
     return items;
-  }, [format, objective]);
+  }, [format, objective, productionEffort]);
 
   async function createContent(next: "idea" | "script") {
     if (!canContinue || saving) {
@@ -117,6 +128,7 @@ export default function ManualContentScreen() {
         idea: idea.trim(),
         format,
         objective,
+        productionEffort,
         status: next === "script" ? "roteiro" : "ideia",
         script: {
           hook: "",
@@ -250,6 +262,34 @@ export default function ManualContentScreen() {
                 Uma frase simples já é suficiente para começar.
               </Text>
             </View>
+          </View>
+
+          <View style={styles.secondaryCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIcon}>
+                <Ionicons
+                  name="flash-outline"
+                  size={20}
+                  color={colors.terracotta}
+                />
+              </View>
+
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>
+                  Quanto esforço vai exigir?
+                </Text>
+
+                <Text style={styles.sectionSubtitle}>
+                  Isso ajuda o ContentFlow a encontrar ideias que cabem no tempo
+                  que você tem.
+                </Text>
+              </View>
+            </View>
+
+            <ProductionEffortSelector
+              value={productionEffort}
+              onChange={setProductionEffort}
+            />
           </View>
 
           <View style={styles.secondaryCard}>

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+
+import { useCallback, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -19,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../components/InspirationThumbnail";
 import PlatformIcon from "../../components/PlatformIcon";
+import { ProductionEffortBadge } from "../../components/ProductionEffortSelector";
 
 import { getContentById, updateContent } from "../../services/contentStorage";
 
@@ -42,6 +44,7 @@ export default function RoteiroScreen() {
   const [points, setPoints] = useState<string[]>([""]);
 
   const [cta, setCta] = useState("");
+  const [startedBlank, setStartedBlank] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -70,13 +73,19 @@ export default function RoteiroScreen() {
 
           setContent(data);
 
-          setHook(data.script?.hook ?? "");
-
+          const savedHook = data.script?.hook ?? "";
           const savedPoints = data.script?.points ?? [];
+          const savedCta = data.script?.cta ?? "";
 
+          setHook(savedHook);
           setPoints(savedPoints.length > 0 ? savedPoints : [""]);
+          setCta(savedCta);
 
-          setCta(data.script?.cta ?? "");
+          setStartedBlank(
+            savedHook.trim().length === 0 &&
+              !savedPoints.some((point) => point.trim().length > 0) &&
+              savedCta.trim().length === 0,
+          );
         } catch (error) {
           console.error("Erro ao carregar roteiro:", error);
         } finally {
@@ -86,7 +95,7 @@ export default function RoteiroScreen() {
         }
       }
 
-      load();
+      void load();
 
       return () => {
         active = false;
@@ -97,13 +106,13 @@ export default function RoteiroScreen() {
   const canAdvance =
     content?.status === "ideia" || content?.status === "roteiro";
 
-  const hasAnyScript = useMemo(() => {
-    return (
+  const hasAnyScript = useMemo(
+    () =>
       hook.trim().length > 0 ||
       points.some((point) => point.trim().length > 0) ||
-      cta.trim().length > 0
-    );
-  }, [hook, points, cta]);
+      cta.trim().length > 0,
+    [hook, points, cta],
+  );
 
   async function handleOpenReference() {
     const url = content?.reference?.url;
@@ -171,7 +180,6 @@ export default function RoteiroScreen() {
           points: normalizedPoints,
           cta: cta.trim(),
         },
-
         ...(shouldAdvance
           ? {
               status: "gravar" as const,
@@ -181,7 +189,6 @@ export default function RoteiroScreen() {
 
       router.replace({
         pathname: "/conteudo/[id]",
-
         params: {
           id: content.id,
         },
@@ -209,11 +216,11 @@ export default function RoteiroScreen() {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <View style={styles.errorMark}>
+          <View style={styles.errorIcon}>
             <Ionicons
               name="document-text-outline"
               size={24}
-              color={colors.textMuted}
+              color={colors.textSecondary}
             />
           </View>
 
@@ -221,7 +228,14 @@ export default function RoteiroScreen() {
 
           <TouchableOpacity
             style={styles.errorButton}
-            onPress={() => router.back()}
+            activeOpacity={0.82}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/conteudos");
+              }
+            }}
           >
             <Text style={styles.errorButtonText}>Voltar</Text>
           </TouchableOpacity>
@@ -248,56 +262,32 @@ export default function RoteiroScreen() {
             <TouchableOpacity
               style={styles.headerButton}
               activeOpacity={0.8}
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/conteudos");
+                }
+              }}
             >
               <Ionicons name="arrow-back" size={20} color={colors.text} />
             </TouchableOpacity>
 
-            <Text style={styles.headerTitle}>Editar roteiro</Text>
+            <View style={styles.headerCopy}>
+              <Text style={styles.headerEyebrow}>
+                {startedBlank ? "SUA VERSÃO" : "EDITOR"}
+              </Text>
 
-            <View style={styles.headerSpace} />
-          </View>
-
-          <View style={styles.editorIntro}>
-            <View style={styles.editorTop}>
-              <View style={styles.editorStep}>
-                <View style={styles.editorStepNumber}>
-                  {content.reference ? (
-                    <Text style={styles.editorStepNumberText}>3</Text>
-                  ) : (
-                    <Ionicons
-                      name="create-outline"
-                      size={16}
-                      color={colors.amber}
-                    />
-                  )}
-                </View>
-
-                <Text style={styles.editorStepText}>
-                  {content.reference
-                    ? "Ajustar o roteiro"
-                    : "Construir o roteiro"}
-                </Text>
-              </View>
-
-              <View style={styles.blockCount}>
-                <Ionicons
-                  name="document-text-outline"
-                  size={14}
-                  color={colors.textMuted}
-                />
-
-                <Text style={styles.blockCountText}>
-                  {points.length + 2} blocos
-                </Text>
-              </View>
+              <Text style={styles.headerTitle}>
+                {startedBlank ? "Criar roteiro" : "Editar roteiro"}
+              </Text>
             </View>
 
-            <Text style={styles.editorTitle}>Trabalhe bloco por bloco.</Text>
-
-            <Text style={styles.editorDescription}>
-              Ajuste o texto até ele soar como algo que você realmente diria.
-            </Text>
+            <View style={styles.blockCount}>
+              <Text style={styles.blockCountText}>
+                {points.length + 2} blocos
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -312,6 +302,7 @@ export default function RoteiroScreen() {
                 source={content.reference.source}
                 variant="compact"
                 style={styles.contextThumbnail}
+                showSourceBadge={false}
               />
             ) : (
               <View style={styles.contextFallback}>
@@ -323,18 +314,21 @@ export default function RoteiroScreen() {
               </View>
             )}
 
-            <View style={styles.contextContent}>
+            <View style={styles.contextMain}>
               <View style={styles.contextMeta}>
-                <Text style={styles.contextLabel}>CONTEÚDO</Text>
-
                 {content.format ? (
                   <View style={styles.formatPill}>
                     <Text style={styles.formatText}>{content.format}</Text>
                   </View>
                 ) : null}
+
+                <ProductionEffortBadge
+                  effort={content.productionEffort}
+                  subtle
+                />
               </View>
 
-              <Text style={styles.contextTitle} numberOfLines={3}>
+              <Text style={styles.contextTitle} numberOfLines={2}>
                 {content.idea}
               </Text>
 
@@ -346,11 +340,9 @@ export default function RoteiroScreen() {
                     Referência: {content.reference.source}
                   </Text>
 
-                  <Text style={styles.originOpenText}>Abrir original</Text>
-
                   <Ionicons
                     name="open-outline"
-                    size={13}
+                    size={12}
                     color={colors.textMuted}
                   />
                 </View>
@@ -360,12 +352,25 @@ export default function RoteiroScreen() {
             </View>
           </TouchableOpacity>
 
-          <View style={styles.editorDocument}>
+          <View style={styles.editorIntro}>
+            <Text style={styles.editorTitle}>
+              {startedBlank
+                ? "Construa sua versão, bloco por bloco."
+                : "Trabalhe bloco por bloco."}
+            </Text>
+
+            <Text style={styles.editorDescription}>
+              {startedBlank
+                ? "Use a referência como ponto de partida e escreva com as suas palavras. Você pode salvar e continuar depois."
+                : "Ajuste o texto até ele soar como algo que você realmente diria."}
+            </Text>
+          </View>
+
+          <View style={styles.document}>
             <EditorSection
               icon="flash-outline"
               label="HOOK"
               hint="A abertura do conteúdo"
-              accent={colors.terracotta}
             >
               <TextInput
                 value={hook}
@@ -373,37 +378,27 @@ export default function RoteiroScreen() {
                 multiline
                 scrollEnabled={false}
                 textAlignVertical="top"
-                placeholder="Como você quer começar? Escreva uma frase, pergunta ou ideia que prenda a atenção..."
+                placeholder="Como você quer começar? Escreva uma frase ou pergunta que prenda a atenção..."
                 placeholderTextColor={colors.textMuted}
                 style={styles.hookInput}
               />
             </EditorSection>
 
-            <View style={styles.sectionDivider} />
+            <View style={styles.divider} />
 
             <View style={styles.developmentSection}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
-                  <View
-                    style={[
-                      styles.sectionAccent,
-                      {
-                        backgroundColor: colors.amber,
-                      },
-                    ]}
-                  />
+                  <View style={styles.sectionIcon}>
+                    <Ionicons
+                      name="list-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </View>
 
                   <View>
-                    <Text
-                      style={[
-                        styles.sectionLabel,
-                        {
-                          color: colors.amber,
-                        },
-                      ]}
-                    >
-                      DESENVOLVIMENTO
-                    </Text>
+                    <Text style={styles.sectionLabel}>DESENVOLVIMENTO</Text>
 
                     <Text style={styles.sectionHint}>
                       Construa sua linha de raciocínio
@@ -416,24 +411,21 @@ export default function RoteiroScreen() {
                 </Text>
               </View>
 
-              <Text style={styles.developmentHelp}>
-                Cada etapa pode ser um argumento, exemplo, explicação ou
-                lembrete.
-              </Text>
-
               <View style={styles.points}>
                 {points.map((point, index) => (
                   <View key={index} style={styles.pointCard}>
                     <View style={styles.pointHeader}>
                       <View style={styles.pointIdentity}>
-                        <Text style={styles.pointNumber}>
-                          {String(index + 1).padStart(2, "0")}
-                        </Text>
+                        <View style={styles.pointNumberWrap}>
+                          <Text style={styles.pointNumber}>
+                            {String(index + 1).padStart(2, "0")}
+                          </Text>
+                        </View>
 
                         <Text style={styles.pointLabel}>Etapa {index + 1}</Text>
                       </View>
 
-                      {points.length > 1 && (
+                      {points.length > 1 ? (
                         <TouchableOpacity
                           style={styles.removePoint}
                           activeOpacity={0.75}
@@ -445,7 +437,7 @@ export default function RoteiroScreen() {
                             color={colors.textMuted}
                           />
                         </TouchableOpacity>
-                      )}
+                      ) : null}
                     </View>
 
                     <TextInput
@@ -467,21 +459,18 @@ export default function RoteiroScreen() {
                 activeOpacity={0.8}
                 onPress={addPoint}
               >
-                <View style={styles.addPointIcon}>
-                  <Ionicons name="add" size={17} color={colors.amber} />
-                </View>
+                <Ionicons name="add" size={17} color={colors.terracotta} />
 
                 <Text style={styles.addPointText}>Adicionar etapa</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.sectionDivider} />
+            <View style={styles.divider} />
 
             <EditorSection
               icon="megaphone-outline"
               label="CTA"
               hint="Como você quer terminar"
-              accent={colors.sage}
             >
               <TextInput
                 value={cta}
@@ -504,16 +493,12 @@ export default function RoteiroScreen() {
             />
 
             <Text style={styles.flexibilityText}>
-              Hook e CTA são opcionais. Use apenas o que fizer sentido para este
-              conteúdo.
+              Hook e CTA são opcionais. Não existe um formato obrigatório: use
+              apenas os blocos que ajudarem a organizar sua ideia.
             </Text>
           </View>
 
           <View style={styles.actions}>
-            <Text style={styles.actionsLabel}>
-              {canAdvance ? "FINALIZAR E CONTINUAR" : "SALVAR ALTERAÇÕES"}
-            </Text>
-
             {canAdvance ? (
               <>
                 <TouchableOpacity
@@ -525,22 +510,15 @@ export default function RoteiroScreen() {
                   disabled={saving || !hasAnyScript}
                   onPress={() => saveScript(true)}
                 >
-                  <View style={styles.primaryButtonMark}>
-                    {saving ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={colors.terracotta}
-                      />
-                    ) : (
-                      <Ionicons
-                        name="checkmark"
-                        size={17}
-                        color={
-                          hasAnyScript ? colors.terracotta : colors.textMuted
-                        }
-                      />
-                    )}
-                  </View>
+                  {saving ? (
+                    <ActivityIndicator size="small" color={colors.surface} />
+                  ) : (
+                    <Ionicons
+                      name="checkmark"
+                      size={18}
+                      color={hasAnyScript ? colors.surface : colors.textMuted}
+                    />
+                  )}
 
                   <View
                     style={{
@@ -549,8 +527,8 @@ export default function RoteiroScreen() {
                   >
                     <Text
                       style={[
-                        styles.primaryButtonText,
-                        !hasAnyScript && styles.primaryButtonTextDisabled,
+                        styles.primaryButtonTitle,
+                        !hasAnyScript && styles.primaryButtonTitleDisabled,
                       ]}
                     >
                       Roteiro pronto
@@ -575,7 +553,7 @@ export default function RoteiroScreen() {
 
                 <TouchableOpacity
                   style={styles.secondaryButton}
-                  activeOpacity={0.8}
+                  activeOpacity={0.82}
                   disabled={saving}
                   onPress={() => saveScript(false)}
                 >
@@ -586,7 +564,7 @@ export default function RoteiroScreen() {
                   />
 
                   <Text style={styles.secondaryButtonText}>
-                    Salvar sem avançar
+                    Salvar rascunho
                   </Text>
                 </TouchableOpacity>
               </>
@@ -597,24 +575,14 @@ export default function RoteiroScreen() {
                 disabled={saving}
                 onPress={() => saveScript(false)}
               >
-                <View style={styles.primaryButtonMark}>
-                  {saving ? (
-                    <ActivityIndicator size="small" color={colors.terracotta} />
-                  ) : (
-                    <Ionicons
-                      name="checkmark"
-                      size={17}
-                      color={colors.terracotta}
-                    />
-                  )}
-                </View>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.surface} />
+                ) : (
+                  <Ionicons name="checkmark" size={18} color={colors.surface} />
+                )}
 
-                <View
-                  style={{
-                    flex: 1,
-                  }}
-                >
-                  <Text style={styles.primaryButtonText}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.primaryButtonTitle}>
                     Salvar alterações
                   </Text>
 
@@ -637,51 +605,31 @@ export default function RoteiroScreen() {
   );
 }
 
-type EditorSectionProps = {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  hint: string;
-  accent: string;
-  children: ReactNode;
-};
-
 function EditorSection({
   icon,
   label,
   hint,
-  accent,
   children,
-}: EditorSectionProps) {
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
   return (
     <View style={styles.editorSection}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderLeft}>
-          <View
-            style={[
-              styles.sectionAccent,
-              {
-                backgroundColor: accent,
-              },
-            ]}
-          />
+          <View style={styles.sectionIcon}>
+            <Ionicons name={icon} size={16} color={colors.textSecondary} />
+          </View>
 
           <View>
-            <Text
-              style={[
-                styles.sectionLabel,
-                {
-                  color: accent,
-                },
-              ]}
-            >
-              {label}
-            </Text>
+            <Text style={styles.sectionLabel}>{label}</Text>
 
             <Text style={styles.sectionHint}>{hint}</Text>
           </View>
         </View>
-
-        <Ionicons name={icon} size={17} color={colors.textMuted} />
       </View>
 
       {children}
@@ -701,117 +649,68 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: 48,
+    paddingBottom: 50,
   },
 
   header: {
-    height: 70,
+    minHeight: 78,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
   },
 
   headerButton: {
-    width: 42,
-    height: 42,
+    width: 40,
+    height: 40,
     borderRadius: radius.round,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  headerCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  headerEyebrow: {
+    fontSize: 11,
+    letterSpacing: 0.75,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
 
   headerTitle: {
-    fontSize: 18,
-    fontFamily: fonts.semibold,
+    marginTop: 2,
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: fonts.bold,
     color: colors.text,
   },
 
-  headerSpace: {
-    width: 42,
-  },
-
-  editorIntro: {
-    marginTop: 18,
-    marginBottom: 17,
-  },
-
-  editorTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  editorStep: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  editorStepNumber: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.round,
-    backgroundColor: colors.amberLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  editorStepNumberText: {
-    fontSize: 14,
-    fontFamily: fonts.bold,
-    color: colors.amber,
-  },
-
-  editorStepText: {
-    fontSize: 14,
-    fontFamily: fonts.semibold,
-    color: colors.textSecondary,
-  },
-
   blockCount: {
-    minHeight: 30,
-    paddingHorizontal: 9,
+    minHeight: 33,
+    paddingHorizontal: 10,
     borderRadius: radius.round,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    justifyContent: "center",
   },
 
   blockCountText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
 
-  editorTitle: {
-    maxWidth: 330,
-    marginTop: 13,
-    fontSize: 30,
-    lineHeight: 37,
-    letterSpacing: -0.85,
-    fontFamily: fonts.bold,
-    color: colors.text,
-  },
-
-  editorDescription: {
-    maxWidth: 325,
-    marginTop: 7,
-    fontSize: 13,
-    lineHeight: 20,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
-  },
-
   contextCard: {
-    minHeight: 98,
-    marginBottom: 18,
-    padding: 11,
-    borderRadius: 18,
+    minHeight: 96,
+    padding: 10,
+    borderRadius: 17,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -829,34 +728,27 @@ const styles = StyleSheet.create({
   contextFallback: {
     width: 62,
     height: 62,
-    borderRadius: 14,
+    borderRadius: 13,
     backgroundColor: colors.terracottaLight,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  contextContent: {
+  contextMain: {
     flex: 1,
     minWidth: 0,
-    marginLeft: 11,
+    marginLeft: 10,
   },
 
   contextMeta: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-
-  contextLabel: {
-    fontSize: 11,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.textMuted,
+    gap: 6,
   },
 
   formatPill: {
-    minHeight: 25,
+    minHeight: 24,
     paddingHorizontal: 8,
     borderRadius: radius.round,
     backgroundColor: colors.surfaceMuted,
@@ -865,54 +757,69 @@ const styles = StyleSheet.create({
   },
 
   formatText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
 
   contextTitle: {
     marginTop: 6,
-    fontSize: 15,
-    lineHeight: 21,
-    fontFamily: fonts.bold,
+    fontSize: 14,
+    lineHeight: 19,
+    fontFamily: fonts.semibold,
     color: colors.text,
   },
 
   originRow: {
-    marginTop: 5,
+    marginTop: 6,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
 
   originText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
 
-  originOpenText: {
-    marginLeft: 3,
-    fontSize: 11,
-    fontFamily: fonts.medium,
-    color: colors.textMuted,
+  editorIntro: {
+    paddingTop: 22,
+    paddingBottom: 12,
   },
 
-  editorDocument: {
-    paddingHorizontal: 16,
-    borderRadius: 22,
+  editorTitle: {
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.55,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  editorDescription: {
+    maxWidth: 320,
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  document: {
+    paddingHorizontal: 15,
+    borderRadius: 19,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
+    ...shadows.soft,
   },
 
   editorSection: {
-    paddingVertical: 18,
+    paddingVertical: 17,
   },
 
   developmentSection: {
-    paddingVertical: 18,
+    paddingVertical: 17,
   },
 
   sectionHeader: {
@@ -928,71 +835,67 @@ const styles = StyleSheet.create({
     gap: 9,
   },
 
-  sectionAccent: {
-    width: 4,
-    height: 33,
-    borderRadius: radius.round,
+  sectionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sectionLabel: {
-    fontSize: 11,
-    letterSpacing: 0.85,
+    fontSize: 10,
+    letterSpacing: 0.75,
     fontFamily: fonts.bold,
+    color: colors.text,
   },
 
   sectionHint: {
-    marginTop: 2,
-    fontSize: 11,
-    lineHeight: 16,
+    marginTop: 1,
+    fontSize: 10,
+    lineHeight: 14,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
 
-  sectionDivider: {
+  divider: {
     height: 1,
     backgroundColor: colors.divider,
   },
 
   hookInput: {
-    minHeight: 120,
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 15,
-    backgroundColor: colors.surfaceSoft,
+    minHeight: 116,
+    marginTop: 13,
+    padding: 13,
+    borderRadius: 14,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.divider,
-    fontSize: 17,
-    lineHeight: 27,
+    borderColor: colors.border,
+    fontSize: 15,
+    lineHeight: 23,
     fontFamily: fonts.medium,
     color: colors.text,
   },
 
   ctaInput: {
-    minHeight: 105,
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 15,
-    backgroundColor: colors.surfaceSoft,
+    minHeight: 104,
+    marginTop: 13,
+    padding: 13,
+    borderRadius: 14,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.divider,
-    fontSize: 16,
-    lineHeight: 25,
+    borderColor: colors.border,
+    fontSize: 14,
+    lineHeight: 22,
     fontFamily: fonts.regular,
     color: colors.text,
   },
 
   stepsCount: {
-    fontSize: 11,
-    fontFamily: fonts.semibold,
+    fontSize: 10,
+    fontFamily: fonts.medium,
     color: colors.textMuted,
-  },
-
-  developmentHelp: {
-    marginTop: 11,
-    fontSize: 11,
-    lineHeight: 17,
-    fontFamily: fonts.regular,
-    color: colors.textSecondary,
   },
 
   points: {
@@ -1001,14 +904,15 @@ const styles = StyleSheet.create({
   },
 
   pointCard: {
-    padding: 13,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceSoft,
+    padding: 11,
+    borderRadius: 14,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.divider,
+    borderColor: colors.border,
   },
 
   pointHeader: {
+    marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1020,15 +924,24 @@ const styles = StyleSheet.create({
     gap: 7,
   },
 
+  pointNumberWrap: {
+    minWidth: 27,
+    height: 27,
+    paddingHorizontal: 5,
+    borderRadius: 9,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   pointNumber: {
     fontSize: 11,
-    letterSpacing: 0.4,
     fontFamily: fonts.bold,
-    color: colors.amber,
+    color: colors.textSecondary,
   },
 
   pointLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
@@ -1042,77 +955,61 @@ const styles = StyleSheet.create({
   },
 
   pointInput: {
-    minHeight: 88,
-    marginTop: 8,
+    minHeight: 78,
     padding: 0,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 13,
+    lineHeight: 20,
     fontFamily: fonts.regular,
     color: colors.text,
   },
 
   addPointButton: {
-    minHeight: 48,
+    minHeight: 43,
     marginTop: 10,
-    borderRadius: 14,
+    borderRadius: 13,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderStyle: "dashed",
+    borderColor: colors.terracotta,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
-  },
-
-  addPointIcon: {
-    width: 27,
-    height: 27,
-    borderRadius: 9,
-    backgroundColor: colors.amberLight,
-    alignItems: "center",
-    justifyContent: "center",
+    gap: 5,
   },
 
   addPointText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: fonts.semibold,
-    color: colors.text,
+    color: colors.terracotta,
   },
 
   flexibilityNote: {
-    marginTop: 14,
-    paddingHorizontal: 3,
+    marginTop: 11,
+    paddingHorizontal: 2,
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 7,
+    gap: 6,
   },
 
   flexibilityText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 10,
+    lineHeight: 15,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
 
   actions: {
-    marginTop: 26,
-  },
-
-  actionsLabel: {
-    marginBottom: 10,
-    fontSize: 11,
-    letterSpacing: 0.8,
-    fontFamily: fonts.bold,
-    color: colors.textMuted,
+    marginTop: 23,
   },
 
   primaryButton: {
-    minHeight: 62,
-    paddingHorizontal: 13,
-    borderRadius: 17,
+    minHeight: 59,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     backgroundColor: colors.terracotta,
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
     ...shadows.soft,
   },
 
@@ -1120,32 +1017,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
   },
 
-  primaryButtonMark: {
-    width: 35,
-    height: 35,
-    marginRight: 10,
-    borderRadius: 11,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  primaryButtonText: {
-    fontSize: 14,
+  primaryButtonTitle: {
+    fontSize: 13,
+    lineHeight: 18,
     fontFamily: fonts.bold,
     color: colors.surface,
   },
 
-  primaryButtonTextDisabled: {
+  primaryButtonTitleDisabled: {
     color: colors.textMuted,
   },
 
   primaryButtonHint: {
     marginTop: 2,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 10,
+    lineHeight: 14,
     fontFamily: fonts.regular,
-    color: "rgba(255,253,252,0.72)",
+    color: "rgba(255,255,255,0.78)",
   },
 
   primaryButtonHintDisabled: {
@@ -1153,20 +1041,20 @@ const styles = StyleSheet.create({
   },
 
   secondaryButton: {
-    minHeight: 50,
-    marginTop: 9,
-    borderRadius: 15,
+    minHeight: 48,
+    marginTop: 8,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    gap: 6,
   },
 
   secondaryButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.textSecondary,
   },
@@ -1180,40 +1068,40 @@ const styles = StyleSheet.create({
 
   loadingText: {
     marginTop: 12,
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
 
-  errorMark: {
+  errorIcon: {
     width: 54,
     height: 54,
-    marginBottom: 16,
+    marginBottom: 15,
     borderRadius: 17,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
   },
 
   errorTitle: {
-    fontSize: 21,
-    lineHeight: 28,
+    fontSize: 20,
+    lineHeight: 26,
     fontFamily: fonts.bold,
     color: colors.text,
   },
 
   errorButton: {
-    marginTop: 18,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 14,
+    minHeight: 43,
+    marginTop: 17,
+    paddingHorizontal: 16,
+    borderRadius: 13,
     backgroundColor: colors.text,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   errorButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: fonts.semibold,
     color: colors.surface,
   },

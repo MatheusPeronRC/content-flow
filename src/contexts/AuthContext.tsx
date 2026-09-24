@@ -59,15 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
 
       signOut: async () => {
-        const { error } = await supabase.auth.signOut();
+        // A interface sai da área autenticada imediatamente,
+        // sem esperar a chamada de logout terminar.
+        setSession(null);
+
+        const { error } = await supabase.auth.signOut({
+          scope: "local",
+        });
 
         if (error) {
           throw error;
         }
-
-        // Não depende apenas do callback assíncrono do Supabase.
-        // A UI passa imediatamente para o estado deslogado.
-        setSession(null);
       },
     }),
     [session, loading],

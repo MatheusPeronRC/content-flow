@@ -7,7 +7,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/manrope";
 
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
@@ -35,8 +35,10 @@ export default function RootLayout() {
 
 function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
   const { session, loading } = useAuth();
+  const pathname = usePathname();
 
   const appReady = fontsReady && !loading;
+  const isPasswordRecoveryRoute = pathname === "/redefinir-senha";
 
   useEffect(() => {
     if (appReady) {
@@ -54,6 +56,16 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
         headerShown: false,
       }}
     >
+      <Stack.Protected guard={isPasswordRecoveryRoute}>
+        <Stack.Screen
+          name="redefinir-senha"
+          options={{
+            presentation: "card",
+            gestureEnabled: false,
+          }}
+        />
+      </Stack.Protected>
+
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />
       </Stack.Protected>
@@ -91,6 +103,13 @@ function RootNavigator({ fontsReady }: { fontsReady: boolean }) {
 
         <Stack.Screen
           name="conteudo/manual"
+          options={{
+            presentation: "card",
+          }}
+        />
+
+        <Stack.Screen
+          name="conteudo/tempo-curto"
           options={{
             presentation: "card",
           }}

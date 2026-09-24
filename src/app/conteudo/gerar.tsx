@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,13 +26,6 @@ import { Inspiration } from "../../types/inspiration";
 
 import { colors, fonts, radius, shadows, spacing } from "../../constants/theme";
 
-type GeneratedScript = {
-  title: string;
-  hook: string;
-  points: string[];
-  cta: string;
-};
-
 export default function GerarConteudoScreen() {
   const {
     inspirationId,
@@ -43,9 +37,8 @@ export default function GerarConteudoScreen() {
     format?: string;
   }>();
 
-  const [variation, setVariation] = useState(0);
-
   const [inspiration, setInspiration] = useState<Inspiration | null>(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -66,30 +59,43 @@ export default function GerarConteudoScreen() {
       }
     }
 
-    loadReference();
+    void loadReference();
 
     return () => {
       active = false;
     };
   }, [inspirationId]);
 
-  const script = useMemo(
-    () => generateMockScript(referenceIdea, format, variation),
-    [referenceIdea, format, variation],
-  );
-
   const platformMeta = useMemo(
     () => getPlatformMeta(inspiration?.source ?? "Outro"),
     [inspiration?.source],
   );
 
-  async function createContent(status: "roteiro" | "gravar") {
-    const now = new Date().toISOString();
+  const startingIdea = useMemo(
+    () => getStartingIdea(referenceIdea, inspiration),
+    [referenceIdea, inspiration],
+  );
 
-    let reference: ContentReference | undefined;
+  async function handleStartScript() {
+    if (creating) {
+      return;
+    }
 
-    if (inspirationId) {
-      const savedInspiration = await getInspirationById(inspirationId);
+    try {
+      setCreating(true);
+
+      const now = new Date().toISOString();
+      let savedInspiration = inspiration;
+
+      if (inspirationId) {
+        const latestInspiration = await getInspirationById(inspirationId);
+
+        if (latestInspiration) {
+          savedInspiration = latestInspiration;
+        }
+      }
+
+      let reference: ContentReference | undefined;
 
       if (savedInspiration) {
         reference = {
@@ -98,60 +104,45 @@ export default function GerarConteudoScreen() {
           source: savedInspiration.source,
           category: savedInspiration.category,
           note: savedInspiration.note,
+          productionEffort: savedInspiration.productionEffort ?? null,
           thumbnailUrl: savedInspiration.thumbnailUrl ?? null,
           mediaTitle: savedInspiration.mediaTitle ?? null,
           authorName: savedInspiration.authorName ?? null,
           metadataUpdatedAt: savedInspiration.metadataUpdatedAt ?? null,
         };
       }
+
+      const content: ContentItem = {
+        id: Date.now().toString(),
+        inspirationId: inspirationId || undefined,
+        reference,
+        idea: getStartingIdea(referenceIdea, savedInspiration),
+        format,
+        objective: null,
+        productionEffort: savedInspiration?.productionEffort ?? null,
+        status: "roteiro",
+        script: {
+          hook: "",
+          points: [],
+          cta: "",
+        },
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await saveContent(content);
+
+      router.replace({
+        pathname: "/conteudo/roteiro",
+        params: {
+          contentId: content.id,
+        },
+      });
+    } catch (error) {
+      console.error("Erro ao iniciar roteiro:", error);
+    } finally {
+      setCreating(false);
     }
-
-    const content: ContentItem = {
-      id: Date.now().toString(),
-      inspirationId: inspirationId || undefined,
-      reference,
-      idea: script.title,
-      format,
-      objective: null,
-      status,
-      script: {
-        hook: script.hook,
-        points: script.points,
-        cta: script.cta,
-      },
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await saveContent(content);
-
-    return content;
-  }
-
-  async function handleUseScript() {
-    const content = await createContent("gravar");
-
-    router.replace({
-      pathname: "/conteudo/[id]",
-      params: {
-        id: content.id,
-      },
-    });
-  }
-
-  async function handleEditScript() {
-    const content = await createContent("roteiro");
-
-    router.replace({
-      pathname: "/conteudo/roteiro",
-      params: {
-        contentId: content.id,
-      },
-    });
-  }
-
-  function handleGenerateAgain() {
-    setVariation((current) => (current === 2 ? 0 : current + 1));
   }
 
   return (
@@ -164,7 +155,13 @@ export default function GerarConteudoScreen() {
           <TouchableOpacity
             style={styles.backButton}
             activeOpacity={0.8}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/");
+              }
+            }}
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -175,27 +172,21 @@ export default function GerarConteudoScreen() {
         </View>
 
         <View style={styles.resultIntro}>
-          <View style={styles.resultTop}>
-            <View style={styles.stepRow}>
-              <View style={styles.stepDone}>
-                <Text style={styles.stepNumber}>2</Text>
-              </View>
-
-              <Text style={styles.stepText}>Sua versão</Text>
+          <View style={styles.stepRow}>
+            <View style={styles.stepDone}>
+              <Text style={styles.stepNumber}>2</Text>
             </View>
 
-            <View style={styles.versionControl}>
-              <Text style={styles.versionLabel}>V{variation + 1}</Text>
-            </View>
+            <Text style={styles.stepText}>Sua versão</Text>
           </View>
 
           <Text style={styles.resultTitle}>
-            Sua primeira versão está pronta.
+            Agora transforme a referência em algo seu.
           </Text>
 
           <Text style={styles.resultDescription}>
-            Agora você pode usar como está, ajustar o texto ou experimentar
-            outra direção.
+            O ContentFlow organiza a estrutura. A ideia, o jeito de explicar e
+            as palavras continuam sendo suas.
           </Text>
         </View>
 
@@ -209,7 +200,11 @@ export default function GerarConteudoScreen() {
             />
           ) : (
             <View style={styles.ideaFallback}>
-              <Ionicons name="sparkles" size={20} color={colors.terracotta} />
+              <Ionicons
+                name="bulb-outline"
+                size={21}
+                color={colors.terracotta}
+              />
             </View>
           )}
 
@@ -223,7 +218,7 @@ export default function GerarConteudoScreen() {
             </View>
 
             <Text style={styles.ideaTitle} numberOfLines={3}>
-              {script.title}
+              {startingIdea}
             </Text>
 
             {inspiration ? (
@@ -245,238 +240,300 @@ export default function GerarConteudoScreen() {
           </View>
         </View>
 
-        <View style={styles.scriptHeading}>
-          <View>
-            <Text style={styles.scriptEyebrow}>ROTEIRO</Text>
+        <View style={styles.guideHeading}>
+          <Text style={styles.guideEyebrow}>SEU ROTEIRO</Text>
 
-            <Text style={styles.scriptTitle}>
-              Uma estrutura para partir daqui
-            </Text>
-          </View>
+          <Text style={styles.guideTitle}>Construa em três partes.</Text>
 
-          <View style={styles.scriptCount}>
-            <Ionicons
-              name="document-text-outline"
-              size={15}
-              color={colors.textSecondary}
-            />
-
-            <Text style={styles.scriptCountText}>
-              {script.points.length + 2} blocos
-            </Text>
-          </View>
+          <Text style={styles.guideDescription}>
+            Você não precisa escrever tudo de uma vez. Use cada bloco como uma
+            pergunta para organizar o que quer dizer.
+          </Text>
         </View>
 
-        <View style={styles.document}>
-          <ScriptBlock
+        <View style={styles.guideCard}>
+          <GuideItem
             icon="flash-outline"
             label="HOOK"
-            hint="Como começar"
+            title="Como você quer começar?"
+            description="Pense na frase, pergunta ou situação que faria seu público parar para prestar atenção."
             color={colors.terracotta}
-          >
-            <Text style={styles.hookText}>{script.hook}</Text>
-          </ScriptBlock>
+          />
 
-          <View style={styles.documentDivider} />
+          <View style={styles.guideDivider} />
 
-          <ScriptBlock
+          <GuideItem
             icon="list-outline"
             label="DESENVOLVIMENTO"
-            hint="O que falar"
+            title="O que precisa ser explicado?"
+            description="Quebre sua ideia em pontos simples e coloque-os na ordem em que você falaria."
             color={colors.amber}
-          >
-            <View style={styles.points}>
-              {script.points.map((point, index) => (
-                <View key={`${point}-${index}`} style={styles.point}>
-                  <Text style={styles.pointNumber}>
-                    {String(index + 1).padStart(2, "0")}
-                  </Text>
+          />
 
-                  <Text style={styles.pointText}>{point}</Text>
-                </View>
-              ))}
-            </View>
-          </ScriptBlock>
+          <View style={styles.guideDivider} />
 
-          <View style={styles.documentDivider} />
-
-          <ScriptBlock
+          <GuideItem
             icon="megaphone-outline"
             label="CTA"
-            hint="Como terminar"
+            title="Como você quer terminar?"
+            description="Se fizer sentido, escolha uma ação: salvar, comentar, compartilhar, clicar ou entrar em contato."
             color={colors.sage}
-          >
-            <Text style={styles.ctaText}>{script.cta}</Text>
-          </ScriptBlock>
+          />
         </View>
 
-        <View style={styles.actions}>
-          <Text style={styles.actionsLabel}>O QUE VOCÊ QUER FAZER?</Text>
+        <View style={styles.manualNote}>
+          <Ionicons
+            name="information-circle-outline"
+            size={17}
+            color={colors.textMuted}
+          />
 
-          <TouchableOpacity
-            style={styles.useButton}
-            activeOpacity={0.86}
-            onPress={handleUseScript}
-          >
-            <View style={styles.useButtonMark}>
-              <Ionicons name="checkmark" size={17} color={colors.terracotta} />
-            </View>
+          <Text style={styles.manualNoteText}>
+            Hook e CTA são opcionais. O importante é transformar a referência em
+            um conteúdo que pareça seu.
+          </Text>
+        </View>
 
-            <View
-              style={{
-                flex: 1,
-              }}
-            >
-              <Text style={styles.useButtonText}>Usar este roteiro</Text>
+        <TouchableOpacity
+          style={[styles.startButton, creating && styles.startButtonDisabled]}
+          activeOpacity={0.86}
+          disabled={creating}
+          onPress={handleStartScript}
+        >
+          <View style={styles.startButtonIcon}>
+            {creating ? (
+              <ActivityIndicator size="small" color={colors.terracotta} />
+            ) : (
+              <Ionicons
+                name="create-outline"
+                size={18}
+                color={colors.terracotta}
+              />
+            )}
+          </View>
 
-              <Text style={styles.useButtonHint}>Seguir para produção</Text>
-            </View>
+          <View style={styles.startButtonCopy}>
+            <Text style={styles.startButtonTitle}>
+              {creating ? "Preparando roteiro..." : "Começar meu roteiro"}
+            </Text>
 
+            <Text style={styles.startButtonHint}>
+              Abrir o editor com uma estrutura em branco
+            </Text>
+          </View>
+
+          {!creating ? (
             <Ionicons name="arrow-forward" size={18} color={colors.surface} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.editButton}
-            activeOpacity={0.82}
-            onPress={handleEditScript}
-          >
-            <View style={styles.secondaryActionIcon}>
-              <Ionicons name="create-outline" size={17} color={colors.text} />
-            </View>
-
-            <View
-              style={{
-                flex: 1,
-              }}
-            >
-              <Text style={styles.editButtonText}>Editar antes de usar</Text>
-
-              <Text style={styles.editButtonHint}>
-                Abrir no editor de roteiro
-              </Text>
-            </View>
-
-            <Ionicons
-              name="chevron-forward"
-              size={17}
-              color={colors.textMuted}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.regenerateButton}
-            activeOpacity={0.8}
-            onPress={handleGenerateAgain}
-          >
-            <Ionicons
-              name="refresh-outline"
-              size={16}
-              color={colors.terracotta}
-            />
-
-            <Text style={styles.regenerateButtonText}>Gerar outra versão</Text>
-          </TouchableOpacity>
-        </View>
+          ) : null}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-type ScriptBlockProps = {
+function GuideItem({
+  icon,
+  label,
+  title,
+  description,
+  color,
+}: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  hint: string;
+  title: string;
+  description: string;
   color: string;
-  children: React.ReactNode;
-};
-
-function ScriptBlock({ icon, label, hint, color, children }: ScriptBlockProps) {
+}) {
   return (
-    <View style={styles.scriptBlock}>
-      <View style={styles.blockHeader}>
-        <View style={styles.blockTitleRow}>
-          <View
-            style={[
-              styles.blockDot,
-              {
-                backgroundColor: color,
-              },
-            ]}
-          />
-
-          <Text style={[styles.blockLabel, { color }]}>{label}</Text>
+    <View style={styles.guideItem}>
+      <View style={styles.guideItemTop}>
+        <View style={[styles.guideIcon, { backgroundColor: `${color}18` }]}>
+          <Ionicons name={icon} size={17} color={color} />
         </View>
 
-        <View style={styles.blockHintRow}>
-          <Ionicons name={icon} size={14} color={colors.textMuted} />
-
-          <Text style={styles.blockHint}>{hint}</Text>
-        </View>
+        <Text style={[styles.guideLabel, { color }]}>{label}</Text>
       </View>
 
-      <View style={styles.blockContent}>{children}</View>
+      <Text style={styles.guideItemTitle}>{title}</Text>
+
+      <Text style={styles.guideItemDescription}>{description}</Text>
     </View>
   );
 }
 
-function generateMockScript(
+function getStartingIdea(
   referenceIdea: string,
-  format: string,
-  variation: number,
-): GeneratedScript {
-  const subject = referenceIdea.trim() || "o tema dessa referência";
-
-  const variations: GeneratedScript[] = [
-    {
-      title: shorten(subject),
-      hook: "Tem uma coisa nesse assunto que muita gente entende errado — e isso pode estar mudando completamente a forma como você enxerga o tema.",
-      points: [
-        `Comece explicando de forma simples a ideia principal: ${shorten(
-          subject,
-        )}.`,
-        "Mostre qual é o erro, dúvida ou interpretação mais comum sobre esse assunto.",
-        "Feche explicando o que a pessoa deveria entender ou fazer de forma diferente a partir disso.",
-      ],
-      cta: "Salve este conteúdo para lembrar disso quando precisar.",
-    },
-    {
-      title: shorten(subject),
-      hook: "Se você já ouviu isso e ficou em dúvida, presta atenção porque a explicação é mais simples do que parece.",
-      points: [
-        `Apresente o contexto da referência: ${shorten(subject)}.`,
-        "Explique por que essa ideia chama atenção e qual parte merece ser analisada com mais cuidado.",
-        "Dê uma conclusão prática e fácil de aplicar para o seu público.",
-      ],
-      cta: "Compartilhe com alguém que também precisa entender isso.",
-    },
-    {
-      title: shorten(subject),
-      hook: "Antes de repetir isso por aí, tem um detalhe importante que quase ninguém explica.",
-      points: [
-        `Mostre rapidamente qual é a afirmação ou ideia central: ${shorten(
-          subject,
-        )}.`,
-        "Quebre o assunto em uma explicação curta, direta e sem termos complicados.",
-        "Finalize mostrando como essa informação muda a forma de enxergar o problema.",
-      ],
-      cta: "Se esse conteúdo te ajudou, salva para consultar depois.",
-    },
+  inspiration: Inspiration | null,
+) {
+  const candidates = [
+    referenceIdea,
+    inspiration?.note,
+    inspiration?.mediaTitle,
   ];
 
-  return variations[variation % variations.length];
+  const selected =
+    candidates.find(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    ) ?? "Novo conteúdo";
+
+  return shorten(selected);
 }
 
 function shorten(text: string) {
   const clean = text.replace(/\s+/g, " ").trim();
 
-  if (clean.length <= 60) {
+  if (clean.length <= 80) {
     return clean;
   }
 
-  return `${clean.slice(0, 57)}...`;
+  return `${clean.slice(0, 77)}...`;
 }
 
 const styles = StyleSheet.create({
+  guideHeading: {
+    marginBottom: 12,
+  },
+
+  guideEyebrow: {
+    fontSize: 11,
+    letterSpacing: 0.85,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  guideTitle: {
+    marginTop: 3,
+    fontSize: 23,
+    lineHeight: 29,
+    letterSpacing: -0.45,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  guideDescription: {
+    maxWidth: 340,
+    marginTop: 5,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  guideCard: {
+    paddingHorizontal: 16,
+    borderRadius: 21,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
+  },
+
+  guideItem: {
+    paddingVertical: 17,
+  },
+
+  guideItemTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  guideIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  guideLabel: {
+    fontSize: 11,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+  },
+
+  guideItemTitle: {
+    marginTop: 10,
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  guideItemDescription: {
+    marginTop: 4,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  guideDivider: {
+    height: 1,
+    backgroundColor: colors.divider,
+  },
+
+  manualNote: {
+    marginTop: 12,
+    paddingHorizontal: 3,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7,
+  },
+
+  manualNoteText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
+  },
+
+  startButton: {
+    minHeight: 64,
+    marginTop: 24,
+    paddingHorizontal: 13,
+    borderRadius: 17,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    ...shadows.soft,
+  },
+
+  startButtonDisabled: {
+    opacity: 0.68,
+  },
+
+  startButtonIcon: {
+    width: 37,
+    height: 37,
+    marginRight: 10,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  startButtonCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  startButtonTitle: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: colors.surface,
+  },
+
+  startButtonHint: {
+    marginTop: 2,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
+    color: "rgba(255,253,252,0.78)",
+  },
+
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
@@ -582,9 +639,9 @@ const styles = StyleSheet.create({
   },
 
   resultDescription: {
-    maxWidth: 325,
+    maxWidth: 335,
     marginTop: 8,
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 20,
     fontFamily: fonts.regular,
     color: colors.textSecondary,

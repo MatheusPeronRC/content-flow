@@ -14,19 +14,22 @@ type ProfileRow = {
   updated_at: string;
 };
 
+let cachedProfile: CreatorProfile | null = null;
+let cachedUserId: string | null = null;
+
 
 async function getAuthenticatedUserId(): Promise<string | null> {
   const {
-    data: { user },
+    data: { session },
     error,
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getSession();
 
   if (error) {
-    console.error("Erro ao identificar usuário:", error);
+    console.error("Erro ao recuperar sessão:", error);
     return null;
   }
 
-  return user?.id ?? null;
+  return session?.user?.id ?? null;
 }
 
 function mapProfileRow(row: ProfileRow): CreatorProfile {
@@ -60,7 +63,13 @@ export async function getCreatorProfile(): Promise<CreatorProfile | null> {
     const userId = await getAuthenticatedUserId();
 
     if (!userId) {
+      cachedProfile = null;
+      cachedUserId = null;
       return null;
+    }
+
+    if (cachedUserId === userId && cachedProfile) {
+      return cachedProfile;
     }
 
     const { data, error } = await supabase
@@ -76,6 +85,8 @@ export async function getCreatorProfile(): Promise<CreatorProfile | null> {
     }
 
     if (!data) {
+      cachedProfile = null;
+      cachedUserId = userId;
       return null;
     }
 
@@ -92,7 +103,12 @@ export async function getCreatorProfile(): Promise<CreatorProfile | null> {
       updated_at: data.updated_at,
     };
 
-    return mapProfileRow(row);
+    const profile = mapProfileRow(row);
+
+    cachedUserId = userId;
+    cachedProfile = profile;
+
+    return profile;
   } catch (error) {
     console.error("Erro ao carregar perfil:", error);
     return null;
@@ -131,6 +147,12 @@ export async function saveCreatorProfile(
   if (error) {
     throw error;
   }
+
+  cachedUserId = userId;
+  cachedProfile = {
+    ...profile,
+    avatarUri: getPersistableAvatarUrl(profile.avatarUri),
+  };
 }
 
 export async function updateCreatorProfile(

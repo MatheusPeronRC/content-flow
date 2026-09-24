@@ -3,43 +3,48 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState, type ReactNode } from "react";
 
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import InspirationThumbnail from "../../../components/InspirationThumbnail";
 import PlatformIcon from "../../../components/PlatformIcon";
+import {
+  ProductionEffortBadge,
+  ProductionEffortSelector,
+} from "../../../components/ProductionEffortSelector";
 
 import {
-    deleteContent,
-    getContentById,
-    updateContent,
+  deleteContent,
+  getContentById,
+  updateContent,
 } from "../../../services/contentStorage";
 
 import { getInspirationById } from "../../../services/inspirationStorage";
 
 import {
-    ContentItem,
-    ContentReference,
-    ContentStatus,
+  ContentItem,
+  ContentReference,
+  ContentStatus,
 } from "../../../types/content";
+import { ProductionEffort } from "../../../types/productionEffort";
 
 import {
-    colors,
-    fonts,
-    radius,
-    shadows,
-    spacing,
-    statusColors,
+  colors,
+  fonts,
+  radius,
+  shadows,
+  spacing,
+  statusColors,
 } from "../../../constants/theme";
 
 const formats = ["Reel", "Carrossel", "Story", "Foto"];
@@ -73,6 +78,9 @@ export default function ContentDetailsScreen() {
   const [format, setFormat] = useState<string | null>(null);
 
   const [objective, setObjective] = useState<string | null>(null);
+
+  const [productionEffort, setProductionEffort] =
+    useState<ProductionEffort | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -179,6 +187,7 @@ export default function ContentDetailsScreen() {
           setIdea(nextContent.idea);
           setFormat(nextContent.format);
           setObjective(nextContent.objective);
+          setProductionEffort(nextContent.productionEffort ?? null);
         } catch (error) {
           console.error("Erro ao carregar conteúdo:", error);
         } finally {
@@ -206,6 +215,7 @@ export default function ContentDetailsScreen() {
         idea: idea.trim(),
         format,
         objective,
+        productionEffort,
       };
 
       await updateContent(content.id, updates);
@@ -232,6 +242,7 @@ export default function ContentDetailsScreen() {
     setIdea(content.idea);
     setFormat(content.format);
     setObjective(content.objective);
+    setProductionEffort(content.productionEffort ?? null);
     setEditing(false);
   }
 
@@ -397,12 +408,20 @@ export default function ContentDetailsScreen() {
           <TouchableOpacity
             style={styles.headerButton}
             activeOpacity={0.8}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/");
+              }
+            }}
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Conteúdo</Text>
+          <Text style={styles.headerTitle}>
+            {editing ? "Editar detalhes" : "Conteúdo"}
+          </Text>
 
           <TouchableOpacity
             style={[styles.headerButton, editing && styles.headerButtonEditing]}
@@ -472,6 +491,16 @@ export default function ContentDetailsScreen() {
                   );
                 })}
               </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.formLabel}>ESFORÇO DE PRODUÇÃO</Text>
+
+              <ProductionEffortSelector
+                value={productionEffort}
+                onChange={setProductionEffort}
+                compact
+              />
             </View>
 
             <View style={styles.formSection}>
@@ -576,6 +605,11 @@ export default function ContentDetailsScreen() {
                 {content.objective ? (
                   <MetaPill icon="flag-outline" text={content.objective} />
                 ) : null}
+
+                <ProductionEffortBadge
+                  effort={content.productionEffort}
+                  subtle
+                />
               </View>
 
               {content.reference ? (
@@ -745,7 +779,8 @@ export default function ContentDetailsScreen() {
                 <Text style={styles.sectionEyebrow}>SEU FLUXO</Text>
 
                 <Text style={styles.flowCurrent}>
-                  Etapa atual: {status.label.toLowerCase()}
+                  Agora:{" "}
+                  {status.label.charAt(0) + status.label.slice(1).toLowerCase()}
                 </Text>
               </View>
 

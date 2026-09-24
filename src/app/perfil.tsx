@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -34,6 +34,7 @@ import {
 } from "../types/creatorProfile";
 
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
 
 import { colors, fonts, radius, shadows, spacing } from "../constants/theme";
 
@@ -128,13 +129,28 @@ export default function ProfileScreen() {
   );
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
 
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordFeedback, setPasswordFeedback] = useState<string | null>(null);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
+
+  const hasLoadedProfileOnce = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
 
       async function loadProfile() {
         try {
-          setLoading(true);
+          if (!hasLoadedProfileOnce.current) {
+            setLoading(true);
+          }
 
           const data = await getCreatorProfile();
 
@@ -159,6 +175,7 @@ export default function ProfileScreen() {
           console.error("Erro ao carregar perfil:", error);
         } finally {
           if (active) {
+            hasLoadedProfileOnce.current = true;
             setLoading(false);
           }
         }
@@ -363,6 +380,129 @@ export default function ProfileScreen() {
       Alert.alert("Não foi possível salvar", "Tente novamente.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openPasswordModal() {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setPasswordFeedback(null);
+    setPasswordUpdated(false);
+    setPasswordModalVisible(true);
+  }
+
+  function closePasswordModal() {
+    if (changingPassword) {
+      return;
+    }
+
+    setPasswordModalVisible(false);
+    setPasswordFeedback(null);
+    setPasswordUpdated(false);
+  }
+
+  async function handleChangePassword() {
+    if (changingPassword) {
+      return;
+    }
+
+    if (!currentPassword) {
+      setPasswordFeedback("Digite sua senha atual.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordFeedback("A nova senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordFeedback("As novas senhas não coincidem.");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordFeedback("Escolha uma senha diferente da atual.");
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      setPasswordFeedback(null);
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        current_password: currentPassword,
+      });
+
+      if (error) {
+        const errorCode = (error as { code?: string }).code ?? "";
+        const message = error.message.toLowerCase();
+
+        console.error("Erro do Supabase ao alterar senha:", {
+          code: errorCode,
+          message: error.message,
+        });
+
+        if (errorCode === "current_password_mismatch") {
+          setPasswordFeedback("A senha atual está incorreta.");
+          return;
+        }
+
+        if (errorCode === "current_password_required") {
+          setPasswordFeedback(
+            "O Supabase não recebeu a senha atual corretamente. Tente novamente.",
+          );
+          return;
+        }
+
+        if (errorCode === "reauthentication_needed") {
+          setPasswordFeedback(
+            "Sua sessão precisa ser reautenticada antes de alterar a senha.",
+          );
+          return;
+        }
+
+        if (errorCode === "same_password") {
+          setPasswordFeedback(
+            "A nova senha precisa ser diferente da senha atual.",
+          );
+          return;
+        }
+
+        if (
+          errorCode === "weak_password" ||
+          (message.includes("password") &&
+            (message.includes("weak") ||
+              message.includes("least") ||
+              message.includes("characters")))
+        ) {
+          setPasswordFeedback(
+            "A nova senha não atende aos requisitos de segurança.",
+          );
+          return;
+        }
+
+        throw error;
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setPasswordFeedback(null);
+      setPasswordUpdated(true);
+    } catch (error) {
+      console.error("Erro inesperado ao alterar senha:", error);
+
+      setPasswordFeedback(
+        "Não foi possível alterar a senha agora. Tente novamente.",
+      );
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -790,6 +930,36 @@ export default function ProfileScreen() {
             <View style={styles.accountDivider} />
 
             <TouchableOpacity
+              style={styles.securityRow}
+              activeOpacity={0.82}
+              onPress={openPasswordModal}
+            >
+              <View style={styles.accountIcon}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </View>
+
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.securityTitle}>Alterar senha</Text>
+
+                <Text style={styles.securitySubtitle}>
+                  Atualize a senha de acesso à sua conta.
+                </Text>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={17}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.accountDivider} />
+
+            <TouchableOpacity
               style={styles.signOutButton}
               activeOpacity={0.8}
               disabled={signingOut}
@@ -888,7 +1058,202 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={passwordModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closePasswordModal}
+      >
+        <View style={styles.passwordModalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={closePasswordModal}
+          />
+
+          <View style={styles.passwordModalCard}>
+            <View style={styles.passwordModalHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.passwordModalEyebrow}>SEGURANÇA</Text>
+
+                <Text style={styles.passwordModalTitle}>Alterar senha</Text>
+
+                <Text style={styles.passwordModalSubtitle}>
+                  Confirme sua senha atual antes de criar uma nova.
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.passwordModalClose}
+                activeOpacity={0.8}
+                onPress={closePasswordModal}
+              >
+                <Ionicons name="close" size={19} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {passwordUpdated ? (
+              <View style={styles.passwordSuccess}>
+                <View style={styles.passwordSuccessIcon}>
+                  <Ionicons name="checkmark" size={24} color={colors.surface} />
+                </View>
+
+                <Text style={styles.passwordSuccessTitle}>
+                  Senha atualizada
+                </Text>
+
+                <Text style={styles.passwordSuccessText}>
+                  Sua nova senha já está ativa e poderá ser usada no próximo
+                  acesso.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.passwordPrimaryButton}
+                  activeOpacity={0.85}
+                  onPress={closePasswordModal}
+                >
+                  <Text style={styles.passwordPrimaryButtonText}>Concluir</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <PasswordField
+                  label="SENHA ATUAL"
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry={!showCurrentPassword}
+                  onToggleVisibility={() =>
+                    setShowCurrentPassword((current) => !current)
+                  }
+                  visible={showCurrentPassword}
+                  placeholder="Digite sua senha atual"
+                />
+
+                <PasswordField
+                  label="NOVA SENHA"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showNewPassword}
+                  onToggleVisibility={() =>
+                    setShowNewPassword((current) => !current)
+                  }
+                  visible={showNewPassword}
+                  placeholder="Pelo menos 6 caracteres"
+                />
+
+                <PasswordField
+                  label="CONFIRMAR NOVA SENHA"
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  secureTextEntry={!showConfirmNewPassword}
+                  onToggleVisibility={() =>
+                    setShowConfirmNewPassword((current) => !current)
+                  }
+                  visible={showConfirmNewPassword}
+                  placeholder="Digite a nova senha novamente"
+                />
+
+                {passwordFeedback ? (
+                  <View style={styles.passwordFeedback}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={16}
+                      color={colors.terracotta}
+                    />
+
+                    <Text style={styles.passwordFeedbackText}>
+                      {passwordFeedback}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  style={[
+                    styles.passwordPrimaryButton,
+                    changingPassword && styles.passwordPrimaryButtonDisabled,
+                  ]}
+                  activeOpacity={0.85}
+                  disabled={changingPassword}
+                  onPress={handleChangePassword}
+                >
+                  {changingPassword ? (
+                    <ActivityIndicator color={colors.surface} />
+                  ) : (
+                    <>
+                      <Text style={styles.passwordPrimaryButtonText}>
+                        Atualizar senha
+                      </Text>
+
+                      <Ionicons
+                        name="checkmark"
+                        size={18}
+                        color={colors.surface}
+                      />
+                    </>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function PasswordField({
+  label,
+  value,
+  onChangeText,
+  secureTextEntry,
+  onToggleVisibility,
+  visible,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  secureTextEntry: boolean;
+  onToggleVisibility: () => void;
+  visible: boolean;
+  placeholder: string;
+}) {
+  return (
+    <View style={styles.passwordFieldGroup}>
+      <Text style={styles.passwordFieldLabel}>{label}</Text>
+
+      <View style={styles.passwordInputShell}>
+        <Ionicons
+          name="lock-closed-outline"
+          size={18}
+          color={colors.textMuted}
+        />
+
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={secureTextEntry}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+          style={styles.passwordInput}
+        />
+
+        <TouchableOpacity
+          style={styles.passwordVisibility}
+          activeOpacity={0.75}
+          onPress={onToggleVisibility}
+        >
+          <Ionicons
+            name={visible ? "eye-off-outline" : "eye-outline"}
+            size={20}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -1342,6 +1707,198 @@ const styles = StyleSheet.create({
     height: 1,
     marginHorizontal: 14,
     backgroundColor: colors.border,
+  },
+
+  securityRow: {
+    minHeight: 72,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  securityTitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: fonts.semibold,
+    color: colors.text,
+  },
+
+  securitySubtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  passwordModalBackdrop: {
+    flex: 1,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.overlay,
+  },
+
+  passwordModalCard: {
+    width: "100%",
+    maxWidth: 390,
+    padding: 18,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.elevated,
+  },
+
+  passwordModalHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 4,
+  },
+
+  passwordModalEyebrow: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
+
+  passwordModalTitle: {
+    marginTop: 3,
+    fontSize: 21,
+    lineHeight: 27,
+    fontFamily: fonts.bold,
+    color: colors.text,
+  },
+
+  passwordModalSubtitle: {
+    maxWidth: 290,
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  passwordModalClose: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  passwordFieldGroup: {
+    marginTop: 14,
+  },
+
+  passwordFieldLabel: {
+    marginBottom: 7,
+    fontSize: 11,
+    letterSpacing: 0.7,
+    fontFamily: fonts.bold,
+    color: colors.textMuted,
+  },
+
+  passwordInputShell: {
+    minHeight: 52,
+    paddingHorizontal: 13,
+    borderRadius: 14,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  passwordInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingVertical: 0,
+    fontSize: 14,
+    fontFamily: fonts.regular,
+    color: colors.text,
+  },
+
+  passwordVisibility: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.round,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  passwordFeedback: {
+    marginTop: 11,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+
+  passwordFeedbackText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 16,
+    fontFamily: fonts.medium,
+    color: colors.terracotta,
+  },
+
+  passwordSuccess: {
+    paddingTop: 18,
+    alignItems: "center",
+  },
+
+  passwordSuccessIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 17,
+    backgroundColor: colors.sage,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  passwordSuccessTitle: {
+    marginTop: 14,
+    fontSize: 19,
+    lineHeight: 25,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    textAlign: "center",
+  },
+
+  passwordSuccessText: {
+    maxWidth: 300,
+    marginTop: 5,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: fonts.regular,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+
+  passwordPrimaryButton: {
+    minHeight: 52,
+    marginTop: 17,
+    paddingHorizontal: 15,
+    borderRadius: 14,
+    backgroundColor: colors.terracotta,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
+  passwordPrimaryButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  passwordPrimaryButtonText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.surface,
   },
 
   signOutButton: {

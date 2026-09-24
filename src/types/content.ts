@@ -1,3 +1,5 @@
+import { ProductionEffort } from "./productionEffort";
+
 export type ContentStatus =
   | "ideia"
   | "roteiro"
@@ -18,9 +20,7 @@ export type ContentReference = {
   source: string;
   category: string | null;
   note: string;
-
-  // Snapshot visual da inspiração.
-  // Opcional para manter compatibilidade com conteúdos antigos.
+  productionEffort?: ProductionEffort | null;
   thumbnailUrl?: string | null;
   mediaTitle?: string | null;
   authorName?: string | null;
@@ -29,17 +29,12 @@ export type ContentReference = {
 
 export type ContentItem = {
   id: string;
-
-  // Mantido para compatibilidade com conteúdos já salvos.
   inspirationId?: string;
-
-  // Snapshot da referência no momento em que o conteúdo é criado.
-  // Assim a referência continua disponível mesmo se a inspiração for apagada.
   reference?: ContentReference;
-
   idea: string;
   format: string | null;
   objective: string | null;
+  productionEffort?: ProductionEffort | null;
   status: ContentStatus;
   plannedDate?: string | null;
   script: ContentScript;

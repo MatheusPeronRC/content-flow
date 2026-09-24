@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { Inspiration } from "../types/inspiration";
+import { ProductionEffort } from "../types/productionEffort";
 
 type InspirationRow = {
   id: string;
@@ -8,6 +9,7 @@ type InspirationRow = {
   source: string;
   category: string | null;
   note: string;
+  production_effort: ProductionEffort | null;
   thumbnail_url: string | null;
   media_title: string | null;
   author_name: string | null;
@@ -39,6 +41,7 @@ function mapRowToInspiration(row: InspirationRow): Inspiration {
     source: row.source,
     category: row.category,
     note: row.note,
+    productionEffort: row.production_effort,
     thumbnailUrl: row.thumbnail_url,
     mediaTitle: row.media_title,
     authorName: row.author_name,
@@ -54,7 +57,7 @@ export async function getInspirations(): Promise<Inspiration[]> {
     const { data, error } = await supabase
       .from("inspirations")
       .select(
-        "id, user_id, url, source, category, note, thumbnail_url, media_title, author_name, metadata_updated_at, created_at",
+        "id, user_id, url, source, category, note, production_effort, thumbnail_url, media_title, author_name, metadata_updated_at, created_at",
       )
       .eq("user_id", userId)
       .order("created_at", {
@@ -73,6 +76,7 @@ export async function getInspirations(): Promise<Inspiration[]> {
         source: row.source,
         category: row.category,
         note: row.note,
+        production_effort: row.production_effort as ProductionEffort | null,
         thumbnail_url: row.thumbnail_url,
         media_title: row.media_title,
         author_name: row.author_name,
@@ -98,6 +102,7 @@ export async function saveInspiration(
     source: inspiration.source,
     category: inspiration.category,
     note: inspiration.note,
+    production_effort: inspiration.productionEffort ?? null,
     thumbnail_url: inspiration.thumbnailUrl ?? null,
     media_title: inspiration.mediaTitle ?? null,
     author_name: inspiration.authorName ?? null,
@@ -119,7 +124,7 @@ export async function getInspirationById(
     const { data, error } = await supabase
       .from("inspirations")
       .select(
-        "id, user_id, url, source, category, note, thumbnail_url, media_title, author_name, metadata_updated_at, created_at",
+        "id, user_id, url, source, category, note, production_effort, thumbnail_url, media_title, author_name, metadata_updated_at, created_at",
       )
       .eq("user_id", userId)
       .eq("id", id)
@@ -140,6 +145,7 @@ export async function getInspirationById(
       source: data.source,
       category: data.category,
       note: data.note,
+      production_effort: data.production_effort as ProductionEffort | null,
       thumbnail_url: data.thumbnail_url,
       media_title: data.media_title,
       author_name: data.author_name,
@@ -174,6 +180,10 @@ export async function updateInspiration(
 
   if (updates.note !== undefined) {
     payload.note = updates.note;
+  }
+
+  if (updates.productionEffort !== undefined) {
+    payload.production_effort = updates.productionEffort;
   }
 
   if (updates.thumbnailUrl !== undefined) {

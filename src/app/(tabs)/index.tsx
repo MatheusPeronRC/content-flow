@@ -248,10 +248,10 @@ export default function HomeScreen() {
           />
 
           <QuickAction
-            icon="albums-outline"
-            title="Meus conteúdos"
-            subtitle="Acompanhar produção"
-            onPress={() => router.push("/conteudos")}
+            icon="flash-outline"
+            title="Tenho pouco tempo"
+            subtitle="Veja o que cabe agora"
+            onPress={() => router.push("/conteudo/tempo-curto")}
           />
         </View>
 
@@ -313,35 +313,6 @@ export default function HomeScreen() {
             ))}
           </View>
         )}
-
-        <TouchableOpacity
-          style={styles.inspirationStrip}
-          activeOpacity={0.88}
-          onPress={() => router.push("/inspiracoes")}
-        >
-          <View style={styles.inspirationIcon}>
-            <Ionicons name="bulb-outline" size={20} color={colors.blue} />
-          </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.inspirationLabel}>SUA BIBLIOTECA</Text>
-            <Text style={styles.inspirationTitle}>
-              {inspirationCount === 0
-                ? "Salve sua primeira referência"
-                : `${inspirationCount} ${
-                    inspirationCount === 1
-                      ? "inspiração salva"
-                      : "inspirações salvas"
-                  }`}
-            </Text>
-          </View>
-
-          <Ionicons
-            name="arrow-forward"
-            size={17}
-            color={colors.textSecondary}
-          />
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -952,43 +923,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  inspirationStrip: {
-    marginTop: 20,
-    minHeight: 78,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 11,
-  },
-
-  inspirationIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: colors.blueLight,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  inspirationLabel: {
-    fontSize: 10,
-    letterSpacing: 0.65,
-    fontFamily: fonts.bold,
-    color: colors.textSecondary,
-  },
-
-  inspirationTitle: {
-    marginTop: 3,
-    fontSize: 14,
-    lineHeight: 19,
-    fontFamily: fonts.semibold,
-    color: colors.text,
   },
 });

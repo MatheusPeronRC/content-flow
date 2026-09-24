@@ -246,93 +246,107 @@ export default function TabsLayout() {
             <View style={styles.handle} />
 
             <View style={styles.sheetHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.sheetTitle}>O que vamos criar?</Text>
+              <View style={styles.sheetHeaderCopy}>
+                <Text style={styles.sheetEyebrow}>NOVO CONTEÚDO</Text>
+
+                <Text style={styles.sheetTitle}>Como você quer começar?</Text>
 
                 <Text style={styles.sheetSubtitle}>
-                  Escolha como você quer começar.
+                  Escolha um ponto de partida. Você poderá ajustar tudo depois.
                 </Text>
               </View>
 
               <TouchableOpacity
                 style={styles.closeButton}
+                activeOpacity={0.8}
                 onPress={() => setCreateModalVisible(false)}
               >
-                <Ionicons name="close" size={20} color={colors.text} />
+                <Ionicons name="close" size={19} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[styles.option, styles.inspirationOption]}
-              activeOpacity={0.85}
-              onPress={() => closeAndNavigate("/conteudo/escolher-inspiracao")}
-            >
-              <View
-                style={[
-                  styles.optionMark,
-
-                  {
-                    backgroundColor: colors.surface,
-                  },
-                ]}
+            <View style={styles.options}>
+              <TouchableOpacity
+                style={styles.option}
+                activeOpacity={0.84}
+                onPress={() =>
+                  closeAndNavigate("/conteudo/escolher-inspiracao")
+                }
               >
-                <Ionicons name="sparkles" size={22} color={colors.rose} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <View style={styles.optionTitleRow}>
-                  <Text style={styles.optionTitle}>
-                    A partir de uma inspiração
-                  </Text>
-
-                  <View style={styles.recommended}>
-                    <Text style={styles.recommendedText}>RECOMENDADO</Text>
-                  </View>
+                <View style={styles.optionMarkPrimary}>
+                  <Ionicons
+                    name="sparkles-outline"
+                    size={21}
+                    color={colors.terracotta}
+                  />
                 </View>
 
-                <Text style={styles.optionText}>
-                  Transforme algo que você salvou na sua própria versão.
-                </Text>
-              </View>
+                <View style={styles.optionContent}>
+                  <View style={styles.optionTitleRow}>
+                    <Text style={styles.optionTitle}>Usar uma inspiração</Text>
 
-              <Ionicons name="arrow-forward" size={18} color={colors.rose} />
-            </TouchableOpacity>
+                    <View style={styles.quickBadge}>
+                      <Text style={styles.quickBadgeText}>MAIS RÁPIDO</Text>
+                    </View>
+                  </View>
 
-            <TouchableOpacity
-              style={[styles.option, styles.scratchOption]}
-              activeOpacity={0.85}
-              onPress={() => closeAndNavigate("/conteudo/manual")}
-            >
-              <View
-                style={[
-                  styles.optionMark,
+                  <Text style={styles.optionText}>
+                    Transforme uma referência salva em uma versão com a sua
+                    identidade.
+                  </Text>
+                </View>
 
-                  {
-                    backgroundColor: colors.surface,
-                  },
-                ]}
+                <View style={styles.optionArrow}>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={17}
+                    color={colors.terracotta}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.option}
+                activeOpacity={0.84}
+                onPress={() => closeAndNavigate("/conteudo/manual")}
               >
-                <Ionicons
-                  name="create-outline"
-                  size={22}
-                  color={colors.terracotta}
-                />
-              </View>
+                <View style={styles.optionMarkNeutral}>
+                  <Ionicons
+                    name="create-outline"
+                    size={21}
+                    color={colors.text}
+                  />
+                </View>
 
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>Começar do zero</Text>
+                <View style={styles.optionContent}>
+                  <Text style={styles.optionTitle}>Começar do zero</Text>
 
-                <Text style={styles.optionText}>
-                  Pegue uma ideia sua e construa o conteúdo.
-                </Text>
-              </View>
+                  <Text style={styles.optionText}>
+                    Parta de uma ideia sua e construa o conteúdo passo a passo.
+                  </Text>
+                </View>
 
+                <View style={styles.optionArrowNeutral}>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={17}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.sheetNote}>
               <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={colors.terracotta}
+                name="information-circle-outline"
+                size={15}
+                color={colors.textMuted}
               />
-            </TouchableOpacity>
+
+              <Text style={styles.sheetNoteText}>
+                Os dois caminhos terminam no mesmo fluxo de produção.
+              </Text>
+            </View>
           </SafeAreaView>
         </View>
       </Modal>
@@ -380,174 +394,187 @@ const styles = StyleSheet.create({
 
   modalBackdrop: {
     flex: 1,
-
     justifyContent: "flex-end",
-
     backgroundColor: colors.overlay,
   },
 
   sheet: {
     marginHorizontal: 10,
-
     marginBottom: 8,
-
     paddingHorizontal: spacing.lg,
-
-    paddingTop: 12,
-
+    paddingTop: 10,
     paddingBottom: spacing.lg,
-
     borderRadius: radius.xxl,
-
     backgroundColor: colors.surface,
+    ...shadows.elevated,
   },
 
   handle: {
     width: 36,
     height: 4,
-
     alignSelf: "center",
-
-    marginBottom: spacing.lg,
-
+    marginBottom: 18,
     borderRadius: radius.round,
-
     backgroundColor: colors.border,
   },
 
   sheetHeader: {
     flexDirection: "row",
-
     alignItems: "flex-start",
+    gap: 12,
+    marginBottom: 18,
+  },
 
-    marginBottom: spacing.lg,
+  sheetHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  sheetEyebrow: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.terracotta,
   },
 
   sheetTitle: {
-    fontSize: 25,
-
-    lineHeight: 32,
-
-    letterSpacing: -0.5,
-
+    marginTop: 3,
+    fontSize: 23,
+    lineHeight: 29,
+    letterSpacing: -0.45,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   sheetSubtitle: {
+    maxWidth: 310,
     marginTop: 5,
-
-    fontSize: 14,
-
-    lineHeight: 20,
-
+    fontSize: 12,
+    lineHeight: 18,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
   closeButton: {
-    width: 40,
-    height: 40,
-
+    width: 38,
+    height: 38,
     borderRadius: radius.round,
-
     backgroundColor: colors.surfaceMuted,
-
     alignItems: "center",
-
     justifyContent: "center",
+  },
+
+  options: {
+    gap: 9,
   },
 
   option: {
-    minHeight: 104,
-
-    padding: spacing.md,
-
+    minHeight: 96,
+    padding: 12,
+    borderRadius: 17,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: "row",
-
     alignItems: "center",
-
-    borderRadius: radius.xl,
-
-    marginBottom: spacing.sm,
+    gap: 11,
   },
 
-  inspirationOption: {
-    backgroundColor: colors.roseLight,
-  },
-
-  scratchOption: {
+  optionMarkPrimary: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  optionMark: {
-    width: 48,
-    height: 48,
-
-    marginRight: spacing.md,
-
-    borderRadius: 15,
-
+  optionMarkNeutral: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
-
     justifyContent: "center",
+  },
+
+  optionContent: {
+    flex: 1,
+    minWidth: 0,
   },
 
   optionTitleRow: {
     flexDirection: "row",
-
     alignItems: "center",
-
     flexWrap: "wrap",
-
     gap: 7,
   },
 
   optionTitle: {
-    fontSize: 16,
-
-    lineHeight: 22,
-
+    fontSize: 14,
+    lineHeight: 19,
     fontFamily: fonts.bold,
-
     color: colors.text,
   },
 
   optionText: {
-    maxWidth: 240,
-
-    marginTop: 5,
-
-    paddingRight: spacing.sm,
-
-    fontSize: 13,
-
-    lineHeight: 19,
-
+    maxWidth: 260,
+    marginTop: 4,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
-
     color: colors.textSecondary,
   },
 
-  recommended: {
-    paddingHorizontal: 8,
-
-    paddingVertical: 4,
-
+  quickBadge: {
+    minHeight: 22,
+    paddingHorizontal: 7,
     borderRadius: radius.round,
-
-    backgroundColor: colors.surface,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  recommendedText: {
-    fontSize: 11,
-
-    letterSpacing: 0.4,
-
+  quickBadgeText: {
+    fontSize: 8,
+    letterSpacing: 0.55,
     fontFamily: fonts.bold,
+    color: colors.terracotta,
+  },
 
-    color: colors.rose,
+  optionArrow: {
+    width: 31,
+    height: 31,
+    borderRadius: radius.round,
+    backgroundColor: colors.terracottaLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  optionArrowNeutral: {
+    width: 31,
+    height: 31,
+    borderRadius: radius.round,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sheetNote: {
+    marginTop: 14,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+
+  sheetNoteText: {
+    flex: 1,
+    fontSize: 10,
+    lineHeight: 15,
+    fontFamily: fonts.regular,
+    color: colors.textMuted,
   },
 });
