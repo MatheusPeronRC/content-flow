@@ -111,6 +111,8 @@ export default function HomeScreen() {
       ? 0
       : Math.min(Math.round((plannedThisWeek / weeklyTarget) * 100), 100);
 
+  const firstName = getFirstName(profile?.fullName);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -140,7 +142,11 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.welcome}>
-          <Text style={styles.greeting}>{getGreeting()} 👋</Text>
+          <Text style={styles.greeting}>
+            {firstName
+              ? `${getGreeting()}, ${firstName}! 👋`
+              : `${getGreeting()}! 👋`}
+          </Text>
           <Text style={styles.welcomeText}>
             Organize suas ideias e mantenha seu conteúdo em movimento.
           </Text>
@@ -518,6 +524,16 @@ function getStatusMeta(status: ContentStatus) {
         ...statusColors.publicado,
       };
   }
+}
+
+function getFirstName(fullName?: string | null) {
+  const normalized = fullName?.trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.split(/\s+/)[0];
 }
 
 function getGreeting() {

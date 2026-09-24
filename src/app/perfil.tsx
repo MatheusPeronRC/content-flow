@@ -117,6 +117,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
+  const [fullName, setFullName] = useState("");
   const [profession, setProfession] = useState("");
   const [objective, setObjective] = useState<CreatorObjective | null>(null);
   const [postsPerWeek, setPostsPerWeek] = useState<number | null>(null);
@@ -147,6 +148,7 @@ export default function ProfileScreen() {
           }
 
           setProfile(data);
+          setFullName(data.fullName ?? "");
           setProfession(data.profession);
           setObjective(data.objective);
           setPostsPerWeek(data.postsPerWeek);
@@ -171,6 +173,7 @@ export default function ProfileScreen() {
   );
 
   const formIsValid =
+    fullName.trim().length >= 2 &&
     profession.trim().length >= 2 &&
     objective !== null &&
     postsPerWeek !== null &&
@@ -185,6 +188,7 @@ export default function ProfileScreen() {
     const savedFormats = [...profile.formats].sort();
 
     return (
+      fullName.trim() !== (profile.fullName ?? "") ||
       profession.trim() !== profile.profession ||
       objective !== profile.objective ||
       postsPerWeek !== profile.postsPerWeek ||
@@ -194,6 +198,7 @@ export default function ProfileScreen() {
     );
   }, [
     profile,
+    fullName,
     profession,
     objective,
     postsPerWeek,
@@ -319,6 +324,7 @@ export default function ProfileScreen() {
       }
 
       await updateCreatorProfile({
+        fullName: fullName.trim(),
         profession: profession.trim(),
         objective,
         postsPerWeek,
@@ -341,6 +347,7 @@ export default function ProfileScreen() {
 
       if (updated) {
         setProfile(updated);
+        setFullName(updated.fullName ?? "");
         setProfession(updated.profession);
         setObjective(updated.objective);
         setPostsPerWeek(updated.postsPerWeek);
@@ -518,8 +525,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <View style={styles.profileMain}>
-            <Text style={styles.profileProfession}>
-              {profession.trim() || "Seu perfil"}
+            <Text style={styles.profileName}>
+              {fullName.trim() || "Seu nome"}
+            </Text>
+
+            <Text style={styles.profileProfession} numberOfLines={1}>
+              {profession.trim() || "Seu perfil profissional"}
             </Text>
 
             <Text style={styles.profileEmail} numberOfLines={1}>
@@ -574,21 +585,29 @@ export default function ProfileScreen() {
         <View style={styles.settingCard}>
           <View style={styles.settingHeader}>
             <View style={styles.settingIcon}>
-              <Ionicons
-                name="briefcase-outline"
-                size={19}
-                color={colors.text}
-              />
+              <Ionicons name="person-outline" size={19} color={colors.text} />
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingTitle}>Profissão ou nicho</Text>
+              <Text style={styles.settingTitle}>Identidade profissional</Text>
               <Text style={styles.settingSubtitle}>
-                Como você se apresenta profissionalmente.
+                Seu nome e como você se apresenta no ContentFlow.
               </Text>
             </View>
           </View>
 
+          <Text style={styles.inputLabel}>NOME</Text>
+          <TextInput
+            value={fullName}
+            onChangeText={setFullName}
+            placeholder="Ex.: Mariana Silva"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
+
+          <Text style={styles.inputLabelSpaced}>PROFISSÃO OU NICHO</Text>
           <TextInput
             value={profession}
             onChangeText={setProfession}
@@ -988,7 +1007,7 @@ const styles = StyleSheet.create({
     marginLeft: 14,
   },
 
-  profileProfession: {
+  profileName: {
     fontSize: 21,
     lineHeight: 27,
     letterSpacing: -0.45,
@@ -996,8 +1015,16 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
 
+  profileProfession: {
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 19,
+    fontFamily: fonts.semibold,
+    color: colors.textSecondary,
+  },
+
   profileEmail: {
-    marginTop: 3,
+    marginTop: 2,
     fontSize: 13,
     lineHeight: 19,
     fontFamily: fonts.regular,
@@ -1130,6 +1157,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     fontFamily: fonts.regular,
+    color: colors.textSecondary,
+  },
+
+  inputLabel: {
+    marginBottom: 7,
+    fontSize: 10,
+    letterSpacing: 0.7,
+    fontFamily: fonts.bold,
+    color: colors.textSecondary,
+  },
+
+  inputLabelSpaced: {
+    marginTop: 14,
+    marginBottom: 7,
+    fontSize: 10,
+    letterSpacing: 0.7,
+    fontFamily: fonts.bold,
     color: colors.textSecondary,
   },
 

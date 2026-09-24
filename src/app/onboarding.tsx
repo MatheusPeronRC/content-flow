@@ -167,6 +167,8 @@ const stepMeta = {
 export default function OnboardingScreen() {
   const [step, setStep] = useState(1);
 
+  const [fullName, setFullName] = useState("");
+
   const [profession, setProfession] = useState("");
 
   const [objective, setObjective] = useState<CreatorObjective | null>(null);
@@ -191,6 +193,8 @@ export default function OnboardingScreen() {
         if (!active || !profile) {
           return;
         }
+
+        setFullName(profile.fullName ?? "");
 
         setProfession(profile.profession ?? "");
 
@@ -220,7 +224,7 @@ export default function OnboardingScreen() {
   const canContinue = useMemo(() => {
     switch (step) {
       case 1:
-        return profession.trim().length >= 2;
+        return fullName.trim().length >= 2 && profession.trim().length >= 2;
 
       case 2:
         return objective !== null;
@@ -234,7 +238,7 @@ export default function OnboardingScreen() {
       default:
         return false;
     }
-  }, [step, profession, objective, postsPerWeek, formats]);
+  }, [step, fullName, profession, objective, postsPerWeek, formats]);
 
   function handleBack() {
     if (step > 1) {
@@ -264,6 +268,7 @@ export default function OnboardingScreen() {
 
   async function handleFinish() {
     if (
+      !fullName.trim() ||
       !profession.trim() ||
       !objective ||
       !postsPerWeek ||
@@ -281,6 +286,7 @@ export default function OnboardingScreen() {
       const now = new Date().toISOString();
 
       const profile: CreatorProfile = {
+        fullName: fullName.trim(),
         profession: profession.trim(),
         objective,
         postsPerWeek,
@@ -405,7 +411,9 @@ export default function OnboardingScreen() {
         >
           {step === 1 && (
             <ProfessionStep
+              fullName={fullName}
               profession={profession}
+              onChangeFullName={setFullName}
               onChangeProfession={setProfession}
             />
           )}
@@ -473,24 +481,55 @@ export default function OnboardingScreen() {
 }
 
 type ProfessionStepProps = {
+  fullName: string;
   profession: string;
+  onChangeFullName: (value: string) => void;
   onChangeProfession: (value: string) => void;
 };
 
 function ProfessionStep({
+  fullName,
   profession,
+  onChangeFullName,
   onChangeProfession,
 }: ProfessionStepProps) {
   return (
     <>
       <StepIntro
         eyebrow="SOBRE VOCÊ"
-        title={"Com o que você\ntrabalha?"}
-        description="Vamos usar isso para adaptar o ContentFlow à sua rotina e ao tipo de conteúdo que você cria."
+        title={"Vamos personalizar\nseu espaço"}
+        description="Seu nome e sua área ajudam o ContentFlow a deixar a experiência mais pessoal e próxima da sua rotina."
       />
 
       <View style={styles.inputSection}>
-        <Text style={styles.fieldLabel}>PROFISSÃO OU NICHO</Text>
+        <Text style={styles.fieldLabel}>SEU NOME</Text>
+
+        <View
+          style={[
+            styles.professionInputWrap,
+            fullName.trim() && styles.professionInputWrapActive,
+          ]}
+        >
+          <View style={styles.professionMark}>
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color={colors.terracotta}
+            />
+          </View>
+
+          <TextInput
+            value={fullName}
+            onChangeText={onChangeFullName}
+            autoCapitalize="words"
+            placeholder="Ex.: Mariana Silva"
+            placeholderTextColor={colors.textMuted}
+            style={styles.professionInput}
+            returnKeyType="next"
+          />
+        </View>
+
+        <Text style={styles.fieldLabelSpaced}>PROFISSÃO OU NICHO</Text>
 
         <View
           style={[
@@ -929,7 +968,7 @@ const styles = StyleSheet.create({
   },
 
   stepLabel: {
-    fontSize: 11,
+    fontSize: 9,
     letterSpacing: 0.75,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -977,7 +1016,7 @@ const styles = StyleSheet.create({
 
   eyebrow: {
     marginBottom: 9,
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 0.95,
     fontFamily: fonts.bold,
     color: colors.terracotta,
@@ -1007,7 +1046,16 @@ const styles = StyleSheet.create({
 
   fieldLabel: {
     marginBottom: 10,
-    fontSize: 11,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontFamily: fonts.bold,
+    color: colors.textSecondary,
+  },
+
+  fieldLabelSpaced: {
+    marginTop: 18,
+    marginBottom: 10,
+    fontSize: 10,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textSecondary,
@@ -1053,7 +1101,7 @@ const styles = StyleSheet.create({
   suggestionsLabel: {
     marginTop: 22,
     marginBottom: 10,
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: 0.8,
     fontFamily: fonts.bold,
     color: colors.textSecondary,
@@ -1100,8 +1148,8 @@ const styles = StyleSheet.create({
 
   helperText: {
     flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textMuted,
   },
@@ -1147,8 +1195,8 @@ const styles = StyleSheet.create({
     maxWidth: 245,
     marginTop: 3,
     paddingRight: 8,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1224,8 +1272,8 @@ const styles = StyleSheet.create({
   frequencyDescription: {
     marginTop: 2,
     paddingRight: 8,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1253,7 +1301,7 @@ const styles = StyleSheet.create({
   },
 
   weekPreviewLabel: {
-    fontSize: 11,
+    fontSize: 9,
     letterSpacing: 0.75,
     fontFamily: fonts.bold,
     color: colors.textMuted,
@@ -1269,8 +1317,8 @@ const styles = StyleSheet.create({
 
   weekPreviewText: {
     marginTop: 3,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 10,
+    lineHeight: 16,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1320,8 +1368,8 @@ const styles = StyleSheet.create({
 
   formatDescription: {
     marginTop: 3,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },
@@ -1354,8 +1402,8 @@ const styles = StyleSheet.create({
 
   finishMessageText: {
     marginTop: 3,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: fonts.regular,
     color: colors.textSecondary,
   },

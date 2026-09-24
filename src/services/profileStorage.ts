@@ -3,6 +3,7 @@ import { CreatorProfile } from "../types/creatorProfile";
 
 type ProfileRow = {
   id: string;
+  full_name: string | null;
   profession: string;
   objective: CreatorProfile["objective"];
   posts_per_week: number;
@@ -30,6 +31,7 @@ async function getAuthenticatedUserId(): Promise<string | null> {
 
 function mapProfileRow(row: ProfileRow): CreatorProfile {
   return {
+    fullName: row.full_name ?? "",
     profession: row.profession,
     objective: row.objective,
     postsPerWeek: row.posts_per_week,
@@ -64,7 +66,7 @@ export async function getCreatorProfile(): Promise<CreatorProfile | null> {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, profession, objective, posts_per_week, formats, avatar_url, onboarding_completed, created_at, updated_at",
+        "id, full_name, profession, objective, posts_per_week, formats, avatar_url, onboarding_completed, created_at, updated_at",
       )
       .eq("id", userId)
       .maybeSingle();
@@ -79,6 +81,7 @@ export async function getCreatorProfile(): Promise<CreatorProfile | null> {
 
     const row: ProfileRow = {
       id: data.id,
+      full_name: data.full_name,
       profession: data.profession,
       objective: data.objective as CreatorProfile["objective"],
       posts_per_week: data.posts_per_week,
@@ -110,6 +113,7 @@ export async function saveCreatorProfile(
   const { error } = await supabase.from("profiles").upsert(
     {
       id: userId,
+      full_name: profile.fullName?.trim() || null,
       profession: profile.profession.trim(),
       objective: profile.objective,
       posts_per_week: profile.postsPerWeek,
