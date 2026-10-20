@@ -1,56 +1,84 @@
-# Welcome to your Expo app 👋
+# ContentFlow
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Aplicativo em desenvolvimento para transformar referências salvas em conteúdos planejados, produzidos e publicados.
 
-## Get started
+**Tipo:** projeto pessoal · **Plataforma:** aplicativo mobile-first · **Status:** em desenvolvimento
 
-1. Install dependencies
+## Problema e proposta
 
-   ```bash
-   npm install
-   ```
+Profissionais e pequenos criadores frequentemente salvam ideias de conteúdo, mas perdem essas referências ou têm dificuldade para transformá-las em publicações. O ContentFlow busca organizar essa jornada em um único fluxo: **salvar uma inspiração → adaptar a ideia → preparar o roteiro → planejar → acompanhar a publicação**.
 
-2. Start the app
+## Funcionalidades presentes no código
 
-   ```bash
-   npx expo start
-   ```
+- **Conta e acesso:** cadastro, login e recuperação de senha com Supabase Auth, além de navegação protegida por sessão.
+- **Inspirações:** registro, listagem e consulta de referências, com categorias, pesquisa e filtros.
+- **Criação de conteúdo:** fluxo para iniciar uma ideia manualmente ou a partir de uma inspiração existente.
+- **Roteiro:** edição de gancho, pontos principais e chamada para ação (CTA).
+- **Planejamento:** visão semanal, escolha de datas, acompanhamento da meta e filtros por esforço de produção.
+- **Acompanhamento:** organização das ideias em etapas como roteiro, gravação, edição, pronto e publicado.
+- **Perfil e onboarding:** preferências e informações utilizadas para personalizar a experiência.
+- **Persistência:** serviços de leitura e gravação de dados conectados ao Supabase.
 
-In the output, you'll find options to open the app in a
+Estas funcionalidades foram identificadas nos arquivos do projeto; o aplicativo ainda está em evolução e não é apresentado aqui como produto comercial finalizado.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Tecnologias
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| Camada | Tecnologias |
+| --- | --- |
+| Aplicativo | React Native, Expo e TypeScript |
+| Navegação | Expo Router |
+| Backend e autenticação | Supabase |
+| Interface | Componentes React Native e ícones do Expo |
 
-## Get a fresh project
+## Organização do código
 
-When you're ready, run:
+- `src/app/`: rotas, telas e fluxos de navegação.
+- `src/components/`: componentes compartilhados.
+- `src/services/`: acesso e persistência de inspirações, conteúdos e perfil.
+- `src/contexts/`: contexto de autenticação.
+- `src/types/`: tipos das entidades da aplicação.
+- `src/constants/`: configurações visuais e constantes.
 
-```bash
-npm run reset-project
-```
+## Executar localmente
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Pré-requisitos
 
-### Other setup steps
+- Node.js e npm compatíveis com a versão do Expo presente em `package.json`.
+- Um projeto Supabase com autenticação e estrutura de dados compatíveis com os serviços do aplicativo.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. Instale as dependências:
 
-## Learn more
+~~~bash
+npm install
+~~~
 
-To learn more about developing your project with Expo, look at the following resources:
+2. Configure as variáveis de ambiente em um arquivo `.env` local:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+~~~dotenv
+EXPO_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sua_chave_publicavel
+~~~
 
-## Join the community
+Utilize somente a chave publicável do Supabase. **Nunca inclua chaves de serviço ou segredos de administrador no aplicativo, no repositório ou em variáveis `EXPO_PUBLIC_*`.** A configuração do backend precisa corresponder às tabelas e políticas esperadas pelo código.
 
-Join our community of developers creating universal apps.
+3. Inicie o projeto:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+~~~bash
+npx expo start
+~~~
+
+Para verificar o lint:
+
+~~~bash
+npm run lint
+~~~
+
+> **Observação:** a execução completa depende de um backend Supabase configurado. Instalar as dependências e preencher as variáveis não cria automaticamente as tabelas e políticas necessárias.
+
+## Situação atual e próximos passos
+
+Este é um projeto em desenvolvimento. Os fluxos, a experiência de uso e as integrações continuam sujeitos a ajustes e validação. A proposta é reduzir o caminho entre uma ideia salva e um conteúdo efetivamente publicado.
+
+## Sobre o projeto
+
+Projeto pessoal de desenvolvimento de software, com foco em organização de fluxos, experiência mobile e integração entre interface e persistência de dados.
